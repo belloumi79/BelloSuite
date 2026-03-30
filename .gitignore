@@ -28,3 +28,4 @@ prisma/migrations/
 
 # Cache
 .cache/
+tsconfig.tsbuildinfo
