@@ -27,13 +27,13 @@ export async function createProduct(data: {
   category?: string
   unit?: string
   purchasePrice?: number
-  sellingPrice?: number
+  salePrice?: number
 }) {
   return prisma.product.create({
     data: {
       ...data,
       purchasePrice: data.purchasePrice ?? 0,
-      sellingPrice: data.sellingPrice ?? 0,
+      salePrice: data.salePrice ?? 0,
       unit: data.unit ?? 'unité',
     },
   })
