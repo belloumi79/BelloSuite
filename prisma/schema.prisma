@@ -7,53 +7,38 @@ datasource db {
 }
 
 // ============================================
-// TENANT MANAGEMENT (Multi-tenant + Reseller)
+// TENANT MANAGEMENT (Multi-tenant)
 // ============================================
 
-model Reseller {
+model Tenant {
   id        String   @id @default(uuid())
   name      String
-  email     String   @unique
-  phone     String?
-  address   String?
+  subdomain String   @unique
+  settings  Json     @default("{}")
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenants   Tenant[]
-}
-
-model Tenant {
-  id          String   @id @default(uuid())
-  resellerId  String
-  reseller    Reseller @relation(fields: [resellerId], references: [id])
-  name        String
-  subdomain   String   @unique
-  settings    Json     @default("{}")
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  users           User[]
-  modules         TenantModule[]
-  products        Product[]
-  stockMovements  StockMovement[]
-  clients         Client[]
-  suppliers       Supplier[]
-  invoices        Invoice[]
-  purchaseOrders  PurchaseOrder[]
-  accounts        AccountingAccount[]
-  journalEntries  JournalEntry[]
-  employees       Employee[]
-  paySlips        PaySlip[]
-  assets          Asset[]
-  workOrders      WorkOrder[]
-  workStations    WorkStation[]
+  users    User[]
+  modules  TenantModule[]
+  stock    StockMovement[]
+  products Product[]
+  clients  Client[]
+  suppliers Supplier[]
+  invoices Invoice[]
+  purchaseOrders PurchaseOrder[]
+  accounts AccountingAccount[]
+  journalEntries JournalEntry[]
+  employees Employee[]
+  paySlips PaySlip[]
+  assets Asset[]
+  workOrders WorkOrder[]
+  workStations WorkStation[]
   billsOfMaterials BillOfMaterials[]
   productionOrders ProductionOrder[]
   qualityControls QualityControl[]
-  costCenters     CostCenter[]
-  costEntries     CostEntry[]
+  costCenters CostCenter[]
+  costEntries CostEntry[]
 }
 
 // ============================================
@@ -91,7 +76,6 @@ model Module {
   description String?
   icon        String?
   isActive    Boolean  @default(true)
-  price       Decimal  @default(0)
   tenants     TenantModule[]
   createdAt   DateTime @default(now())
 }
@@ -114,40 +98,40 @@ model TenantModule {
 // ============================================
 
 model Product {
-  id           String   @id @default(uuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id])
-  code         String
-  barcode      String?
-  name         String
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  code        String
+  barcode     String?
+  name        String
   description String?
-  category     String?
-  unit         String   @default("unit")
-  purchasePrice  Decimal @default(0)
-  salePrice      Decimal @default(0)
-  minStock       Decimal @default(0)
-  currentStock   Decimal @default(0)
-  isActive       Boolean @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  category    String?
+  unit        String   @default("unit")
+  purchasePrice Decimal @default(0)
+  salePrice   Decimal  @default(0)
+  minStock    Decimal  @default(0)
+  currentStock Decimal @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  movements StockMovement[]
+  movements   StockMovement[]
 
   @@unique([tenantId, code])
 }
 
 model StockMovement {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  type        StockMovementType
-  quantity    Decimal
-  unitPrice   Decimal?
-  reference   String?
-  notes       String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  type      StockMovementType
+  quantity  Decimal
+  unitPrice Decimal?
+  reference String?
+  notes     String?
+  createdAt DateTime @default(now())
 
   @@index([tenantId, productId])
 }
@@ -225,7 +209,7 @@ model Invoice {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  items InvoiceItem[]
+  items        InvoiceItem[]
 
   @@unique([tenantId, number])
 }
@@ -262,7 +246,7 @@ model PurchaseOrder {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  items PurchaseOrderItem[]
+  items        PurchaseOrderItem[]
 
   @@unique([tenantId, number])
 }
@@ -300,18 +284,18 @@ enum DocumentStatus {
 // ============================================
 
 model AccountingAccount {
-  id            String   @id @default(uuid())
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
   accountNumber String
-  name          String
-  type          AccountType
-  parentId      String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  name        String
+  type        AccountType
+  parentId    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  journalEntries JournalEntry[]
+  journalEntryLines JournalEntryLine[]
   parent         AccountingAccount? @relation("AccountHierarchy", fields: [parentId], references: [id])
   children      AccountingAccount[] @relation("AccountHierarchy")
 
@@ -327,31 +311,31 @@ enum AccountType {
 }
 
 model JournalEntry {
-  id           String   @id @default(uuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id])
-  entryNumber  String
-  date         DateTime
-  description  String
-  reference    String?
-  isPosted     Boolean  @default(false)
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  entryNumber String
+  date        DateTime
+  description String
+  reference   String?
+  isPosted    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  lines JournalEntryLine[]
+  lines       JournalEntryLine[]
 
   @@unique([tenantId, entryNumber])
 }
 
 model JournalEntryLine {
-  id             String  @id @default(uuid())
-  journalEntryId String
-  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  accountId      String
-  account        AccountingAccount @relation(fields: [accountId], references: [id])
-  debit          Decimal @default(0)
-  credit         Decimal @default(0)
-  description    String?
+  id              String  @id @default(uuid())
+  journalEntryId  String
+  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  accountId       String
+  account         AccountingAccount @relation(fields: [accountId], references: [id])
+  debit           Decimal @default(0)
+  credit          Decimal @default(0)
+  description     String?
 }
 
 // ============================================
@@ -359,50 +343,50 @@ model JournalEntryLine {
 // ============================================
 
 model Employee {
-  id              String   @id @default(uuid())
-  tenantId        String
-  tenant          Tenant   @relation(fields: [tenantId], references: [id])
-  employeeNumber  String
-  firstName       String
-  lastName        String
-  email           String?
-  phone           String?
-  cin             String?
-  birthDate       DateTime?
-  hireDate        DateTime
-  department      String?
-  position        String?
-  salary          Decimal?
-  address         String?
-  city            String?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  employeeNumber String
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  cin         String?
+  birthDate   DateTime?
+  hireDate    DateTime
+  department  String?
+  position    String?
+  salary      Decimal?
+  address     String?
+  city        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  paySlips PaySlip[]
+  paySlips    PaySlip[]
 
   @@unique([tenantId, employeeNumber])
 }
 
 model PaySlip {
-  id               String   @id @default(uuid())
-  tenantId         String
-  tenant           Tenant   @relation(fields: [tenantId], references: [id])
-  employeeId       String
-  employee         Employee @relation(fields: [employeeId], references: [id])
-  reference        String
-  periodStart      DateTime
-  periodEnd        DateTime
-  grossSalary      Decimal
-  socialSecurity   Decimal  @default(0)
-  taxBase          Decimal
-  incomeTax        Decimal  @default(0)
-  netSalary        Decimal
-  paymentDate      DateTime?
-  status           PaymentStatus @default(PENDING)
-  notes            String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  reference   String
+  periodStart DateTime
+  periodEnd   DateTime
+  grossSalary Decimal
+  socialSecurity Decimal @default(0)
+  taxBase     Decimal
+  incomeTax   Decimal @default(0)
+  netSalary   Decimal
+  paymentDate DateTime?
+  status      PaymentStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([tenantId, reference])
 }
@@ -418,23 +402,23 @@ enum PaymentStatus {
 // ============================================
 
 model Asset {
-  id            String   @id @default(uuid())
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id])
-  code          String
-  name          String
-  description   String?
-  category      String?
-  location      String?
-  purchaseDate  DateTime?
-  purchaseCost  Decimal?
-  warrantyEnd   DateTime?
-  status        AssetStatus @default(ACTIVE)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  code        String
+  name        String
+  description String?
+  category    String?
+  location    String?
+  purchaseDate DateTime?
+  purchaseCost Decimal?
+  warrantyEnd DateTime?
+  status      AssetStatus @default(ACTIVE)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  workOrders WorkOrder[]
+  workOrders  WorkOrder[]
 
   @@unique([tenantId, code])
 }
@@ -447,23 +431,23 @@ enum AssetStatus {
 }
 
 model WorkOrder {
-  id              String   @id @default(uuid())
-  tenantId        String
-  tenant          Tenant   @relation(fields: [tenantId], references: [id])
-  assetId         String
-  asset           Asset    @relation(fields: [assetId], references: [id])
-  title           String
-  description     String?
-  type            WorkOrderType
-  priority        Priority @default(MEDIUM)
-  status          WorkOrderStatus @default(OPEN)
-  assignedTo      String?
-  scheduledDate   DateTime?
-  completedDate   DateTime?
-  cost            Decimal?
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id])
+  title       String
+  description String?
+  type        WorkOrderType
+  priority    Priority @default(MEDIUM)
+  status      WorkOrderStatus @default(OPEN)
+  assignedTo  String?
+  scheduledDate DateTime?
+  completedDate DateTime?
+  cost        Decimal?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum WorkOrderType {
@@ -519,35 +503,35 @@ model BillOfMaterials {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  items BillOfMaterialsItem[]
+  items       BillOfMaterialsItem[]
 
   @@unique([tenantId, productId, version])
 }
 
 model BillOfMaterialsItem {
-  id                String  @id @default(uuid())
-  billOfMaterialsId String
-  billOfMaterials   BillOfMaterials @relation(fields: [billOfMaterialsId], references: [id], onDelete: Cascade)
-  productId         String
-  quantity          Decimal
+  id                  String  @id @default(uuid())
+  billOfMaterialsId   String
+  billOfMaterials     BillOfMaterials @relation(fields: [billOfMaterialsId], references: [id], onDelete: Cascade)
+  productId           String
+  quantity            Decimal
 }
 
 model ProductionOrder {
-  id                 String   @id @default(uuid())
-  tenantId           String
-  tenant             Tenant   @relation(fields: [tenantId], references: [id])
-  workStationId      String?
-  workStation        WorkStation? @relation(fields: [workStationId], references: [id])
-  productId          String
-  quantity           Decimal
-  status             ProductionStatus @default(PENDING)
-  plannedStartDate   DateTime?
-  plannedEndDate     DateTime?
-  actualStartDate   DateTime?
-  actualEndDate      DateTime?
-  notes              String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  workStationId   String?
+  workStation     WorkStation? @relation(fields: [workStationId], references: [id])
+  productId       String
+  quantity        Decimal
+  status          ProductionStatus @default(PENDING)
+  plannedStartDate DateTime?
+  plannedEndDate  DateTime?
+  actualStartDate DateTime?
+  actualEndDate   DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 enum ProductionStatus {
@@ -562,21 +546,21 @@ enum ProductionStatus {
 // ============================================
 
 model QualityControl {
-  id             String   @id @default(uuid())
-  tenantId       String
-  tenant         Tenant   @relation(fields: [tenantId], references: [id])
-  reference      String
-  type           String
-  status         QualityStatus @default(PENDING)
-  inspectedItem  String?
-  quantity       Decimal?
-  defects        Decimal?
-  result         String?
-  inspector      String?
-  notes          String?
-  controlledAt   DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  reference   String
+  type        String
+  status      QualityStatus @default(PENDING)
+  inspectedItem String?
+  quantity    Decimal?
+  defects     Decimal?
+  result      String?
+  inspector   String?
+  notes       String?
+  controlledAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([tenantId, reference])
 }
@@ -593,15 +577,15 @@ enum QualityStatus {
 // ============================================
 
 model CostCenter {
-  id        String   @id @default(uuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  code      String
-  name      String
-  type      CostCenterType
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  code        String
+  name        String
+  type        CostCenterType
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   costEntries CostEntry[]
 
@@ -616,14 +600,14 @@ enum CostCenterType {
 }
 
 model CostEntry {
-  id           String  @id @default(uuid())
-  tenantId     String
-  tenant       Tenant  @relation(fields: [tenantId], references: [id])
+  id          String  @id @default(uuid())
+  tenantId    String
+  tenant      Tenant  @relation(fields: [tenantId], references: [id])
   costCenterId String
-  costCenter   CostCenter @relation(fields: [costCenterId], references: [id])
-  description  String
-  amount       Decimal
-  date         DateTime
-  reference    String?
-  createdAt    DateTime @default(now())
+  costCenter  CostCenter @relation(fields: [costCenterId], references: [id])
+  description String
+  amount      Decimal
+  date        DateTime
+  reference   String?
+  createdAt   DateTime @default(now())
 }
