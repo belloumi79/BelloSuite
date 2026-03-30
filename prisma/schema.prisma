@@ -1,0 +1,602 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// TENANT MANAGEMENT (Multi-tenant)
+// ============================================
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  subdomain String   @unique
+  settings  Json     @default("{}")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  modules  TenantModule[]
+  stock    StockMovement[]
+  products Product[]
+  clients  Client[]
+  suppliers Supplier[]
+  invoices Invoice[]
+  purchaseOrders PurchaseOrder[]
+
+  @@index([subdomain])
+}
+
+model TenantModule {
+  id        String   @id @default(uuid())
+  tenantId  String
+  module    String
+  isActive  Boolean  @default(true)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, module])
+}
+
+// ============================================
+// AUTHENTICATION
+// ============================================
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  firstName     String?
+  lastName      String?
+  role          UserRole  @default(USER)
+  tenantId      String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+
+  @@index([email])
+  @@index([tenantId])
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  USER
+  ACCOUNTANT
+  MANAGER
+}
+
+// ============================================
+// MODULE: GESTION DE STOCKS
+// ============================================
+
+model Product {
+  id          String   @id @default(uuid())
+  tenantId    String
+  code        String
+  barcode     String?
+  name        String
+  description String?
+  category    String?
+  unit        String   @default("unité")
+  minStock    Int      @default(0)
+  currentStock Int     @default(0)
+  purchasePrice Decimal @default(0)
+  sellingPrice Decimal @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  movements     StockMovement[]
+  invoiceItems  InvoiceItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, category])
+}
+
+model StockMovement {
+  id          String        @id @default(uuid())
+  tenantId    String
+  productId   String
+  type        StockMoveType
+  quantity    Int
+  reason      String?
+  reference   String?
+  createdAt   DateTime      @default(now())
+  createdBy   String?
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, productId])
+  @@index([tenantId, createdAt])
+}
+
+enum StockMoveType {
+  IN
+  OUT
+  ADJUSTMENT
+  TRANSFER
+}
+
+// ============================================
+// MODULE: COMMERCIAL
+// ============================================
+
+model Client {
+  id        String   @id @default(uuid())
+  tenantId  String
+  code      String
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  country   String   @default("Tunisie")
+  taxId     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices Invoice[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, name])
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  tenantId  String
+  code      String
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  country   String   @default("Tunisie")
+  taxId     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([tenantId, code])
+}
+
+model Invoice {
+  id          String       @id @default(uuid())
+  tenantId    String
+  clientId    String
+  number      String
+  type        InvoiceType
+  status      InvoiceStatus @default(DRAFT)
+  date        DateTime     @default(now())
+  dueDate     DateTime?
+  subtotal    Decimal      @default(0)
+  taxRate     Decimal      @default(0.19)
+  taxAmount   Decimal      @default(0)
+  total       Decimal      @default(0)
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client    Client        @relation(fields: [clientId], references: [id])
+  items     InvoiceItem[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, clientId])
+  @@index([tenantId, date])
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  productId   String?
+  description String
+  quantity    Int
+  unitPrice   Decimal
+  taxRate     Decimal @default(0.19)
+  taxAmount   Decimal @default(0)
+  total       Decimal
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([invoiceId])
+}
+
+enum InvoiceType {
+  INVOICE
+  CREDIT_NOTE
+  PROFORMA
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id          String            @id @default(uuid())
+  tenantId    String
+  supplierId  String
+  number      String
+  status      PurchaseOrderStatus @default(DRAFT)
+  date        DateTime          @default(now())
+  subtotal    Decimal           @default(0)
+  taxAmount   Decimal           @default(0)
+  total       Decimal           @default(0)
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  tenant   Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier Supplier             @relation(fields: [supplierId], references: [id])
+  items    PurchaseOrderItem[]
+
+  @@unique([tenantId, number])
+}
+
+model PurchaseOrderItem {
+  id              String  @id @default(uuid())
+  purchaseOrderId String
+  productId       String?
+  description     String
+  quantity        Int
+  unitPrice       Decimal
+  taxRate         Decimal @default(0)
+  taxAmount       Decimal @default(0)
+  total           Decimal
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product       Product?      @relation(fields: [productId], references: [id])
+
+  @@index([purchaseOrderId])
+}
+
+// ============================================
+// MODULE: COMPTABILITÉ
+// ============================================
+
+model AccountingAccount {
+  id          String   @id @default(uuid())
+  tenantId    String
+  number      String
+  name        String
+  type        AccountType
+  parentId    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent    AccountingAccount? @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children  AccountingAccount[] @relation("AccountHierarchy")
+  entries   JournalEntryLine[]
+
+  @@unique([tenantId, number])
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model JournalEntry {
+  id          String   @id @default(uuid())
+  tenantId    String
+  date        DateTime
+  reference   String
+  libelle     String
+  createdAt   DateTime @default(now())
+  createdBy   String?
+
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines     JournalEntryLine[]
+
+  @@index([tenantId, date])
+  @@index([tenantId, reference])
+}
+
+model JournalEntryLine {
+  id              String @id @default(uuid())
+  journalEntryId  String
+  accountId       String
+  debit           Decimal @default(0)
+  credit          Decimal @default(0)
+  libelle         String?
+
+  journalEntry JournalEntry      @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account      AccountingAccount @relation(fields: [accountId], references: [id])
+
+  @@index([journalEntryId])
+}
+
+// ============================================
+// MODULE: GRH & PAIE
+// ============================================
+
+model Employee {
+  id           String   @id @default(uuid())
+  tenantId     String
+  employeeCode String
+  firstName    String
+  lastName     String
+  email        String?
+  phone        String?
+  hireDate     DateTime
+  department   String?
+  position     String?
+  salary       Decimal @default(0)
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payslips PaySlip[]
+
+  @@unique([tenantId, employeeCode])
+}
+
+model PaySlip {
+  id          String   @id @default(uuid())
+  tenantId    String
+  employeeId  String
+  month       Int
+  year        Int
+  baseSalary  Decimal
+  bonuses     Decimal @default(0)
+  deductions  Decimal @default(0)
+  taxBase     Decimal
+  cnss        Decimal @default(0)
+  tax         Decimal @default(0)
+  netSalary   Decimal
+  paymentDate DateTime?
+  status      PaySlipStatus @default(DRAFT)
+  createdAt   DateTime @default(now())
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee  @relation(fields: [employeeId], references: [id])
+
+  @@unique([tenantId, employeeId, month, year])
+}
+
+enum PaySlipStatus {
+  DRAFT
+  VALIDATED
+  PAID
+}
+
+// ============================================
+// MODULE: GMAO
+// ============================================
+
+model Asset {
+  id          String   @id @default(uuid())
+  tenantId    String
+  code        String
+  name        String
+  category    String?
+  location    String?
+  purchaseDate DateTime?
+  supplierId  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  workOrders WorkOrder[]
+
+  @@unique([tenantId, code])
+}
+
+model WorkOrder {
+  id          String         @id @default(uuid())
+  tenantId    String
+  assetId     String
+  type        WorkOrderType
+  priority    Priority       @default(MEDIUM)
+  description String
+  status      WorkOrderStatus @default(OPEN)
+  scheduledDate DateTime?
+  completedDate DateTime?
+  cost        Decimal        @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset  Asset  @relation(fields: [assetId], references: [id])
+
+  @@index([tenantId, status])
+}
+
+enum WorkOrderType {
+  PREVENTIVE
+  CORRECTIVE
+  URGENT
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum WorkOrderStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// MODULE: GPAO
+// ============================================
+
+model WorkStation {
+  id        String   @id @default(uuid())
+  tenantId  String
+  code      String
+  name      String
+  capacity  Int      @default(1)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bomItems  BoMItem[]
+
+  @@unique([tenantId, code])
+}
+
+model BillOfMaterials {
+  id          String   @id @default(uuid())
+  tenantId    String
+  productId   String
+  version     String   @default("1.0")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items BoMItem[]
+
+  @@unique([tenantId, productId, version])
+}
+
+model BoMItem {
+  id              String  @id @default(uuid())
+  billOfMaterialsId String
+  productId       String
+  workstationId   String?
+  quantity        Int
+  sequence        Int     @default(0)
+
+  billOfMaterials BillOfMaterials @relation(fields: [billOfMaterialsId], references: [id], onDelete: Cascade)
+  product         Product         @relation(fields: [productId], references: [id])
+  workstation     WorkStation?    @relation(fields: [workstationId], references: [id])
+
+  @@index([billOfMaterialsId])
+}
+
+model ProductionOrder {
+  id          String   @id @default(uuid())
+  tenantId    String
+  productId   String
+  quantity    Int
+  status      ProductionOrderStatus @default(PLANNED)
+  plannedDate DateTime?
+  startedDate DateTime?
+  completedDate DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+}
+
+enum ProductionOrderStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// MODULE: GQAO
+// ============================================
+
+model QualityControl {
+  id          String     @id @default(uuid())
+  tenantId    String
+  reference   String
+  type        QcType
+  status      QcStatus   @default(PENDING)
+  productId   String?
+  quantity    Int?
+  defects     Int        @default(0)
+  observations String?
+  controlledAt DateTime?
+  controlledBy String?
+  createdAt   DateTime   @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, reference])
+}
+
+enum QcType {
+  INCOMING
+  IN_PROCESS
+  FINAL
+}
+
+enum QcStatus {
+  PENDING
+  PASSED
+  FAILED
+  CONDITIONAL
+}
+
+// ============================================
+// MODULE: COMPTABILITÉ ANALYTIQUE
+// ============================================
+
+model CostCenter {
+  id        String   @id @default(uuid())
+  tenantId  String
+  code      String
+  name      String
+  type      CostCenterType
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entries CostEntry[]
+
+  @@unique([tenantId, code])
+}
+
+enum CostCenterType {
+  PRODUCTION
+  DISTRIBUTION
+  ADMINISTRATION
+  RESEARCH
+}
+
+model CostEntry {
+  id          String   @id @default(uuid())
+  tenantId    String
+  costCenterId String
+  amount      Decimal
+  libelle     String
+  date        DateTime
+  reference   String?
+  createdAt   DateTime @default(now())
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  costCenter CostCenter  @relation(fields: [costCenterId], references: [id])
+
+  @@index([tenantId, date])
+}
