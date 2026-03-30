@@ -22,7 +22,7 @@ const supabase = createClient(
 export { prisma, supabase }
 
 export interface StockOperation {
-  type: 'IN' | 'OUT' | 'ADJUSTMENT'
+  type: 'ENTRY' | 'EXIT' | 'ADJUSTMENT'
   quantity: number
   reason?: string
 }
@@ -37,8 +37,8 @@ export async function executeStockOperation(productId: string, tenantId: string,
   let newStock = Number(product.currentStock)
   const qty = Number(data.quantity)
 
-  if (data.type === 'IN') newStock += qty
-  else if (data.type === 'OUT') {
+  if (data.type === 'ENTRY') newStock += qty
+  else if (data.type === 'EXIT') {
     newStock -= qty
     if (newStock < 0) throw new Error('Stock insuffisant')
   }
@@ -53,7 +53,7 @@ export async function executeStockOperation(productId: string, tenantId: string,
       data: {
         tenantId,
         productId,
-        type: data.type as 'IN' | 'OUT' | 'ADJUSTMENT',
+        type: data.type as 'ENTRY' | 'EXIT' | 'ADJUSTMENT',
         quantity: qty,
         notes: data.reason,
       },
