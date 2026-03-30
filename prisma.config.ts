@@ -1,9 +1,12 @@
 import path from 'node:path'
-import { defineConfig } from 'prisma/config'
+import type { PrismaConfig } from 'prisma'
 
-export default defineConfig({
+export default {
+  earlyAccess: true,
   schema: path.join(__dirname, 'prisma', 'schema.prisma'),
-  datasource: {
-    url: process.env.DATABASE_URL,
+  migrate: {
+    async dev({ schema }) {
+      return { url: process.env.DATABASE_URL }
+    }
   },
-})
+} satisfies PrismaConfig
