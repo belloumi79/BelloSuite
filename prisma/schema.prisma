@@ -3,9 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 // ============================================
@@ -29,104 +27,118 @@ model Tenant {
   suppliers Supplier[]
   invoices Invoice[]
   purchaseOrders PurchaseOrder[]
-
-  @@index([subdomain])
-}
-
-model TenantModule {
-  id        String   @id @default(uuid())
-  tenantId  String
-  module    String
-  isActive  Boolean  @default(true)
-  expiresAt DateTime?
-  createdAt DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, module])
+  accounts AccountingAccount[]
+  journalEntries JournalEntry[]
+  employees Employee[]
+  paySlips PaySlip[]
+  assets Asset[]
+  workOrders WorkOrder[]
+  workStations WorkStation[]
+  billsOfMaterials BillOfMaterials[]
+  productionOrders ProductionOrder[]
+  qualityControls QualityControl[]
+  costCenters CostCenter[]
+  costEntries CostEntry[]
 }
 
 // ============================================
-// AUTHENTICATION
+// USER & AUTH
 // ============================================
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  passwordHash  String
-  firstName     String?
-  lastName      String?
-  role          UserRole  @default(USER)
-  tenantId      String?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  tenant Tenant? @relation(fields: [tenantId], references: [id])
-
-  @@index([email])
-  @@index([tenantId])
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  role      UserRole @default(USER)
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum UserRole {
   SUPER_ADMIN
   ADMIN
   USER
-  ACCOUNTANT
-  MANAGER
 }
 
 // ============================================
-// MODULE: GESTION DE STOCKS
+// MODULES
+// ============================================
+
+model Module {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  displayName String
+  description String?
+  icon        String?
+  isActive    Boolean  @default(true)
+  tenants     TenantModule[]
+  createdAt   DateTime @default(now())
+}
+
+model TenantModule {
+  id        String   @id @default(uuid())
+  tenantId  String
+  moduleId  String
+  isEnabled Boolean  @default(true)
+  settings  Json     @default("{}")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  module    Module   @relation(fields: [moduleId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, moduleId])
+}
+
+// ============================================
+// MODULE: STOCK (Gestion de Stocks)
 // ============================================
 
 model Product {
   id          String   @id @default(uuid())
   tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
   code        String
   barcode     String?
   name        String
   description String?
   category    String?
-  unit        String   @default("unité")
-  minStock    Int      @default(0)
-  currentStock Int     @default(0)
+  unit        String   @default("unit")
   purchasePrice Decimal @default(0)
-  sellingPrice Decimal @default(0)
+  salePrice   Decimal  @default(0)
+  minStock    Decimal  @default(0)
+  currentStock Decimal @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  movements     StockMovement[]
-  invoiceItems  InvoiceItem[]
-  purchaseOrderItems PurchaseOrderItem[]
+  movements   StockMovement[]
 
   @@unique([tenantId, code])
-  @@index([tenantId, category])
 }
 
 model StockMovement {
-  id          String        @id @default(uuid())
-  tenantId    String
-  productId   String
-  type        StockMoveType
-  quantity    Int
-  reason      String?
-  reference   String?
-  createdAt   DateTime      @default(now())
-  createdBy   String?
-
-  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  product Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  type      StockMovementType
+  quantity  Decimal
+  unitPrice Decimal?
+  reference String?
+  notes     String?
+  createdAt DateTime @default(now())
 
   @@index([tenantId, productId])
-  @@index([tenantId, createdAt])
 }
 
-enum StockMoveType {
-  IN
-  OUT
+enum StockMovementType {
+  ENTRY
+  EXIT
   ADJUSTMENT
   TRANSFER
 }
@@ -138,6 +150,7 @@ enum StockMoveType {
 model Client {
   id        String   @id @default(uuid())
   tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
   code      String
   name      String
   email     String?
@@ -150,16 +163,16 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoices Invoice[]
+  invoices        Invoice[]
+  purchaseOrders  PurchaseOrder[]
 
   @@unique([tenantId, code])
-  @@index([tenantId, name])
 }
 
 model Supplier {
   id        String   @id @default(uuid())
   tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
   code      String
   name      String
   email     String?
@@ -172,85 +185,68 @@ model Supplier {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   purchaseOrders PurchaseOrder[]
 
   @@unique([tenantId, code])
 }
 
 model Invoice {
-  id          String       @id @default(uuid())
-  tenantId    String
-  clientId    String
-  number      String
-  type        InvoiceType
-  status      InvoiceStatus @default(DRAFT)
-  date        DateTime     @default(now())
-  dueDate     DateTime?
-  subtotal    Decimal      @default(0)
-  taxRate     Decimal      @default(0.19)
-  taxAmount   Decimal      @default(0)
-  total       Decimal      @default(0)
-  notes       String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id])
+  number       String
+  type         DocumentType
+  status       DocumentStatus @default(DRAFT)
+  date         DateTime @default(now())
+  dueDate      DateTime?
+  subtotal     Decimal  @default(0)
+  taxRate      Decimal  @default(0)
+  taxAmount    Decimal  @default(0)
+  total        Decimal  @default(0)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client    Client        @relation(fields: [clientId], references: [id])
-  items     InvoiceItem[]
+  items        InvoiceItem[]
 
   @@unique([tenantId, number])
-  @@index([tenantId, clientId])
-  @@index([tenantId, date])
 }
 
 model InvoiceItem {
   id          String  @id @default(uuid())
   invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   productId   String?
   description String
-  quantity    Int
+  quantity    Decimal
   unitPrice   Decimal
-  taxRate     Decimal @default(0.19)
-  taxAmount   Decimal @default(0)
   total       Decimal
-
-  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id])
-
-  @@index([invoiceId])
-}
-
-enum InvoiceType {
-  INVOICE
-  CREDIT_NOTE
-  PROFORMA
-}
-
-enum InvoiceStatus {
-  DRAFT
-  SENT
-  PAID
-  CANCELLED
 }
 
 model PurchaseOrder {
-  id          String            @id @default(uuid())
-  tenantId    String
-  supplierId  String
-  number      String
-  status      PurchaseOrderStatus @default(DRAFT)
-  date        DateTime          @default(now())
-  subtotal    Decimal           @default(0)
-  taxAmount   Decimal           @default(0)
-  total       Decimal           @default(0)
-  notes       String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  clientId     String?
+  client       Client?  @relation(fields: [clientId], references: [id])
+  supplierId   String?
+  supplier     Supplier? @relation(fields: [supplierId], references: [id])
+  number       String
+  type         DocumentType
+  status       DocumentStatus @default(DRAFT)
+  date         DateTime @default(now())
+  expectedDate DateTime?
+  subtotal     Decimal  @default(0)
+  taxRate      Decimal  @default(0)
+  taxAmount    Decimal  @default(0)
+  total        Decimal  @default(0)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  tenant   Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  supplier Supplier             @relation(fields: [supplierId], references: [id])
-  items    PurchaseOrderItem[]
+  items        PurchaseOrderItem[]
 
   @@unique([tenantId, number])
 }
@@ -258,18 +254,29 @@ model PurchaseOrder {
 model PurchaseOrderItem {
   id              String  @id @default(uuid())
   purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   productId       String?
   description     String
-  quantity        Int
+  quantity        Decimal
   unitPrice       Decimal
-  taxRate         Decimal @default(0)
-  taxAmount       Decimal @default(0)
   total           Decimal
+}
 
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  product       Product?      @relation(fields: [productId], references: [id])
+enum DocumentType {
+  INVOICE
+  QUOTE
+  ORDER
+  DELIVERY_NOTE
+  CREDIT_NOTE
+}
 
-  @@index([purchaseOrderId])
+enum DocumentStatus {
+  DRAFT
+  PENDING
+  CONFIRMED
+  SENT
+  PAID
+  CANCELLED
 }
 
 // ============================================
@@ -279,19 +286,20 @@ model PurchaseOrderItem {
 model AccountingAccount {
   id          String   @id @default(uuid())
   tenantId    String
-  number      String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  accountNumber String
   name        String
   type        AccountType
   parentId    String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  parent    AccountingAccount? @relation("AccountHierarchy", fields: [parentId], references: [id])
-  children  AccountingAccount[] @relation("AccountHierarchy")
-  entries   JournalEntryLine[]
+  journalEntries JournalEntry[]
+  parent         AccountingAccount? @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children      AccountingAccount[] @relation("AccountHierarchy")
 
-  @@unique([tenantId, number])
+  @@unique([tenantId, accountNumber])
 }
 
 enum AccountType {
@@ -305,31 +313,29 @@ enum AccountType {
 model JournalEntry {
   id          String   @id @default(uuid())
   tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  entryNumber String
   date        DateTime
-  reference   String
-  libelle     String
+  description String
+  reference   String?
+  isPosted    Boolean  @default(false)
   createdAt   DateTime @default(now())
-  createdBy   String?
+  updatedAt   DateTime @updatedAt
 
-  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  lines     JournalEntryLine[]
+  lines       JournalEntryLine[]
 
-  @@index([tenantId, date])
-  @@index([tenantId, reference])
+  @@unique([tenantId, entryNumber])
 }
 
 model JournalEntryLine {
-  id              String @id @default(uuid())
+  id              String  @id @default(uuid())
   journalEntryId  String
+  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   accountId       String
+  account         AccountingAccount @relation(fields: [accountId], references: [id])
   debit           Decimal @default(0)
   credit          Decimal @default(0)
-  libelle         String?
-
-  journalEntry JournalEntry      @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  account      AccountingAccount @relation(fields: [accountId], references: [id])
-
-  @@index([journalEntryId])
+  description     String?
 }
 
 // ============================================
@@ -337,103 +343,117 @@ model JournalEntryLine {
 // ============================================
 
 model Employee {
-  id           String   @id @default(uuid())
-  tenantId     String
-  employeeCode String
-  firstName    String
-  lastName     String
-  email        String?
-  phone        String?
-  hireDate     DateTime
-  department   String?
-  position     String?
-  salary       Decimal @default(0)
-  isActive     Boolean @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  employeeNumber String
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  cin         String?
+  birthDate   DateTime?
+  hireDate    DateTime
+  department  String?
+  position    String?
+  salary      Decimal?
+  address     String?
+  city        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  payslips PaySlip[]
+  paySlips    PaySlip[]
 
-  @@unique([tenantId, employeeCode])
+  @@unique([tenantId, employeeNumber])
 }
 
 model PaySlip {
   id          String   @id @default(uuid())
   tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
   employeeId  String
-  month       Int
-  year        Int
-  baseSalary  Decimal
-  bonuses     Decimal @default(0)
-  deductions  Decimal @default(0)
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  reference   String
+  periodStart DateTime
+  periodEnd   DateTime
+  grossSalary Decimal
+  socialSecurity Decimal @default(0)
   taxBase     Decimal
-  cnss        Decimal @default(0)
-  tax         Decimal @default(0)
+  incomeTax   Decimal @default(0)
   netSalary   Decimal
   paymentDate DateTime?
-  status      PaySlipStatus @default(DRAFT)
+  status      PaymentStatus @default(PENDING)
+  notes       String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employee Employee  @relation(fields: [employeeId], references: [id])
-
-  @@unique([tenantId, employeeId, month, year])
+  @@unique([tenantId, reference])
 }
 
-enum PaySlipStatus {
-  DRAFT
-  VALIDATED
+enum PaymentStatus {
+  PENDING
   PAID
+  CANCELLED
 }
 
 // ============================================
-// MODULE: GMAO
+// MODULE: GMAO (Maintenance)
 // ============================================
 
 model Asset {
   id          String   @id @default(uuid())
   tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
   code        String
   name        String
+  description String?
   category    String?
   location    String?
   purchaseDate DateTime?
-  supplierId  String?
+  purchaseCost Decimal?
+  warrantyEnd DateTime?
+  status      AssetStatus @default(ACTIVE)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  workOrders WorkOrder[]
+  workOrders  WorkOrder[]
 
   @@unique([tenantId, code])
 }
 
+enum AssetStatus {
+  ACTIVE
+  IN_MAINTENANCE
+  BROKEN
+  RETIRED
+}
+
 model WorkOrder {
-  id          String         @id @default(uuid())
+  id          String   @id @default(uuid())
   tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
   assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id])
+  title       String
+  description String?
   type        WorkOrderType
-  priority    Priority       @default(MEDIUM)
-  description String
+  priority    Priority @default(MEDIUM)
   status      WorkOrderStatus @default(OPEN)
+  assignedTo  String?
   scheduledDate DateTime?
   completedDate DateTime?
-  cost        Decimal        @default(0)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  asset  Asset  @relation(fields: [assetId], references: [id])
-
-  @@index([tenantId, status])
+  cost        Decimal?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum WorkOrderType {
   PREVENTIVE
   CORRECTIVE
-  URGENT
+  EMERGENCY
 }
 
 enum Priority {
@@ -446,25 +466,29 @@ enum Priority {
 enum WorkOrderStatus {
   OPEN
   IN_PROGRESS
+  PAUSED
   COMPLETED
   CANCELLED
 }
 
 // ============================================
-// MODULE: GPAO
+// MODULE: GPAO (Production)
 // ============================================
 
 model WorkStation {
-  id        String   @id @default(uuid())
-  tenantId  String
-  code      String
-  name      String
-  capacity  Int      @default(1)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  code        String
+  name        String
+  description String?
+  location    String?
+  capacity    Decimal  @default(1)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  bomItems  BoMItem[]
+  productionOrders ProductionOrder[]
 
   @@unique([tenantId, code])
 }
@@ -472,91 +496,80 @@ model WorkStation {
 model BillOfMaterials {
   id          String   @id @default(uuid())
   tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
   productId   String
-  version     String   @default("1.0")
+  version     String   @default("1")
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  items BoMItem[]
+  items       BillOfMaterialsItem[]
 
   @@unique([tenantId, productId, version])
 }
 
-model BoMItem {
-  id              String  @id @default(uuid())
-  billOfMaterialsId String
-  productId       String
-  workstationId   String?
-  quantity        Int
-  sequence        Int     @default(0)
-
-  billOfMaterials BillOfMaterials @relation(fields: [billOfMaterialsId], references: [id], onDelete: Cascade)
-  product         Product         @relation(fields: [productId], references: [id])
-  workstation     WorkStation?    @relation(fields: [workstationId], references: [id])
-
-  @@index([billOfMaterialsId])
+model BillOfMaterialsItem {
+  id                  String  @id @default(uuid())
+  billOfMaterialsId   String
+  billOfMaterials     BillOfMaterials @relation(fields: [billOfMaterialsId], references: [id], onDelete: Cascade)
+  productId           String
+  quantity            Decimal
 }
 
 model ProductionOrder {
-  id          String   @id @default(uuid())
-  tenantId    String
-  productId   String
-  quantity    Int
-  status      ProductionOrderStatus @default(PLANNED)
-  plannedDate DateTime?
-  startedDate DateTime?
-  completedDate DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId, status])
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  workStationId   String?
+  workStation     WorkStation? @relation(fields: [workStationId], references: [id])
+  productId       String
+  quantity        Decimal
+  status          ProductionStatus @default(PENDING)
+  plannedStartDate DateTime?
+  plannedEndDate  DateTime?
+  actualStartDate DateTime?
+  actualEndDate   DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
-enum ProductionOrderStatus {
-  PLANNED
+enum ProductionStatus {
+  PENDING
   IN_PROGRESS
   COMPLETED
   CANCELLED
 }
 
 // ============================================
-// MODULE: GQAO
+// MODULE: GQAO (Qualité)
 // ============================================
 
 model QualityControl {
-  id          String     @id @default(uuid())
+  id          String   @id @default(uuid())
   tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
   reference   String
-  type        QcType
-  status      QcStatus   @default(PENDING)
-  productId   String?
-  quantity    Int?
-  defects     Int        @default(0)
-  observations String?
+  type        String
+  status      QualityStatus @default(PENDING)
+  inspectedItem String?
+  quantity    Decimal?
+  defects     Decimal?
+  result      String?
+  inspector   String?
+  notes       String?
   controlledAt DateTime?
-  controlledBy String?
-  createdAt   DateTime   @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([tenantId, reference])
 }
 
-enum QcType {
-  INCOMING
-  IN_PROCESS
-  FINAL
-}
-
-enum QcStatus {
+enum QualityStatus {
   PENDING
   PASSED
   FAILED
-  CONDITIONAL
+  UNDER_REVIEW
 }
 
 // ============================================
@@ -564,16 +577,17 @@ enum QcStatus {
 // ============================================
 
 model CostCenter {
-  id        String   @id @default(uuid())
-  tenantId  String
-  code      String
-  name      String
-  type      CostCenterType
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  code        String
+  name        String
+  type        CostCenterType
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  entries CostEntry[]
+  costEntries CostEntry[]
 
   @@unique([tenantId, code])
 }
@@ -586,17 +600,14 @@ enum CostCenterType {
 }
 
 model CostEntry {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   tenantId    String
+  tenant      Tenant  @relation(fields: [tenantId], references: [id])
   costCenterId String
+  costCenter  CostCenter @relation(fields: [costCenterId], references: [id])
+  description String
   amount      Decimal
-  libelle     String
   date        DateTime
   reference   String?
   createdAt   DateTime @default(now())
-
-  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  costCenter CostCenter  @relation(fields: [costCenterId], references: [id])
-
-  @@index([tenantId, date])
 }
