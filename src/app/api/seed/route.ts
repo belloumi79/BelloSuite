@@ -11,51 +11,38 @@ export async function POST() {
       update: {},
       create: {
         email: 'belloumi.kkarim.professional@gmail.com',
-        name: 'Karim Belloumi',
+        password: '$2a$10$dummy', // À changer lors du premier login
+        firstName: 'Karim',
+        lastName: 'Belloumi',
         role: 'SUPER_ADMIN',
       },
     })
 
-    // Créer le tenant BelloSuite (la société qui vend les modules)
+    // Créer le tenant BelloSuite
     const belloSuite = await prisma.tenant.upsert({
-      where: { slug: 'bellosuite' },
+      where: { subdomain: 'bellosuite' },
       update: {},
       create: {
         name: 'BelloSuite',
-        slug: 'bellosuite',
-        type: 'RESELLER',
-      },
-    })
-
-    // Attacher le super admin comme owner du tenant
-    await prisma.tenantUser.upsert({
-      where: {
-        tenantId_userId: {
-          tenantId: belloSuite.id,
-          userId: superAdmin.id,
-        },
-      },
-      update: {},
-      create: {
-        tenantId: belloSuite.id,
-        userId: superAdmin.id,
-        role: 'OWNER',
+        subdomain: 'bellosuite',
       },
     })
 
     // Créer les modules disponibles
     const modules = [
-      { name: 'Gestion de Stock', slug: 'stock', description: 'Gestion complète des stocks et entrepôts', price: 299 },
-      { name: 'Module Commercial', slug: 'commercial', description: 'CRM, devis, commandes, factures', price: 399 },
-      { name: 'Comptabilité', slug: 'comptabilite', description: 'Comptabilité générale et analytique', price: 499 },
-      { name: 'GRH', slug: 'grh', description: 'Gestion des ressources humaines', price: 349 },
-      { name: 'GMAO', slug: 'gmao', description: 'Gestion de la maintenance', price: 299 },
-      { name: 'GPAO', slug: 'gpao', description: 'Gestion de la production', price: 599 },
+      { name: 'stock', displayName: 'Gestion de Stock', description: 'Gestion complète des stocks', icon: 'Package' },
+      { name: 'commercial', displayName: 'Module Commercial', description: 'CRM, devis, commandes, factures', icon: 'ShoppingCart' },
+      { name: 'comptabilite', displayName: 'Comptabilité', description: 'Comptabilité générale', icon: 'Calculator' },
+      { name: 'grh', displayName: 'GRH', description: 'Gestion des ressources humaines', icon: 'Users' },
+      { name: 'gmao', displayName: 'GMAO', description: 'Gestion de la maintenance', icon: 'Wrench' },
+      { name: 'gpao', displayName: 'GPAO', description: 'Gestion de la production', icon: 'Factory' },
+      { name: 'paie', displayName: 'Paie', description: 'Gestion de la paie', icon: 'CreditCard' },
+      { name: 'qualite', displayName: 'GQAO', description: 'Gestion qualité', icon: 'CheckCircle' },
     ]
 
     for (const mod of modules) {
       await prisma.module.upsert({
-        where: { slug: mod.slug },
+        where: { name: mod.name },
         update: {},
         create: mod,
       })
