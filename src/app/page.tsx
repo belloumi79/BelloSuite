@@ -215,3 +215,4 @@ const features = [
     description: 'Invitez votre équipe et gérez les permissions.',
   },
 ]
+// trigger redeploy
