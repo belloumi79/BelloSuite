@@ -1,31 +1,5 @@
-# Dependencies
 node_modules/
-
-# Build
 .next/
-out/
-dist/
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
+.vercel/
+.env*.local
 *.log
-npm-debug.log*
-
-# Prisma
-prisma/migrations/
-
-# Cache
-.cache/
-tsconfig.tsbuildinfo
