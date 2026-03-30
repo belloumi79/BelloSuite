@@ -1,64 +1,35 @@
 import { PrismaClient } from '@prisma/client'
-import { createClient } from '@supabase/supabase-js'
 import { Pool } from 'pg'
-import { PrismaPg } from '@prisma/adapter-pg'
 
-const connectionString = process.env.DATABASE_URL
-if (!connectionString) throw new Error('DATABASE_URL is required')
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
-const pool = new Pool({ connectionString })
-const adapter = new PrismaPg(pool)
+const databaseUrl = process.env.DATABASE_URL
 
-const prisma = new PrismaClient({
-  adapter,
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-})
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
-
-export { prisma, supabase }
-
-export interface StockOperation {
-  type: 'ENTRY' | 'EXIT' | 'ADJUSTMENT'
-  quantity: number
-  reason?: string
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL environment variable is not set')
 }
 
-export async function executeStockOperation(productId: string, tenantId: string, data: StockOperation) {
-  const product = await prisma.product.findFirst({
-    where: { id: productId, tenantId },
-  })
+let prisma: PrismaClient
 
-  if (!product) throw new Error('Produit non trouvé')
-
-  let newStock = Number(product.currentStock)
-  const qty = Number(data.quantity)
-
-  if (data.type === 'ENTRY') newStock += qty
-  else if (data.type === 'EXIT') {
-    newStock -= qty
-    if (newStock < 0) throw new Error('Stock insuffisant')
-  }
-  else newStock = qty
-
-  const [updated] = await prisma.$transaction([
-    prisma.product.update({
-      where: { id: productId },
-      data: { currentStock: newStock },
-    }),
-    prisma.stockMovement.create({
-      data: {
-        tenantId,
-        productId,
-        type: data.type as 'ENTRY' | 'EXIT' | 'ADJUSTMENT',
-        quantity: qty,
-        notes: data.reason,
+if (process.env.NODE_ENV === 'production') {
+  prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: databaseUrl,
       },
-    }),
-  ])
-
-  return updated
+    },
+  })
+} else {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: databaseUrl,
+        },
+      },
+    })
+  }
+  prisma = globalForPrisma.prisma
 }
+
+export { prisma }
