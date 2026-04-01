@@ -16,8 +16,7 @@ export default function LoginPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   useEffect(() => {
-    // Check existing session
-    const sessionData = localStorage.getItem('bello_session')
+    const sessionData = typeof window !== 'undefined' ? localStorage.getItem('bello_session') : null
     if (sessionData) {
       const session = JSON.parse(sessionData)
       window.location.href = session.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
@@ -31,21 +30,16 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        // Check if first user
-        const { data: existingUsers } = await supabase
-          .from('_User')
-          .select('id', { count: 'exact', head: true })
-        
-        const isFirstUser = (existingUsers?.count || 0) === 0
+        // Check if first user by counting
+        const { data: allUsers } = await supabase.from('_User').select('id')
+        const isFirstUser = !allUsers || allUsers.length === 0
         const role = isFirstUser ? 'SUPER_ADMIN' : 'USER'
 
-        // Hash password (we'll use a simple approach since bcrypt won't work in browser)
-        // For now, store password as-is and verify client-side
         const { data, error } = await supabase
           .from('_User')
           .insert({
             email,
-            password: password, // In production, hash this server-side
+            password: password,
             role,
             tenantid: isFirstUser ? 'bello-hq' : null,
             isactive: true
@@ -55,7 +49,6 @@ export default function LoginPage() {
 
         if (error) throw error
 
-        // Create session
         localStorage.setItem('bello_session', JSON.stringify({
           userId: data.id,
           email: data.email,
@@ -68,7 +61,6 @@ export default function LoginPage() {
           window.location.href = role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
         }, 1000)
       } else {
-        // Login - query user and verify password
         const { data: users, error } = await supabase
           .from('_User')
           .select('*')
@@ -82,12 +74,10 @@ export default function LoginPage() {
 
         const user = users[0]
 
-        // Verify password (simple comparison for now)
         if (user.password !== password) {
           throw new Error('Email ou mot de passe incorrect')
         }
 
-        // Create session
         localStorage.setItem('bello_session', JSON.stringify({
           userId: user.id,
           email: user.email,
