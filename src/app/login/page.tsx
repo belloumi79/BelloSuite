@@ -15,12 +15,21 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
+  // Check session only ONCE on mount - prevent infinite loop
   useEffect(() => {
-    const sessionData = typeof window !== 'undefined' ? localStorage.getItem('bello_session') : null
-    if (sessionData) {
-      const session = JSON.parse(sessionData)
-      window.location.href = session.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
+    const checkSession = () => {
+      const sessionData = localStorage.getItem('bello_session')
+      if (sessionData) {
+        try {
+          const session = JSON.parse(sessionData)
+          const redirect = session.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
+          window.location.href = redirect
+        } catch {
+          localStorage.removeItem('bello_session')
+        }
+      }
     }
+    checkSession()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,10 +39,22 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        // Check if first user by counting
+        // Check if email already exists
+        const { data: existingUsers } = await supabase
+          .from('_User')
+          .select('id')
+          .eq('email', email)
+          .limit(1)
+
+        if (existingUsers && existingUsers.length > 0) {
+          throw new Error('Cet email existe déjà. Veuillez vous connecter.')
+        }
+
+        // Check if first user (no users at all)
         const { data: allUsers } = await supabase.from('_User').select('id')
         const isFirstUser = !allUsers || allUsers.length === 0
         const role = isFirstUser ? 'SUPER_ADMIN' : 'USER'
+        const tenantid = isFirstUser ? 'bello-hq' : null
 
         const { data, error } = await supabase
           .from('_User')
@@ -41,7 +62,7 @@ export default function LoginPage() {
             email,
             password: password,
             role,
-            tenantid: isFirstUser ? 'bello-hq' : null,
+            tenantid,
             isactive: true
           })
           .select()
@@ -61,6 +82,7 @@ export default function LoginPage() {
           window.location.href = role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
         }, 1000)
       } else {
+        // Login
         const { data: users, error } = await supabase
           .from('_User')
           .select('*')
@@ -68,7 +90,8 @@ export default function LoginPage() {
           .eq('isactive', true)
           .limit(1)
 
-        if (error || !users || users.length === 0) {
+        if (error) throw error
+        if (!users || users.length === 0) {
           throw new Error('Email ou mot de passe incorrect')
         }
 
@@ -92,7 +115,6 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Erreur' })
-    } finally {
       setLoading(false)
     }
   }
