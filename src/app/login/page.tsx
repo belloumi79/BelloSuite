@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -9,15 +10,18 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const router = useRouter()
 
-  // Check if already logged in
+  // Check if already logged in - only on mount
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const role = user.user_metadata?.role
         window.location.href = role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
       }
-    })
+    }
+    checkUser()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,7 +51,7 @@ export default function LoginPage() {
             })
         }
         
-        setMessage({ type: 'success', text: 'Compte créé ! Vérifie ton email pour confirmer.' })
+        setMessage({ type: 'success', text: 'Compte créé !' })
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -56,12 +60,11 @@ export default function LoginPage() {
         
         if (error) throw error
         
-        // Redirect based on role
         const role = data.user?.user_metadata?.role
         window.location.href = role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Erreur lors de la connexion' })
+      setMessage({ type: 'error', text: error.message || 'Erreur' })
     } finally {
       setLoading(false)
     }
@@ -70,7 +73,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
             Bello<span className="text-emerald-400">Suite</span>
@@ -78,7 +80,6 @@ export default function LoginPage() {
           <p className="text-zinc-400">ERP Modulaire Tunisien</p>
         </div>
 
-        {/* Form */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8">
           <h2 className="text-2xl font-semibold text-white mb-6">
             {isSignUp ? 'Créer un compte' : 'Connexion'}
@@ -86,14 +87,12 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">
-                Email
-              </label>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 placeholder="votre@email.com"
                 required
                 autoComplete="email"
@@ -101,14 +100,12 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">
-                Mot de passe
-              </label>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">Mot de passe</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 placeholder="••••••••"
                 required
                 minLength={6}
@@ -140,14 +137,13 @@ export default function LoginPage() {
               onClick={() => setIsSignUp(!isSignUp)}
               className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors"
             >
-              {isSignUp ? 'Déjà un compte ? Se connecter' : 'Pas de compte ? S\'inscrire'}
+              {isSignUp ? 'Déjà un compte ?' : 'Pas de compte ?'}
             </button>
           </div>
         </div>
 
-        {/* Footer */}
         <p className="text-center text-zinc-500 text-sm mt-8">
-          © 2026 BelloSuite - ERP Tunisien
+          © 2026 BelloSuite
         </p>
       </div>
     </div>
