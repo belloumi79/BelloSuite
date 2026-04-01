@@ -4,7 +4,6 @@ import { createClient } from '@supabase/supabase-js'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
 
   if (code) {
     const supabase = createClient(
@@ -13,8 +12,26 @@ export async function GET(request: Request) {
     )
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      const response = NextResponse.redirect(`${origin}${next}`, 303)
-      return response
+      // Get user role
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: userData } = await supabase
+          .from('user')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+        
+        const role = userData?.role || 'USER'
+        
+        // Redirect based on role
+        if (role === 'SUPER_ADMIN') {
+          return NextResponse.redirect(`${origin}/super-admin`, 303)
+        } else if (role === 'ADMIN') {
+          return NextResponse.redirect(`${origin}/dashboard`, 303)
+        } else {
+          return NextResponse.redirect(`${origin}/stock`, 303)
+        }
+      }
     }
   }
 
