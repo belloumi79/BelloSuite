@@ -1,22 +1,20 @@
+import Link from 'next/link'
+
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex items-center justify-center">
-      <div className="text-center px-6">
-        <h1 className="text-6xl font-bold text-white mb-4">
-          BelloSuite
-        </h1>
-        <p className="text-xl text-zinc-400 mb-8">
-          ERP Modulaire Tunisien
-        </p>
-        <div className="flex gap-4 justify-center">
-          <a
-            href="/login"
-            className="px-8 py-4 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 transition-colors"
-          >
+    <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold mb-4">BelloSuite</h1>
+        <p className="text-zinc-400 mb-8">ERP Modulaire pour la Tunisie</p>
+        <div className="space-x-4">
+          <Link href="/login" className="px-6 py-3 bg-blue-600 rounded-lg hover:bg-blue-700">
             Connexion
-          </a>
+          </Link>
+          <Link href="/register" className="px-6 py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700">
+            Inscription
+          </Link>
         </div>
       </div>
-    </main>
+    </div>
   )
 }
