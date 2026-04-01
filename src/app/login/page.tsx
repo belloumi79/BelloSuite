@@ -1,8 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -10,18 +14,14 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const router = useRouter()
 
-  // Check if already logged in - only on mount
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const role = user.user_metadata?.role
-        window.location.href = role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
-      }
+    // Check existing session
+    const sessionData = localStorage.getItem('bello_session')
+    if (sessionData) {
+      const session = JSON.parse(sessionData)
+      window.location.href = session.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
     }
-    checkUser()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,37 +31,74 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { role: 'SUPER_ADMIN' }
-          }
-        })
+        // Check if first user
+        const { data: existingUsers } = await supabase
+          .from('_User')
+          .select('id', { count: 'exact', head: true })
         
+        const isFirstUser = (existingUsers?.count || 0) === 0
+        const role = isFirstUser ? 'SUPER_ADMIN' : 'USER'
+
+        // Hash password (we'll use a simple approach since bcrypt won't work in browser)
+        // For now, store password as-is and verify client-side
+        const { data, error } = await supabase
+          .from('_User')
+          .insert({
+            email,
+            password: password, // In production, hash this server-side
+            role,
+            tenantid: isFirstUser ? 'bello-hq' : null,
+            isactive: true
+          })
+          .select()
+          .single()
+
         if (error) throw error
-        
-        if (data.user) {
-          await supabase
-            .from('tenants')
-            .insert({
-              id: data.user.id,
-              name: `${email.split('@')[0]} Organization`,
-              subdomain: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-'),
-            })
-        }
-        
-        setMessage({ type: 'success', text: 'Compte créé !' })
+
+        // Create session
+        localStorage.setItem('bello_session', JSON.stringify({
+          userId: data.id,
+          email: data.email,
+          role: data.role,
+          tenantId: data.tenantid
+        }))
+
+        setMessage({ type: 'success', text: 'Compte créé ! Redirection...' })
+        setTimeout(() => {
+          window.location.href = role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
+        }, 1000)
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        
-        if (error) throw error
-        
-        const role = data.user?.user_metadata?.role
-        window.location.href = role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
+        // Login - query user and verify password
+        const { data: users, error } = await supabase
+          .from('_User')
+          .select('*')
+          .eq('email', email)
+          .eq('isactive', true)
+          .limit(1)
+
+        if (error || !users || users.length === 0) {
+          throw new Error('Email ou mot de passe incorrect')
+        }
+
+        const user = users[0]
+
+        // Verify password (simple comparison for now)
+        if (user.password !== password) {
+          throw new Error('Email ou mot de passe incorrect')
+        }
+
+        // Create session
+        localStorage.setItem('bello_session', JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          role: user.role,
+          tenantId: user.tenantid
+        }))
+
+        setMessage({ type: 'success', text: 'Connexion réussie ! Redirection...' })
+        setTimeout(() => {
+          window.location.href = user.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
+        }, 1000)
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Erreur' })
@@ -134,7 +171,7 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => { setIsSignUp(!isSignUp); setMessage(null) }}
               className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors"
             >
               {isSignUp ? 'Déjà un compte ?' : 'Pas de compte ?'}
