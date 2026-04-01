@@ -22,7 +22,7 @@ export default function SuperAdminDashboard() {
       setStats({ totalClients: tenantsData?.length || 0, totalUsers: usersCount || 0, activeModules: activeModuleIds.size, totalModules: modulesData?.length || 6, mrr })
     } catch (error) { console.error('Error:', error) } finally { setLoading(false) }
   }
-  async function handleLogout() { await supabase.auth.signOut(); router.push('/login') }
+  async function handleLogout() { localStorage.removeItem('bello_session'); router.push('/login') }
   const formatCurrency = (n: number) => new Intl.NumberFormat('fr-TN', { style: 'currency', currency: 'TND', minimumFractionDigits: 0 }).format(n)
   if (loading) return <div className="min-h-screen bg-zinc-950 flex items-center justify-center"><div className="animate-pulse text-zinc-400">Chargement...</div></div>
   const defaultModules = [
