@@ -29,7 +29,9 @@ export default function LoginPage() {
         }
       }
     }
-    checkSession()
+    // Small delay to prevent flash
+    const timer = setTimeout(checkSession, 100)
+    return () => clearTimeout(timer)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,7 +56,7 @@ export default function LoginPage() {
         const { data: allUsers } = await supabase.from('_User').select('id')
         const isFirstUser = !allUsers || allUsers.length === 0
         const role = isFirstUser ? 'SUPER_ADMIN' : 'USER'
-        const tenantid = isFirstUser ? 'bello-hq' : null
+        const tenantid = isFirstUser ? 'bello-hq' : `tenant-${Date.now()}`
 
         const { data, error } = await supabase
           .from('_User')
@@ -110,11 +112,14 @@ export default function LoginPage() {
 
         setMessage({ type: 'success', text: 'Connexion réussie ! Redirection...' })
         setTimeout(() => {
-          window.location.href = user.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
-        }, 1000)
+          // If no role or unknown role, go to dashboard
+          const redirect = user.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
+          window.location.href = redirect
+        }, 500)
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Erreur' })
+    } finally {
       setLoading(false)
     }
   }
@@ -186,7 +191,7 @@ export default function LoginPage() {
               onClick={() => { setIsSignUp(!isSignUp); setMessage(null) }}
               className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors"
             >
-              {isSignUp ? 'Déjà un compte ?' : 'Pas de compte ?'}
+              {isSignUp ? 'Déjà un compte ? Se connecter' : 'Pas de compte ? Créer un compte'}
             </button>
           </div>
         </div>
