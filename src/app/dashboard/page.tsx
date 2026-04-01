@@ -1,107 +1,107 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
-import Link from 'next/link'
-
-const MODULES = [
-  { name: 'Stock', icon: '📦', href: '/stock', color: 'emerald' },
-  { name: 'Commercial', icon: '💼', href: '/commercial', color: 'blue' },
-  { name: 'Comptabilité', icon: '📊', href: '/accounting', color: 'purple' },
-  { name: 'GRH', icon: '👥', href: '/hr', color: 'orange' },
-  { name: 'Paie', icon: '💰', href: '/payroll', color: 'green' },
-  { name: 'GMAO', icon: '🔧', href: '/maintenance', color: 'red' },
-  { name: 'GPAO', icon: '🏭', href: '/production', color: 'yellow' },
-  { name: 'GQAO', icon: '✅', href: '/quality', color: 'cyan' },
-]
+import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        window.location.href = '/login'
+    const sessionData = localStorage.getItem('bello_session')
+    if (!sessionData) {
+      router.push('/login')
+      return
+    }
+    try {
+      const session = JSON.parse(sessionData)
+      if (session.role === 'SUPER_ADMIN') {
+        router.push('/super-admin')
         return
       }
-      setUser(user)
-      setLoading(false)
+      setUser(session)
+    } catch {
+      localStorage.removeItem('bello_session')
+      router.push('/login')
     }
-    getUser()
-  }, [])
+  }, [router])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    window.location.href = '/login'
-  }
-
-  if (loading) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
+        <div className="animate-pulse text-zinc-400">Chargement...</div>
       </div>
     )
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem('bello_session')
+    router.push('/login')
+  }
+
   return (
-    <div className="min-h-screen bg-zinc-950">
-      {/* Header */}
-      <header className="bg-zinc-900 border-b border-zinc-800 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-white">
-              Bello<span className="text-emerald-400">Suite</span>
-            </h1>
-            <p className="text-sm text-zinc-400">{user?.email}</p>
+    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+      <header className="border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+              <span className="text-white font-bold text-lg">B</span>
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-white">BelloSuite</h1>
+              <p className="text-xs text-zinc-500">Tableau de bord</p>
+            </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
-          >
-            Déconnexion
-          </button>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-zinc-400">{user.email}</span>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Déconnexion
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="p-6">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Tableau de bord</h2>
-          <p className="text-zinc-400">Sélectionnez un module pour commencer</p>
-        </div>
-
-        {/* Modules Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {MODULES.map((module) => (
-            <Link
-              key={module.name}
-              href={module.href}
-              className="group bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-emerald-500/50 hover:bg-zinc-800/50 transition-all"
-            >
-              <div className="text-4xl mb-3">{module.icon}</div>
-              <h3 className="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors">
-                {module.name}
-              </h3>
-              <p className="text-sm text-zinc-500 mt-1">Accéder au module →</p>
-            </Link>
-          ))}
-        </div>
-
-        {/* Quick Stats */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-            <p className="text-sm text-zinc-400 mb-1">Utilisateurs actifs</p>
-            <p className="text-3xl font-bold text-white">1</p>
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <h2 className="text-2xl font-bold text-white mb-8">Bienvenue, {user.email} !</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-zinc-900/50 backdrop-blur-xl rounded-2xl border border-zinc-800/50 p-6">
+            <h3 className="text-lg font-semibold text-white mb-2">📦 Gestion de Stock</h3>
+            <p className="text-zinc-400 text-sm mb-4">Gérez votre inventaire et mouvements de stock.</p>
+            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-sm">Bientôt disponible</span>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-            <p className="text-sm text-zinc-400 mb-1">Modules actifs</p>
-            <p className="text-3xl font-bold text-white">8</p>
+
+          <div className="bg-zinc-900/50 backdrop-blur-xl rounded-2xl border border-zinc-800/50 p-6">
+            <h3 className="text-lg font-semibold text-white mb-2">💼 Module Commercial</h3>
+            <p className="text-zinc-400 text-sm mb-4">Gérez vos clients, devis, factures et commandes.</p>
+            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-sm">Bientôt disponible</span>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-            <p className="text-sm text-zinc-400 mb-1">Statut</p>
-            <p className="text-xl font-bold text-emerald-400">Opérationnel</p>
+
+          <div className="bg-zinc-900/50 backdrop-blur-xl rounded-2xl border border-zinc-800/50 p-6">
+            <h3 className="text-lg font-semibold text-white mb-2">💰 Comptabilité</h3>
+            <p className="text-zinc-400 text-sm mb-4">Tenez vos livres comptables à jour.</p>
+            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-sm">Bientôt disponible</span>
+          </div>
+
+          <div className="bg-zinc-900/50 backdrop-blur-xl rounded-2xl border border-zinc-800/50 p-6">
+            <h3 className="text-lg font-semibold text-white mb-2">👥 GRH & Paie</h3>
+            <p className="text-zinc-400 text-sm mb-4">Gestion des employés et bulletins de paie.</p>
+            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-sm">Bientôt disponible</span>
+          </div>
+
+          <div className="bg-zinc-900/50 backdrop-blur-xl rounded-2xl border border-zinc-800/50 p-6">
+            <h3 className="text-lg font-semibold text-white mb-2">🔧 GMAO</h3>
+            <p className="text-zinc-400 text-sm mb-4">Maintenance des équipements et ordres de travail.</p>
+            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-sm">Bientôt disponible</span>
+          </div>
+
+          <div className="bg-zinc-900/50 backdrop-blur-xl rounded-2xl border border-zinc-800/50 p-6">
+            <h3 className="text-lg font-semibold text-white mb-2">🏭 GPAO</h3>
+            <p className="text-zinc-400 text-sm mb-4">Planification et contrôle de la production.</p>
+            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-sm">Bientôt disponible</span>
           </div>
         </div>
       </main>
