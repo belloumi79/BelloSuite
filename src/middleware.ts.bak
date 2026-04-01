@@ -1,63 +1,52 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  })
+  const response = new NextResponse()
 
-  const publicRoutes = ['/login', '/', '/api/auth']
-  const isPublicRoute = publicRoutes.some((route) =>
-    request.nextUrl.pathname === route
-  )
-
-  if (isPublicRoute) {
-    return response
-  }
-
-  // Create Supabase client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options })
-          response = NextResponse.next({
-            request: { headers: request.headers },
+        getAll() {
+          const cookieHeader = request.headers.get('cookie') || ''
+          return cookieHeader.split(',').map(c => {
+            const [name, ...valueParts] = c.trim().split('=')
+            return { name, value: valueParts.join('=') }
           })
-          response.cookies.set({ name, value, ...options })
         },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: '', ...options })
-          response = NextResponse.next({
-            request: { headers: request.headers },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
           })
-          response.cookies.set({ name, value: '', ...options })
         },
       },
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+  const pathname = request.nextUrl.pathname
 
-  // Protect all other routes
-  if (!user && !isPublicRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  // Public routes
+  const publicRoutes = ['/login', '/register', '/api/auth', '/auth/callback']
+  const isPublic = publicRoutes.some(route => pathname.startsWith(route))
+
+  // If not logged in and not public, redirect to login
+  if (!user && !isPublic) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // If logged in and trying to access login, redirect based on role
+  if (user && pathname === '/login') {
+    const role = user.user_metadata?.role
+    return NextResponse.redirect(new URL(role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard', request.url))
   }
 
   return response
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
