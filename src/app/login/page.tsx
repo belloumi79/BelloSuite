@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
 export default function LoginPage() {
@@ -9,6 +9,16 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+
+  // Check if already logged in
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        const role = user.user_metadata?.role
+        window.location.href = role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
+      }
+    })
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,17 +37,14 @@ export default function LoginPage() {
         
         if (error) throw error
         
-        // Create tenant for this user
         if (data.user) {
-          const { error: tenantError } = await supabase
+          await supabase
             .from('tenants')
             .insert({
               id: data.user.id,
               name: `${email.split('@')[0]} Organization`,
               subdomain: email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-'),
             })
-          
-          if (tenantError) console.error('Tenant creation error:', tenantError)
         }
         
         setMessage({ type: 'success', text: 'Compte créé ! Vérifie ton email pour confirmer.' })
@@ -49,7 +56,9 @@ export default function LoginPage() {
         
         if (error) throw error
         
-        window.location.href = '/dashboard'
+        // Redirect based on role
+        const role = data.user?.user_metadata?.role
+        window.location.href = role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Erreur lors de la connexion' })
@@ -87,6 +96,7 @@ export default function LoginPage() {
                 className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 placeholder="votre@email.com"
                 required
+                autoComplete="email"
               />
             </div>
 
@@ -102,6 +112,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 required
                 minLength={6}
+                autoComplete={isSignUp ? "new-password" : "current-password"}
               />
             </div>
 
