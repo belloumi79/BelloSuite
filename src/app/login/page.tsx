@@ -43,7 +43,7 @@ export default function LoginPage() {
       if (isSignUp) {
         // Check if email already exists
         const { data: existingUsers } = await supabase
-          .from('_User')
+          .from('User')
           .select('id')
           .eq('email', email)
           .limit(1)
@@ -53,13 +53,13 @@ export default function LoginPage() {
         }
 
         // Check if first user (no users at all)
-        const { data: allUsers } = await supabase.from('_User').select('id')
+        const { data: allUsers } = await supabase.from('User').select('id')
         const isFirstUser = !allUsers || allUsers.length === 0
         const role = isFirstUser ? 'SUPER_ADMIN' : 'USER'
         const tenantid = isFirstUser ? 'bello-hq' : `tenant-${Date.now()}`
 
         const { data, error } = await supabase
-          .from('_User')
+          .from('User')
           .insert({
             email,
             password: password,
@@ -86,7 +86,7 @@ export default function LoginPage() {
       } else {
         // Login
         const { data: users, error } = await supabase
-          .from('_User')
+          .from('User')
           .select('*')
           .eq('email', email)
           .eq('isactive', true)
