@@ -1,12 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -15,23 +10,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
-  // Check session only ONCE on mount - prevent infinite loop
   useEffect(() => {
-    const checkSession = () => {
-      const sessionData = localStorage.getItem('bello_session')
-      if (sessionData) {
-        try {
-          const session = JSON.parse(sessionData)
-          const redirect = session.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
-          window.location.href = redirect
-        } catch {
-          localStorage.removeItem('bello_session')
-        }
-      }
+    const sessionData = typeof window !== 'undefined' ? localStorage.getItem('bello_session') : null
+    if (sessionData) {
+      const session = JSON.parse(sessionData)
+      window.location.href = session.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
     }
-    // Small delay to prevent flash
-    const timer = setTimeout(checkSession, 100)
-    return () => clearTimeout(timer)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,18 +25,6 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        // Check if email already exists
-        const { data: existingUsers } = await supabase
-          .from('User')
-          .select('id')
-          .eq('email', email)
-          .limit(1)
-
-        if (existingUsers && existingUsers.length > 0) {
-          throw new Error('Cet email existe déjà. Veuillez vous connecter.')
-        }
-
-        // Check if first user (no users at all)
         const { data: allUsers } = await supabase.from('User').select('id')
         const isFirstUser = !allUsers || allUsers.length === 0
         const role = isFirstUser ? 'SUPER_ADMIN' : 'USER'
@@ -62,10 +34,10 @@ export default function LoginPage() {
           .from('User')
           .insert({
             email,
-            password: password,
+            password,
             role,
-            tenantid,
-            isactive: true
+            tenantId: tenantid,
+            isActive: true
           })
           .select()
           .single()
@@ -76,7 +48,7 @@ export default function LoginPage() {
           userId: data.id,
           email: data.email,
           role: data.role,
-          tenantId: data.tenantid
+          tenantId: data.tenantId
         }))
 
         setMessage({ type: 'success', text: 'Compte créé ! Redirection...' })
@@ -84,16 +56,14 @@ export default function LoginPage() {
           window.location.href = role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
         }, 1000)
       } else {
-        // Login
         const { data: users, error } = await supabase
           .from('User')
           .select('*')
           .eq('email', email)
-          .eq('isactive', true)
+          .eq('isActive', true)
           .limit(1)
 
-        if (error) throw error
-        if (!users || users.length === 0) {
+        if (error || !users || users.length === 0) {
           throw new Error('Email ou mot de passe incorrect')
         }
 
@@ -107,15 +77,13 @@ export default function LoginPage() {
           userId: user.id,
           email: user.email,
           role: user.role,
-          tenantId: user.tenantid
+          tenantId: user.tenantId
         }))
 
         setMessage({ type: 'success', text: 'Connexion réussie ! Redirection...' })
         setTimeout(() => {
-          // If no role or unknown role, go to dashboard
-          const redirect = user.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
-          window.location.href = redirect
-        }, 500)
+          window.location.href = user.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
+        }, 1000)
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Erreur' })
@@ -191,7 +159,7 @@ export default function LoginPage() {
               onClick={() => { setIsSignUp(!isSignUp); setMessage(null) }}
               className="text-sm text-zinc-400 hover:text-emerald-400 transition-colors"
             >
-              {isSignUp ? 'Déjà un compte ? Se connecter' : 'Pas de compte ? Créer un compte'}
+              {isSignUp ? 'Déjà un compte ?' : 'Pas de compte ?'}
             </button>
           </div>
         </div>
