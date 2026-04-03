@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import gsap from 'gsap'
-import { supabase } from '@/lib/supabase/client'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -26,16 +25,17 @@ export default function ForgotPasswordPage() {
     gsap.to('.fp-submit-btn', { scale: 0.97, duration: 0.1, yoyo: true, repeat: 1 })
 
     try {
-      const { data: users } = await supabase
-        .from('User')
-        .select('id')
-        .eq('email', email)
-        .limit(1)
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
 
-      // Always show success for security (don't reveal if email exists)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
       setSent(true)
-    } catch {
-      setError('Erreur serveur')
+    } catch (err: any) {
+      setError(err.message || 'Erreur serveur')
       setLoading(false)
     }
   }

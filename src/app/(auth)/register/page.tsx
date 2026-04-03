@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import gsap from 'gsap'
+import bcrypt from 'bcryptjs'
 import { supabase } from '@/lib/supabase/client'
 
 export default function RegisterPage() {
@@ -56,11 +57,13 @@ export default function RegisterPage() {
       const role = isFirstUser ? 'SUPER_ADMIN' : 'USER'
       const tenantId = isFirstUser ? 'bello-hq' : `tenant-${Date.now()}`
 
+      const hashedPassword = await bcrypt.hash(form.password, 10)
+
       const { data, error: insertError } = await supabase
         .from('User')
         .insert({
           email: form.email,
-          password: form.password,
+          password: hashedPassword,
           role,
           tenantId,
           isActive: true

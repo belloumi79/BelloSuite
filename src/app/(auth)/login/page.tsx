@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import gsap from 'gsap'
+import bcrypt from 'bcryptjs'
 import { supabase } from '@/lib/supabase/client'
 
 function LoginForm() {
@@ -41,7 +42,7 @@ function LoginForm() {
       }
 
       const user = users[0]
-      if (user.password !== password) {
+      if (!bcrypt.compareSync(password, user.password)) {
         throw new Error('Email ou mot de passe incorrect')
       }
 

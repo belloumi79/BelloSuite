@@ -44,18 +44,18 @@ function ResetPasswordForm() {
     gsap.to('.rp-submit-btn', { scale: 0.97, duration: 0.1, yoyo: true, repeat: 1 })
 
     try {
-      // In a real app, you'd verify the token server-side
-      // For demo, we just update the password if token is present
       if (!token) {
         throw new Error('Lien de réinitialisation invalide ou expiré')
       }
 
-      const { error: updateError } = await supabase
-        .from('User')
-        .update({ password })
-        .eq('id', token)
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password })
+      })
 
-      if (updateError) throw updateError
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
 
       setSuccess(true)
       gsap.to('.rp-card', {
