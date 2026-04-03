@@ -21,22 +21,10 @@ export default function RegisterPage() {
   const formRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
-    gsap.fromTo('.reg-glow',
-      { scale: 0.6, opacity: 0 },
-      { scale: 1, opacity: 1, duration: 1.2, ease: 'power3.out' }
-    )
-    gsap.fromTo('.reg-brand',
-      { y: -50, opacity: 0, scale: 0.9 },
-      { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: 'back.out(1.7)', delay: 0.2 }
-    )
-    gsap.fromTo('.reg-subtitle',
-      { y: 30, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out', delay: 0.4 }
-    )
-    gsap.fromTo('.reg-card',
-      { y: 60, opacity: 0, scale: 0.9 },
-      { y: 0, opacity: 1, scale: 1, duration: 0.9, ease: 'power3.out', delay: 0.5 }
-    )
+    gsap.fromTo('.reg-glow', { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.2, ease: 'power3.out' })
+    gsap.fromTo('.reg-brand', { y: -50, opacity: 0, scale: 0.9 }, { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: 'back.out(1.7)', delay: 0.2 })
+    gsap.fromTo('.reg-subtitle', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out', delay: 0.4 })
+    gsap.fromTo('.reg-card', { y: 60, opacity: 0, scale: 0.9 }, { y: 0, opacity: 1, scale: 1, duration: 0.9, ease: 'power3.out', delay: 0.5 })
   }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

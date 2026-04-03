@@ -13,22 +13,10 @@ export default function ForgotPasswordPage() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    gsap.fromTo('.fp-glow',
-      { scale: 0.5, opacity: 0 },
-      { scale: 1, opacity: 1, duration: 1.5, ease: 'power3.out' }
-    )
-    gsap.fromTo('.fp-brand',
-      { y: -40, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.7, ease: 'back.out(1.7)', delay: 0.2 }
-    )
-    gsap.fromTo('.fp-subtitle',
-      { y: 20, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.4 }
-    )
-    gsap.fromTo('.fp-card',
-      { y: 50, opacity: 0, scale: 0.95 },
-      { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: 'power3.out', delay: 0.5 }
-    )
+    gsap.fromTo('.fp-glow', { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.5, ease: 'power3.out' })
+    gsap.fromTo('.fp-brand', { y: -40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: 'back.out(1.7)', delay: 0.2 })
+    gsap.fromTo('.fp-subtitle', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out', delay: 0.4 })
+    gsap.fromTo('.fp-card', { y: 50, opacity: 0, scale: 0.95 }, { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: 'power3.out', delay: 0.5 })
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {

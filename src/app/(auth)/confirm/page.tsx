@@ -15,14 +15,8 @@ function ConfirmContent() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    gsap.fromTo('.confirm-glow',
-      { scale: 0.5, opacity: 0 },
-      { scale: 1, opacity: 1, duration: 1.2, ease: 'power3.out' }
-    )
-    gsap.fromTo('.confirm-card',
-      { scale: 0.8, opacity: 0, y: 30 },
-      { scale: 1, opacity: 1, y: 0, duration: 0.8, ease: 'back.out(1.7)', delay: 0.3 }
-    )
+    gsap.fromTo('.confirm-glow', { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.2, ease: 'power3.out' })
+    gsap.fromTo('.confirm-card', { scale: 0.8, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.8, ease: 'back.out(1.7)', delay: 0.3 })
   }, [])
 
   useEffect(() => {
