@@ -16,10 +16,10 @@ function LoginForm() {
   const showRegistered = searchParams.get('registered')
 
   useEffect(() => {
-    gsap.fromTo('.auth-glow', { scale: 0.8, opacity: 0, duration: 1.2, ease: 'power3.out' })
-    gsap.fromTo('.brand-text', { y: -30, opacity: 0, duration: 0.8, ease: 'back.out(1.7)', delay: 0.3 })
-    gsap.fromTo('.subtitle-text', { y: 20, opacity: 0, duration: 0.6, ease: 'power2.out', delay: 0.5 })
-    gsap.fromTo('.form-card', { y: 40, opacity: 0, scale: 0.95, duration: 0.8, ease: 'power3.out', delay: 0.6 })
+    gsap.fromTo('.auth-glow', { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.2, ease: 'power3.out' })
+    gsap.fromTo('.brand-text', { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'back.out(1.7)', delay: 0.3 })
+    gsap.fromTo('.subtitle-text', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out', delay: 0.5 })
+    gsap.fromTo('.form-card', { y: 40, opacity: 0, scale: 0.95 }, { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: 'power3.out', delay: 0.6 })
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
