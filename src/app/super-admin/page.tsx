@@ -9,8 +9,14 @@ export default async function SuperAdminDashboard() {
   try {
     data = await getSuperAdminStats()
   } catch (e) {
-    console.error('Error fetching super admin stats:', e)
-    redirect('/login')
+    console.error('CRITICAL: Error fetching super admin stats:', e)
+    // Fallback to empty state instead of redirecting
+    data = {
+      stats: { totalTenants: 0, totalUsers: 0, activeModules: 0, mrr: 0, totalProducts: 0, totalInvoices: 0, totalEmployees: 0, totalModules: 0 },
+      tenants: [],
+      modules: [],
+      recentUsers: []
+    }
   }
 
   const { stats, tenants, modules, recentUsers } = data

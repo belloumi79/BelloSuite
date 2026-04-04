@@ -3,6 +3,18 @@
 import { prisma } from '@/lib/db'
 
 export async function getSuperAdminStats() {
+  console.log('Fetching Super Admin stats...')
+
+  // Individually guard each query because schema migration may be incomplete in some environments
+  const safeQuery = async <T>(promise: Promise<T>, name: string, fallback: T): Promise<T> => {
+    try {
+      return await promise
+    } catch (e: any) {
+      console.error(`[SuperAdminStats] Query error for table ${name}:`, e.message)
+      return fallback
+    }
+  }
+
   const [
     tenants,
     users,
@@ -12,14 +24,16 @@ export async function getSuperAdminStats() {
     invoices,
     employees
   ] = await Promise.all([
-    prisma.tenant.findMany({ orderBy: { createdAt: 'desc' } }),
-    prisma.user.findMany({ orderBy: { createdAt: 'desc' } }),
-    prisma.module.findMany(),
-    prisma.tenantModule.findMany({ include: { module: true } }),
-    prisma.product.findMany(),
-    prisma.invoice.findMany(),
-    prisma.employee.findMany()
+    safeQuery(prisma.tenant.findMany({ orderBy: { createdAt: 'desc' } }), 'Tenant', []),
+    safeQuery(prisma.user.findMany({ orderBy: { createdAt: 'desc' } }), 'User', []),
+    safeQuery(prisma.module.findMany(), 'Module', []),
+    safeQuery(prisma.tenantModule.findMany({ include: { module: true } }), 'TenantModule', []),
+    safeQuery(prisma.product.findMany(), 'Product', []),
+    safeQuery(prisma.invoice.findMany(), 'Invoice', []),
+    safeQuery(prisma.employee.findMany(), 'Employee', [])
   ])
+
+  console.log(`[SuperAdminStats] Found: ${tenants.length} tenants, ${users.length} users, ${modules.length} modules`)
 
   const activeModuleIds = new Set(tenantModules.filter(tm => tm.isEnabled).map(tm => tm.moduleId))
   
