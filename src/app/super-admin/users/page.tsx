@@ -114,7 +114,7 @@ export default function UsersManagementPage() {
                         {user.firstName?.charAt(0) || user.email.charAt(0)}
                       </div>
                       <div>
-                        <p className="text-white font-bold tracking-tight">{user.firstName} {user.lastName}</p>
+                        <p className="text-white font-bold tracking-tight">{user.firstName || 'Utilisateur'} {user.lastName || ''}</p>
                         <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] uppercase font-black">
                           <Mail className="w-3 h-3 text-emerald-500" />
                           {user.email}

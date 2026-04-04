@@ -280,10 +280,10 @@ export default function SuperAdminDashboardClient({ stats: initialStats, initial
                   {initialUsers.slice(0, 5).map((u: any) => (
                     <div key={u.id} className="flex items-center gap-4 group cursor-pointer">
                        <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-zinc-700/50 flex items-center justify-center text-[10px] font-black text-white group-hover:border-emerald-500 transition-all">
-                          {u.firstName.charAt(0)}
+                          {u.firstName?.charAt(0) || u.email.charAt(0)}
                        </div>
                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-white truncate">{u.firstName} {u.lastName}</p>
+                          <p className="text-xs font-bold text-white truncate">{u.firstName || 'User'} {u.lastName || ''}</p>
                           <p className="text-[10px] text-zinc-500 font-medium truncate">{u.email}</p>
                        </div>
                        <div className="text-[10px] font-black text-zinc-600 group-hover:text-emerald-500 transition-all uppercase">
