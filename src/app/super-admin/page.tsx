@@ -2,6 +2,8 @@ import { getSuperAdminStats } from './actions'
 import { redirect } from 'next/navigation'
 import SuperAdminDashboardClient from './SuperAdminDashboardClient'
 
+export const dynamic = 'force-dynamic'
+
 export default async function SuperAdminDashboard() {
   let data
   try {
