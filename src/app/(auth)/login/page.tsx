@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import gsap from 'gsap'
-import bcrypt from 'bcryptjs'
+import { loginUser } from './actions'
 import { supabase } from '@/lib/supabase/client'
 
 function LoginForm() {
@@ -23,6 +23,16 @@ function LoginForm() {
     gsap.fromTo('.form-card', { y: 40, opacity: 0, scale: 0.95 }, { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: 'power3.out', delay: 0.6 })
   }, [])
 
+  // Fix GSAP warnings for error message box
+  useEffect(() => {
+    if (error) {
+       gsap.fromTo('.error-box', 
+         { x: -10, opacity: 0, scale: 0.98 }, 
+         { x: 0, opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(2)' }
+       )
+    }
+  }, [error])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -30,27 +40,22 @@ function LoginForm() {
     gsap.to('.submit-btn', { scale: 0.98, duration: 0.1, yoyo: true, repeat: 1 })
 
     try {
-      const { data: users, error: queryError } = await supabase
-        .from('User')
-        .select('*')
-        .eq('email', email)
-        .eq('isActive', true)
-        .limit(1)
+      const result = await loginUser(email, password)
 
-      if (queryError || !users || users.length === 0) {
-        throw new Error('Email ou mot de passe incorrect')
+      if (!result.success) {
+        throw new Error(result.error)
       }
 
-      const user = users[0]
-      if (!bcrypt.compareSync(password, user.password)) {
-        throw new Error('Email ou mot de passe incorrect')
-      }
-
+      const user = result.user!
+      
+      // Store minimal safe user data
       localStorage.setItem('bello_session', JSON.stringify({
         userId: user.id,
         email: user.email,
         role: user.role,
-        tenantId: user.tenantId
+        tenantId: user.tenantId,
+        firstName: user.firstName,
+        lastName: user.lastName
       }))
 
       gsap.to('.form-card', {
@@ -59,12 +64,16 @@ function LoginForm() {
         y: -20,
         duration: 0.3,
         onComplete: () => {
-          router.push(user.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard')
+          // Robust redirect based on role
+          if (user.role === 'SUPER_ADMIN') {
+            router.push('/super-admin')
+          } else {
+            router.push('/dashboard')
+          }
         }
       })
     } catch (err: any) {
       setError(err.message || 'Erreur')
-      gsap.fromTo('.error-box', { x: -10, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'back.out(1.7)' })
     } finally {
       setLoading(false)
     }
