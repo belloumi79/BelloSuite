@@ -108,3 +108,19 @@ export async function deleteTenant(tenantId: string) {
     data: { isActive: false }
   })
 }
+export async function toggleTenantModule(tenantId: string, moduleId: string, isEnabled: boolean) {
+  return prisma.tenantModule.upsert({
+    where: {
+      tenantId_moduleId: {
+        tenantId,
+        moduleId
+      }
+    },
+    update: { isEnabled },
+    create: {
+      tenantId,
+      moduleId,
+      isEnabled
+    }
+  })
+}

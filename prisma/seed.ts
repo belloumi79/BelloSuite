@@ -71,6 +71,24 @@ async function main() {
     })
   }
 
+  // Products pour demo
+  const products = [
+    { code: 'SKU-001', name: 'Ramette Papier A4', category: 'Fournitures', purchasePrice: 12, salePrice: 18, minStock: 50, currentStock: 250, unit: 'ramette' },
+    { code: 'SKU-002', name: 'Cartouche HP 304 Noir', category: 'Consommables', purchasePrice: 45, salePrice: 65, minStock: 10, currentStock: 12, unit: 'unité' },
+    { code: 'SKU-003', name: 'Vis TF 4x40mm (Bx100)', category: 'Quincaillerie', purchasePrice: 8.5, salePrice: 15, minStock: 20, currentStock: 5, unit: 'boîte' },
+  ]
+
+  for (const prod of products) {
+    await prisma.product.upsert({
+      where: { tenantId_code: { tenantId: demoTenant.id, code: prod.code } },
+      update: {},
+      create: {
+        ...prod,
+        tenantId: demoTenant.id,
+      },
+    })
+  }
+
   console.log('Seed completed!')
 }
 
