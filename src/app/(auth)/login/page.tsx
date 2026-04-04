@@ -26,10 +26,15 @@ function LoginForm() {
   // Fix GSAP warnings for error message box
   useEffect(() => {
     if (error) {
-       gsap.fromTo('.error-box', 
-         { x: -10, opacity: 0, scale: 0.98 }, 
-         { x: 0, opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(2)' }
-       )
+      const timer = setTimeout(() => {
+        if (document.querySelector('.error-box')) {
+          gsap.fromTo('.error-box', 
+            { x: -10, opacity: 0, scale: 0.98 }, 
+            { x: 0, opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(2)' }
+          )
+        }
+      }, 0)
+      return () => clearTimeout(timer)
     }
   }, [error])
 
