@@ -24,7 +24,7 @@ const modules = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
   { name: 'Stock', icon: Package, path: '/stock' },
   { name: 'Commercial', icon: ShoppingCart, path: '/commercial' },
-  { name: 'Comptabilité', icon: Wallet, path: '/accounting', disabled: true },
+  { name: 'Comptabilité', icon: Wallet, path: '/accounting/chart', disabled: false },
   { name: 'RH & Paie', icon: Users, path: '/hr', disabled: true },
   { name: 'GMAO', icon: Wrench, path: '/gmao', disabled: true },
   { name: 'GPAO', icon: Factory, path: '/gpao', disabled: true },

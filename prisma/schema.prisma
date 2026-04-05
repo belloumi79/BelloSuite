@@ -49,6 +49,8 @@ model Tenant {
   qualityControls QualityControl[]
   costCenters CostCenter[]
   costEntries CostEntry[]
+  accountingPeriods AccountingPeriod[]
+  accountingJournals AccountingJournal[]
 }
 
 // ============================================
@@ -337,21 +339,68 @@ enum AccountType {
   EXPENSE
 }
 
+model AccountingPeriod {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String   // e.g. "Exercice 2026"
+  startDate   DateTime
+  endDate     DateTime
+  isClosed    Boolean  @default(false) // Clôture de l'exercice
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  journalEntries JournalEntry[]
+
+  @@unique([tenantId, name])
+}
+
+model AccountingJournal {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  code        String   // e.g. ACH, VTE, ODi, BQ
+  name        String
+  type        JournalType
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entries     JournalEntry[]
+
+  @@unique([tenantId, code])
+}
+
+enum JournalType {
+  SALES
+  PURCHASES
+  BANK
+  CASH
+  GENERAL
+  INVENTORY
+}
+
 model JournalEntry {
   id          String   @id @default(uuid())
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  journalId   String
+  journal     AccountingJournal @relation(fields: [journalId], references: [id])
+  periodId    String
+  period      AccountingPeriod @relation(fields: [periodId], references: [id])
   entryNumber String
   date        DateTime
   description String
-  reference   String?
-  isPosted    Boolean  @default(false)
+  reference   String? // Pièce justificative conforme au chemin d'audit
+  isPosted    Boolean  @default(false) // Validation définitive (intangibilité)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   lines       JournalEntryLine[]
 
   @@unique([tenantId, entryNumber])
+  @@index([tenantId, journalId])
+  @@index([tenantId, periodId])
 }
 
 model JournalEntryLine {
