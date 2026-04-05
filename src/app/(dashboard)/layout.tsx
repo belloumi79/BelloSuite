@@ -1,6 +1,7 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 
 export default function DashboardLayout({
@@ -8,6 +9,20 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
+  const router = useRouter()
+
+  useEffect(() => {
+    const session = localStorage.getItem('bello_session')
+    if (session) {
+      const { role } = JSON.parse(session)
+      if (role === 'SUPER_ADMIN') {
+        router.replace('/super-admin')
+      }
+    } else {
+      router.replace('/login')
+    }
+  }, [router])
+
   return (
     <div className="flex bg-zinc-950 min-h-screen font-sans">
       <Sidebar />

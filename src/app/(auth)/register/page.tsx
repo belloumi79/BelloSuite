@@ -52,10 +52,12 @@ export default function RegisterPage() {
     gsap.to('.reg-submit-btn', { scale: 0.97, duration: 0.1, yoyo: true, repeat: 1 })
 
     try {
-      const { data: allUsers } = await supabase.from('User').select('id')
-      const isFirstUser = !allUsers || allUsers.length === 0
-      const role = isFirstUser ? 'SUPER_ADMIN' : 'USER'
-      const tenantId = isFirstUser ? 'bello-hq' : `tenant-${Date.now()}`
+      // L'email du propriétaire SaaS est toujours SUPER_ADMIN, peu importe l'ordre d'inscription
+      const SUPER_ADMIN_EMAIL = 'belloumi.karim.professional@gmail.com'
+      const isSuperAdmin = form.email.toLowerCase().trim() === SUPER_ADMIN_EMAIL
+
+      const role = isSuperAdmin ? 'SUPER_ADMIN' : 'USER'
+      const tenantIdValue = isSuperAdmin ? null : `tenant-${Date.now()}`
 
       const hashedPassword = await bcrypt.hash(form.password, 10)
 
@@ -65,7 +67,7 @@ export default function RegisterPage() {
           email: form.email,
           password: hashedPassword,
           role,
-          tenantId,
+          tenantId: tenantIdValue,
           isActive: true
         })
         .select()
