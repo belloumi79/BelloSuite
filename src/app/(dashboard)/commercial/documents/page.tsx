@@ -35,6 +35,7 @@ export default function InvoicesPage() {
   const exportTEIF = (inv: any) => {
     const xml = generateTEIF({
       invoiceNumber: inv.number,
+      type: inv.type,
       issueDate: new Date(inv.date).toISOString().split('T')[0],
       tenant: {
         name: inv.tenant.name,

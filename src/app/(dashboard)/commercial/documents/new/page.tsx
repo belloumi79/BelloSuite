@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Save, ArrowLeft, Search, User, Package, Calendar, Info, CreditCard } from 'lucide-react'
+import { Plus, Trash2, Save, ArrowLeft, Search, User, Package, Calendar, Info, CreditCard, FileText } from 'lucide-react'
 import { calculateInvoiceTotals, VAT_RATES, FISCAL_STAMP } from '@/lib/fiscal'
 import Link from 'next/link'
 
@@ -50,7 +50,7 @@ export default function NewInvoicePage() {
   const handleAddItem = () => {
     setInvoiceData({
       ...invoiceData,
-      items: [...invoiceData.items, { productId: '', description: '', quantity: 1, unitPriceHT: 0, discount: 0, vatRate: 19, fodecApply: false }]
+      items: [...invoiceData.items, { productId: '', description: '', quantity: 1, unitPriceHT: 0, discount: 0, vatRate: 19, fodecApply: false, unit: 'EA' }]
     })
   }
 
