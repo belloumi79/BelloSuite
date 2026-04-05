@@ -23,7 +23,7 @@ import { useState, useEffect } from 'react'
 const modules = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
   { name: 'Stock', icon: Package, path: '/stock' },
-  { name: 'Commercial', icon: ShoppingCart, path: '/commercial', disabled: true },
+  { name: 'Commercial', icon: ShoppingCart, path: '/commercial' },
   { name: 'Comptabilité', icon: Wallet, path: '/accounting', disabled: true },
   { name: 'RH & Paie', icon: Users, path: '/hr', disabled: true },
   { name: 'GMAO', icon: Wrench, path: '/gmao', disabled: true },

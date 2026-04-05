@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================
@@ -12,13 +13,21 @@ datasource db {
 // ============================================
 
 model Tenant {
-  id        String   @id @default(uuid())
-  name      String
-  subdomain String   @unique
-  settings  Json     @default("{}")
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(uuid())
+  name            String
+  subdomain       String   @unique
+  matriculeFiscal String?  // Format: 1234567/A/M/000
+  vatNumber       String?
+  address         String?
+  city            String?
+  zipCode         String?
+  phone           String?
+  email           String?
+  logo            String?
+  settings        Json     @default("{}")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   users    User[]
   modules  TenantModule[]
@@ -100,22 +109,24 @@ model TenantModule {
 // ============================================
 
 model Product {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  code        String
-  barcode     String?
-  name        String
-  description String?
-  category    String?
-  unit        String   @default("unit")
-  purchasePrice Decimal @default(0)
-  salePrice   Decimal  @default(0)
-  minStock    Decimal  @default(0)
-  currentStock Decimal @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  code          String
+  barcode       String?
+  name          String
+  description   String?
+  category      String?
+  unit          String   @default("unit")
+  purchasePrice Decimal  @default(0)
+  salePrice     Decimal  @default(0)
+  vatRate       Decimal  @default(19) // Standard Tunisia: 19%
+  fodec         Boolean  @default(false) // 1% tax
+  minStock      Decimal  @default(0)
+  currentStock  Decimal  @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   movements   StockMovement[]
 
@@ -150,20 +161,21 @@ enum StockMovementType {
 // ============================================
 
 model Client {
-  id        String   @id @default(uuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  code      String
-  name      String
-  email     String?
-  phone     String?
-  address   String?
-  city      String?
-  country   String   @default("Tunisie")
-  taxId     String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  code            String
+  name            String
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  zipCode         String?
+  country         String   @default("Tunisie")
+  matriculeFiscal String?  // Format: 1234567/A/M/000
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   invoices        Invoice[]
   purchaseOrders  PurchaseOrder[]
@@ -172,20 +184,20 @@ model Client {
 }
 
 model Supplier {
-  id        String   @id @default(uuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  code      String
-  name      String
-  email     String?
-  phone     String?
-  address   String?
-  city      String?
-  country   String   @default("Tunisie")
-  taxId     String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  code            String
+  name            String
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  country         String   @default("Tunisie")
+  matriculeFiscal String?  // Format: 1234567/A/M/000
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   purchaseOrders PurchaseOrder[]
 
@@ -203,10 +215,16 @@ model Invoice {
   status       DocumentStatus @default(DRAFT)
   date         DateTime @default(now())
   dueDate      DateTime?
-  subtotal     Decimal  @default(0)
-  taxRate      Decimal  @default(0)
-  taxAmount    Decimal  @default(0)
-  total        Decimal  @default(0)
+  
+  // Totals for Tunisia
+  subtotalHT   Decimal  @default(0)
+  totalFodec   Decimal  @default(0)
+  totalVAT     Decimal  @default(0)
+  timbreFiscal Decimal  @default(1.000) // Default 1 DT
+  totalTTC     Decimal  @default(0)
+  
+  vatSummary   Json?    // Breakdown of VAT by rate for TEIF
+  
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -217,14 +235,21 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          String  @id @default(uuid())
+  id          String   @id @default(uuid())
   invoiceId   String
-  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   productId   String?
   description String
+  unit        String   @default("EA")
   quantity    Decimal
-  unitPrice   Decimal
-  total       Decimal
+  unitPriceHT Decimal
+  discount    Decimal  @default(0) // Percentage
+  fodecApply  Boolean  @default(false)
+  fodecAmount Decimal  @default(0)
+  vatRate     Decimal  @default(19)
+  vatAmount   Decimal  @default(0)
+  totalHT     Decimal  @default(0)
+  totalTTC    Decimal  @default(0)
 }
 
 model PurchaseOrder {
