@@ -26,10 +26,6 @@ export async function GET(req: NextRequest) {
     if (category) where.category = category
     if (isActive === 'true') where.isActive = true
     if (isActive === 'false') where.isActive = false
-    if (lowStock === 'true') {
-      // Filter in JS: gt 0 and lt minStock (Prisma doesn't support cross-field comparison)
-      // Fetch all then filter below
-    }
 
     let products = await prisma.product.findMany({
       where,
@@ -100,8 +96,8 @@ export async function POST(req: NextRequest) {
             notes: 'Stock initial',
           },
         })
-      } catch (error) {
-        console.error('Error creating stock movement:', error)
+      } catch (err) {
+        console.error('Movement error:', err)
       }
     }
 
