@@ -10,7 +10,7 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:deploy": "prisma migrate deploy",
-    "vercel-build": "next build"
+    "vercel-build": "npx prisma generate && next build"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",
