@@ -13,44 +13,70 @@ export async function GET(request: Request) {
     const currentYear = new Date().getFullYear()
     const currentMonth = new Date().getMonth() + 1
 
+    // Single aggregation query instead of 7 sequential calls
     const [
-      totalEmployees,
-      activeEmployees,
+      employees,
+      activeCount,
       pendingAbsences,
       pendingPayslips,
       latestPayslips,
+      monthPayslips,
     ] = await Promise.all([
-      prisma.employee.count({ where: { tenantId } }),
-      prisma.employee.count({ where: { tenantId, isActive: true } }),
-      prisma.absence.count({ where: { tenantId, statut: 'EN_ATTENTE' } }),
-      prisma.paySlip.count({ where: { tenantId, annee: currentYear, mois: currentMonth, statut: 'PENDING' } }),
+      // All employees (count + active)
+      prisma.employee.aggregate({
+        where: { tenantId },
+        _count: true,
+      }),
+      prisma.employee.count({
+        where: { tenantId, isActive: true },
+      }),
+      // Pending absences count
+      prisma.absence.count({
+        where: { tenantId, statut: 'EN_ATTENTE' },
+      }),
+      // Pending payslips for current month
+      prisma.paySlip.count({
+        where: {
+          tenantId,
+          annee: currentYear,
+          mois: currentMonth,
+          statut: 'PENDING',
+        },
+      }),
+      // Latest 5 payslips (minimal select)
       prisma.paySlip.findMany({
         where: { tenantId },
-        include: { employee: true },
+        select: {
+          id: true,
+          reference: true,
+          mois: true,
+          annee: true,
+          netAPayer: true,
+          statut: true,
+          createdAt: true,
+          employee: {
+            select: { firstName: true, lastName: true, employeeNumber: true },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         take: 5,
       }),
+      // Current month aggregated totals (no include, just sum)
+      prisma.paySlip.aggregate({
+        where: { tenantId, annee: currentYear, mois: currentMonth },
+        _sum: { brutGlobal: true, netAPayer: true, irpp: true },
+      }),
     ])
 
-    // Masse salariale du mois
-    const monthPayslips = await prisma.paySlip.findMany({
-      where: { tenantId, annee: currentYear, mois: currentMonth },
-      select: { brutGlobal: true, netAPayer: true, irpp: true },
-    })
-
-    const masseSalariale = monthPayslips.reduce((sum, p) => sum + Number(p.brutGlobal), 0)
-    const netAPayer = monthPayslips.reduce((sum, p) => sum + Number(p.netAPayer), 0)
-    const totalIRPP = monthPayslips.reduce((sum, p) => sum + Number(p.irpp), 0)
-
     return NextResponse.json({
-      totalEmployees,
-      activeEmployees,
+      totalEmployees: employees._count,
+      activeEmployees: activeCount,
       pendingAbsences,
       pendingPayslips,
       latestPayslips,
-      masseSalariale,
-      netAPayer,
-      totalIRPP,
+      masseSalariale: monthPayslips._sum.brutGlobal ?? 0,
+      netAPayer: monthPayslips._sum.netAPayer ?? 0,
+      totalIRPP: monthPayslips._sum.irpp ?? 0,
       currentMonth,
       currentYear,
     })
