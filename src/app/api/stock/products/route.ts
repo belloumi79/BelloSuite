@@ -9,6 +9,24 @@ export async function GET(req: NextRequest) {
 
     const products = await prisma.product.findMany({
       where: { tenantId },
+      select: {
+        id: true,
+        code: true,
+        barcode: true,
+        name: true,
+        description: true,
+        category: true,
+        unit: true,
+        purchasePrice: true,
+        salePrice: true,
+        vatRate: true,
+        fodec: true,
+        minStock: true,
+        currentStock: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
       orderBy: { name: 'asc' },
     })
 
