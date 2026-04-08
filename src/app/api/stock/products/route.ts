@@ -33,9 +33,6 @@ export async function GET(req: NextRequest) {
 
     let products = await prisma.product.findMany({
       where,
-      include: {
-        warehouseStock: { include: { warehouse: true } },
-      },
       orderBy: { name: 'asc' },
     })
 
@@ -59,7 +56,7 @@ export async function POST(req: NextRequest) {
     const {
       tenantId, code, barcode, name, description, category,
       unit, purchasePrice, salePrice, vatRate, fodec,
-      minStock, initialStock, images, variants, supplierId,
+      minStock, initialStock,
     } = body
 
     if (!tenantId || !code || !name) {
@@ -88,22 +85,24 @@ export async function POST(req: NextRequest) {
         fodec: fodec ?? false,
         minStock: minStock || 0,
         currentStock: initialStock || 0,
-        images: images || [],
-        variants: variants || [],
       },
     })
 
     if (initialStock && Number(initialStock) > 0) {
-      await prisma.stockMovement.create({
-        data: {
-          tenantId,
-          productId: product.id,
-          type: 'ENTRY',
-          quantity: initialStock,
-          unitPrice: purchasePrice || 0,
-          notes: 'Stock initial',
-        },
-      })
+      try {
+        await prisma.stockMovement.create({
+          data: {
+            tenantId,
+            productId: product.id,
+            type: 'ENTRY',
+            quantity: initialStock,
+            unitPrice: purchasePrice || 0,
+            notes: 'Stock initial',
+          },
+        })
+      } catch (error) {
+        console.error('Error creating stock movement:', error)
+      }
     }
 
     return NextResponse.json(product, { status: 201 })
