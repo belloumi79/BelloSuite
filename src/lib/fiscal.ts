@@ -101,3 +101,81 @@ export function calculateInvoiceTotals(lines: LineItem[]): InvoiceTotals {
     vatSummary
   }
 }
+
+// ============================================================
+// IRPP — Impôt sur le Revenu des Personnes Physiques (Tunisie)
+// Barème officiel 2024 — revenus annuels
+// Source : جدول الضريبة على الدخل
+// ============================================================
+
+export type ResultatImpot = {
+  impot: number;
+  tauxEffectif: number;
+};
+
+/**
+ * Tranches officielles IRPP Tunisie (revenus annuels en TND).
+ * Chaque tranche est définie par son plafond supérieur.
+ * Le taux s'applique uniquement sur la partie du revenu
+ * qui dépasse le seuil inférieur de la tranche.
+ */
+const TRANCHES_IRPP = [
+  { plafond: 5_000,    taux: 0.00 },
+  { plafond: 10_000,   taux: 0.15 },
+  { plafond: 20_000,   taux: 0.25 },
+  { plafond: 30_000,   taux: 0.30 },
+  { plafond: 40_000,   taux: 0.33 },
+  { plafond: 50_000,   taux: 0.36 },
+  { plafond: 70_000,   taux: 0.38 },
+  { plafond: Infinity, taux: 0.40 },
+] as const;
+
+const SEUIL_DEBUT_PREMIERE_TRANCHE = 0;
+
+/**
+ * Calcule l'IRPP annuel en utilisant le barême progressif tunisien.
+ *
+ * @param salaireBrutAnnuel — salaire brut annuel en dinars tunisiens (TND)
+ * @returns {ResultatImpot} impot (montant total de l'impôt) et tauxEffectif (ratio impot/revenu)
+ *
+ * @example
+ * calculerImpotTunisie(30_000)
+ * // { impot: 6_250, tauxEffectif: 0.2083 }
+ */
+export function calculerImpotTunisie(salaireBrutAnnuel: number): ResultatImpot {
+  if (salaireBrutAnnuel <= 0) {
+    return { impot: 0, tauxEffectif: 0 };
+  }
+
+  let impotTotal = 0;
+  let revenuRestant = salaireBrutAnnuel;
+  let seuilPrecedent = SEUIL_DEBUT_PREMIERE_TRANCHE;
+
+  for (const tranche of TRANCHES_IRPP) {
+    if (revenuRestant <= 0) break;
+
+    // Part du revenu déjà couverte par les tranches précédentes
+    const partDejaImployee = seuilPrecedent;
+
+    // Si le revenu ne dépasse pas le début de cette tranche, on passe
+    if (salaireBrutAnnuel <= partDejaImployee) break;
+
+    // Revenu taxable dans cette tranche uniquement
+    const largeurTranche = tranche.plafond - seuilPrecedent;
+    const revenuDansTranche = Math.min(
+      revenuRestant,
+      Math.max(0, Math.min(salaireBrutAnnuel, tranche.plafond) - seuilPrecedent)
+    );
+
+    impotTotal += revenuDansTranche * tranche.taux;
+    revenuRestant -= revenuDansTranche;
+    seuilPrecedent = tranche.plafond;
+  }
+
+  const tauxEffectif = impotTotal / salaireBrutAnnuel;
+
+  return {
+    impot: Math.round(impotTotal * 1000) / 1000, // 3 décimales
+    tauxEffectif: Math.round(tauxEffectif * 10_000) / 10_000, // 4 décimales (~%)
+  };
+}
