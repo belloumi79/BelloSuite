@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
+
     if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
 
     const product = await prisma.product.findFirst({
-      where: { id: params.id, tenantId },
+      where: { id, tenantId },
       include: {
-        movements: { include: { warehouse: true }, orderBy: { createdAt: 'desc' }, take: 20 },
+        movements: { orderBy: { createdAt: 'desc' }, take: 50 },
         warehouseStock: { include: { warehouse: true } },
       },
     })
-
     if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json(product)
   } catch (error) {
@@ -23,39 +24,34 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { searchParams } = new URL(req.url)
-    const tenantId = searchParams.get('tenantId')
-    if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
-
+    const { id } = await params
     const body = await req.json()
     const {
-      code, barcode, name, description, category,
+      tenantId, code, barcode, name, description, category,
       unit, purchasePrice, salePrice, vatRate, fodec,
-      minStock, isActive, images, variants, supplierId,
+      minStock, images, variants, isActive,
     } = body
 
-    // Check unique code if changed
+    if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
+
+    // Check code uniqueness (excluding self)
     if (code) {
       const existing = await prisma.product.findFirst({
-        where: { tenantId, code, NOT: { id: params.id } },
+        where: { tenantId, code, NOT: { id } },
       })
-      if (existing) return NextResponse.json({ error: 'Code produit déjà utilisé' }, { status: 409 })
+      if (existing) return NextResponse.json({ error: 'Code déjà utilisé' }, { status: 409 })
     }
 
     const product = await prisma.product.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         code, barcode, name, description, category,
         unit, purchasePrice, salePrice, vatRate, fodec,
-        minStock, isActive,
-        images: images !== undefined ? images : undefined,
-        variants: variants !== undefined ? variants : undefined,
-        supplierId: supplierId !== undefined ? supplierId : null,
+        minStock, images, variants, isActive,
       },
     })
-
     return NextResponse.json(product)
   } catch (error) {
     console.error(error)
@@ -63,13 +59,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
+
     if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
 
-    await prisma.product.delete({ where: { id: params.id } })
+    await prisma.product.delete({ where: { id, tenantId } })
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error(error)
