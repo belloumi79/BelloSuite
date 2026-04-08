@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
           data: { tenantId, productId: product.id, type: 'ENTRY', quantity: p.currentStock, unitPrice: p.purchasePrice, notes: 'Stock initial seed' },
         })
         created.push(product.code)
-      } catch (e) { console.error('Error creating', p.code, e.message) }
+      } catch (e) { console.error('Error creating', p.code, (e as Error).message) }
     }
 
     return NextResponse.json({ success: true, created: created.length, codes: created })
