@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Package,
   ShoppingCart,
@@ -15,8 +15,10 @@ import {
   Wrench,
   Factory,
   Lock,
-  BarChart3
+  BarChart3,
+  Receipt as POSIcon,
 } from 'lucide-react'
+
 
 // The master module registry — keys MUST match the `name` field in the Module table.
 const MODULE_REGISTRY: Record<string, { name: string; icon: any; path: string; alwaysVisible?: boolean }> = {
@@ -25,12 +27,13 @@ const MODULE_REGISTRY: Record<string, { name: string; icon: any; path: string; a
   commercial:  { name: 'Commercial', icon: ShoppingCart, path: '/commercial' },
   accounting:  { name: 'Comptabilité', icon: Wallet, path: '/accounting/chart' },
   hr:          { name: 'RH & Paie', icon: Users, path: '/hr' },
+  pos:         { name: 'ShoppingCart', icon: ShoppingCart, path: '/pos' },
   gmao:        { name: 'GMAO', icon: Wrench, path: '/gmao' },
   gpao:        { name: 'GPAO', icon: Factory, path: '/gpao' },
 }
 
 // Display order in the sidebar (must match MODULE_REGISTRY keys)
-const MODULE_ORDER = ['dashboard', 'stock', 'commercial', 'accounting', 'hr', 'gmao', 'gpao']
+const MODULE_ORDER = ['dashboard', 'stock', 'commercial', 'accounting', 'hr', 'pos', 'gmao', 'gpao']
 
 export default function Sidebar() {
   const pathname = usePathname()

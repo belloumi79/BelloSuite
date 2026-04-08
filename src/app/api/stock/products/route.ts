@@ -90,7 +90,6 @@ export async function POST(req: NextRequest) {
         currentStock: initialStock || 0,
         images: images || [],
         variants: variants || [],
-        supplierId: supplierId || null,
       },
     })
 

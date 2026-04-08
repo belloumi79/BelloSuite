@@ -24,7 +24,6 @@ export default function NewProductPage() {
     code: '', barcode: '', name: '', description: '',
     category: '', unit: 'unit', purchasePrice: '', salePrice: '',
     vatRate: '19', fodec: false, minStock: '', initialStock: '',
-    supplierId: '',
   })
   const [images, setImages] = useState<string[]>([])
   const [newImage, setNewImage] = useState('')
@@ -37,7 +36,7 @@ export default function NewProductPage() {
     if (session) {
       const { tenantId: tid } = JSON.parse(session)
       setTenantId(tid)
-      fetch(`/api/commercial/suppliers?tenantId=${tid}`).then(r => r.ok && r.json().then(d => setSuppliers(d))).catch(() => {})
+      fetch(`/api/commercial/suppliers?tenantId=${tid}`).then(r => { if (r.ok) r.json().then(d => setSuppliers(d)) }).catch(() => {})
     }
   }, [])
 
@@ -72,7 +71,7 @@ export default function NewProductPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, tenantId, images, variants }),
     })
-    if (res.created || res.ok) {
+    if (res.ok) {
       router.push('/stock/products')
     } else {
       const d = await res.json()
@@ -127,13 +126,6 @@ export default function NewProductPage() {
                 <option value="m">Mètre</option>
                 <option value="piece">Pièce</option>
                 <option value="box">Boîte</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Fournisseur</label>
-              <select value={form.supplierId} onChange={e => set('supplierId', e.target.value)} className={inputCls}>
-                <option value="">— Aucun —</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
           </div>
