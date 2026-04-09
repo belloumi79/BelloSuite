@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Package, Plus, Search, RefreshCw, Filter, Trash2, Edit2, Eye, AlertTriangle, Image, X, ChevronDown, Upload, Tags } from 'lucide-react'
+import { Package, Plus, Search, RefreshCw, Filter, Trash2, Edit2, Eye, AlertTriangle, Image, X, ChevronDown, Upload, Tags, Download } from 'lucide-react'
 
 type Product = {
   id: string
@@ -46,6 +46,22 @@ export default function ProductsListPage() {
   const [showCategory, setShowCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
   const [categories, setCategories] = useState<string[]>([])
+  const [importLoading, setImportLoading] = useState(false)
+  const [importResult, setImportResult] = useState<{created:number, errors:number}|null>(null)
+
+  const handleFileUpload = async (file: File) => {
+    setImportLoading(true)
+    setImportResult(null)
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch(`/api/stock/import?tenantId=${tenantId}`, { method: 'POST', body: formData })
+      const data = await res.json()
+      setImportResult(data)
+      if (res.ok) { fetchProducts(tenantId); setTimeout(() => setShowImport(false), 1500) }
+    } catch { setImportResult({ created: 0, errors: 1 }) }
+    setImportLoading(false)
+  }
 
   const fetchProducts = useCallback(async (tid: string) => {
     setLoading(true)
@@ -201,6 +217,44 @@ export default function ProductsListPage() {
           </div>
         </div>
       )}
-    </div>
+    
+
+      {showImport && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-black text-white flex items-center gap-2"><Upload className="w-5 h-5 text-purple-400" /> Importer CSV / Excel</h3>
+              <button onClick={() => setShowImport(false)} className="p-2 hover:bg-zinc-800 text-zinc-400 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-zinc-400 text-xs mb-4">Colonne requises: <code className="text-teal-400">code, name, category, unit, purchasePrice, salePrice, vatRate, currentStock</code></p>
+            <div className="border-2 border-dashed border-zinc-700 rounded-2xl p-8 text-center hover:border-purple-500/50 transition-all cursor-pointer"
+              onClick={() => document.getElementById('csvFileInput')?.click()}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => {
+                e.preventDefault()
+                const file = e.dataTransfer.files[0]
+                if (file) handleFileUpload(file)
+              }}>
+              <Upload className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
+              <p className="text-white font-bold text-sm">Glissez votre fichier ici</p>
+              <p className="text-zinc-500 text-xs mt-1">ou cliquez pour parcourir</p>
+              <p className="text-zinc-600 text-[10px] mt-2">CSV, XLSX, XLS — max 5MB</p>
+            </div>
+            <input id="csvFileInput" type="file" accept=".csv,.xlsx,.xls" className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f) }} />
+            {importLoading && <p className="text-purple-400 text-xs text-center mt-4 animate-pulse">Import en cours...</p>}
+            {importResult && (
+              <div className={`mt-4 p-4 rounded-xl text-xs font-bold ${importResult.errors === 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                {importResult.created} créés, {importResult.errors} erreurs
+              </div>
+            )}
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowImport(false)} className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold text-sm">Fermer</button>
+              <a href="/stock/import" className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2"><Download className="w-4 h-4" /> Modèle CSV</a>
+            </div>
+          </div>
+        </div>
+      )}
+</div>
   )
 }
