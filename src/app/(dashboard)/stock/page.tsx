@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Package, Warehouse as WarehouseIcon, ArrowRightLeft, FileText, Plus, RefreshCw, ExternalLink, Upload, Tags } from 'lucide-react'
+import { Package, Warehouse as WarehouseIcon, ArrowRightLeft, FileText, Plus, RefreshCw, ExternalLink, Upload, Tags, X } from 'lucide-react'
 
 export default function StockManagementPage() {
   const [warehouses, setWarehouses] = useState<any[]>([])
