@@ -2,13 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Package, Warehouse as WarehouseIcon, ArrowRightLeft, FileText, Plus, RefreshCw, ExternalLink } from 'lucide-react'
+import { Package, Warehouse as WarehouseIcon, ArrowRightLeft, FileText, Plus, RefreshCw, ExternalLink, Upload, Tags } from 'lucide-react'
 
 export default function StockManagementPage() {
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [tenantId, setTenantId] = useState('')
+  const [showImport, setShowImport] = useState(false)
+  const [showCategory, setShowCategory] = useState(false)
+  const [newCategory, setNewCategory] = useState('')
+  const [categories, setCategories] = useState<string[]>([])
 
   useEffect(() => {
     const session = localStorage.getItem('bello_session')
@@ -53,6 +57,12 @@ export default function StockManagementPage() {
         <div className="flex items-center gap-3">
           <button onClick={() => fetchData(tenantId)} className="p-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-xl transition-all">
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+                    <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-purple-600/20 transition-all">
+            <Upload className="w-5 h-5" /> Import CSV
+          </button>
+          <button onClick={() => setShowCategory(true)} className="flex items-center gap-2 px-4 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-amber-600/20 transition-all">
+            <Tags className="w-5 h-5" /> Categories
           </button>
           <Link href="/stock/warehouses/new" className="flex items-center gap-2 px-5 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-600/20">
             <Plus className="w-5 h-5" /> Nouvel Entrepôt
@@ -192,6 +202,60 @@ export default function StockManagementPage() {
           </Link>
         </div>
       </div>
-    </div>
+    
+
+      {/* Import CSV Modal */}
+      {showImport && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowImport(false)}>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-lg w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-black text-white">Importer Produits (CSV/Excel)</h2>
+              <button onClick={() => setShowImport(false)} className="p-2 hover:bg-zinc-800 rounded-xl text-zinc-400"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="border-2 border-dashed border-zinc-700 rounded-2xl p-12 text-center hover:border-purple-500 transition-colors">
+              <Upload className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+              <p className="text-white font-bold mb-2">Glissez ou choisissez un fichier</p>
+              <p className="text-zinc-500 text-sm mb-4">CSV ou Excel (.xlsx)</p>
+              <input type="file" accept=".csv,.xlsx,.xls" className="hidden" id="csvInput2" onChange={async e => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const fd = new FormData()
+                fd.append('file', file)
+                fd.append('tenantId', tenantId)
+                const r = await fetch('/api/stock/import', { method: 'POST', body: fd })
+                if (r.ok) { setShowImport(false); fetchData(tenantId) }
+                else { const d = await r.json(); alert(d.error || 'Erreur') }
+              }} />
+              <label htmlFor="csvInput2" className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold cursor-pointer">
+                <Upload className="w-5 h-5" /> Choisir fichier
+              </label>
+            </div>
+            <div className="mt-4 p-4 bg-zinc-800/50 rounded-xl text-xs">
+              <p className="text-zinc-400 font-bold uppercase tracking-widest mb-1">Colonnes requises</p>
+              <code className="text-teal-400">code, name, category, purchasePrice, salePrice, vatRate, currentStock</code>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Categories Modal */}
+      {showCategory && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCategory(false)}>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-black text-white">Gerer Categories</h2>
+              <button onClick={() => setShowCategory(false)} className="p-2 hover:bg-zinc-800 rounded-xl text-zinc-400"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="flex gap-3 mb-6">
+              <input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="Nouvelle categorie" className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white outline-none focus:border-teal-500" onKeyDown={e => { if (e.key === 'Enter') { const cat = newCategory.trim(); if (cat) setCategories(prev => [...prev.filter(x => x !== cat), cat]); setNewCategory('') } }} />
+              <button onClick={() => { const cat = newCategory.trim(); if (cat) setCategories(prev => [...prev.filter(x => x !== cat), cat]); setNewCategory('') }} className="px-6 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold">Ajouter</button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {categories.map(cat => <span key={cat} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-300 rounded-full text-sm"><Tags className="w-3 h-3 text-amber-400" /> {cat}</span>)}
+              {categories.length === 0 && <p className="text-zinc-600 text-sm">Aucune categorie</p>}
+            </div>
+          </div>
+        </div>
+      )}</div>
   )
 }

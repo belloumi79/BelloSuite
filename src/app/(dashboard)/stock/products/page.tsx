@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Package, Plus, Search, RefreshCw, Filter, Trash2, Edit2, Eye, AlertTriangle, Image, X, ChevronDown } from 'lucide-react'
+import { Package, Plus, Search, RefreshCw, Filter, Trash2, Edit2, Eye, AlertTriangle, Image, X, ChevronDown, Upload, Tags } from 'lucide-react'
 
 type Product = {
   id: string
@@ -42,6 +42,9 @@ export default function ProductsListPage() {
   const [stockFilter, setStockFilter] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [showImport, setShowImport] = useState(false)
+  const [showCategory, setShowCategory] = useState(false)
+  const [newCategory, setNewCategory] = useState('')
   const [categories, setCategories] = useState<string[]>([])
 
   const fetchProducts = useCallback(async (tid: string) => {
@@ -95,6 +98,12 @@ export default function ProductsListPage() {
         </div>
         <div className="flex items-center gap-3">
           <button onClick={() => fetchProducts(tenantId)} className="p-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-xl"><RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} /></button>
+          <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-purple-600/20 transition-all">
+            <Upload className="w-5 h-5" /> Importer CSV
+          </button>
+          <button onClick={() => setShowCategory(true)} className="flex items-center gap-2 px-4 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-amber-600/20 transition-all">
+            <Tags className="w-5 h-5" /> Categories
+          </button>
           <Link href="/stock/products/new" className="flex items-center gap-2 px-5 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-600/20"><Plus className="w-5 h-5" /> Nouveau Produit</Link>
         </div>
       </div>
