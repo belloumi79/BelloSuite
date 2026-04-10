@@ -17,12 +17,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Identifiants incorrects' }, { status: 401 })
     }
 
-    // Fetch tenant automatically from tenants table if user has no tenant_id
+    // 1. From Supabase Auth metadata
     let tenantId: string | null = data.user.user_metadata?.tenant_id || null
+    let role: string = data.user.user_metadata?.role || 'USER'
+    let firstName: string = data.user.user_metadata?.first_name || ''
+
+    // 2. Fallback: fetch from custom User table (uppercase User)
+    if (!tenantId) {
+      const { data: userRow } = await supabase
+        .from('User')
+        .select('tenantId, role, firstName')
+        .eq('email', email)
+        .maybeSingle()
+      if (userRow) {
+        tenantId = userRow.tenantId || tenantId
+        role = userRow.role || role
+        firstName = userRow.firstName || firstName
+      }
+    }
+
+    // 3. Last resort: pick first active tenant
     if (!tenantId) {
       const { data: tenants } = await supabase
-        .from('tenants')
+        .from('Tenant')
         .select('id')
+        .eq('isActive', true)
         .limit(1)
         .maybeSingle()
       tenantId = tenants?.id ?? null
@@ -31,9 +50,9 @@ export async function POST(req: NextRequest) {
     const session = {
       id: data.user.id,
       email: data.user.email,
-      role: data.user.user_metadata?.role || 'USER',
+      role,
       tenantId,
-      firstName: data.user.user_metadata?.first_name || data.user.email?.split('@')[0] || '',
+      firstName: firstName || data.user.email?.split('@')[0] || '',
     }
 
     return NextResponse.json({ session })
