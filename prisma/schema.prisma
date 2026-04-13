@@ -401,7 +401,7 @@ model Invoice {
   totalInCurrency Decimal? // Montant en devise étrangère
   convertedFromId String?
   convertedAt    DateTime?
-  convertedTos    Invoice[] @relation("Conversion")
+  convertedTos    Invoice[]  @relation("Conversion", fields: [convertedFromId], references: [id])
 
   notes     String?
   createdAt DateTime @default(now())
@@ -1293,7 +1293,7 @@ model ExportInvoice {
   id              String    @id @default(uuid())
   tenantId        String
   tenant          Tenant    @relation(fields: [tenantId], references: [id])
-  invoiceId       String    @unique
+  invoiceId       String
   invoice         Invoice   @relation(fields: [invoiceId], references: [id])
   countryDest     String    // Pays de destination
   incoterm        String    // EXW | FOB | CIF | DDP | ...
