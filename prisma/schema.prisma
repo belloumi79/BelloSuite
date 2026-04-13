@@ -425,6 +425,8 @@ model Invoice {
 
   // ─── Pipeline Commercial ────────────────────────────────
   exportInvoice   ExportInvoice?
+  items           InvoiceItem[]
+  paymentFollowUp PaymentFollowUp?
 }
 
 model InvoiceItem {
@@ -1292,7 +1294,7 @@ model ExportInvoice {
   id              String    @id @default(uuid())
   tenantId        String
   tenant          Tenant    @relation(fields: [tenantId], references: [id])
-  invoiceId       String
+  invoiceId       String @unique
   invoice         Invoice   @relation(fields: [invoiceId], references: [id])
   countryDest     String    // Pays de destination
   incoterm        String    // EXW | FOB | CIF | DDP | ...
