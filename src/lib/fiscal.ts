@@ -103,6 +103,41 @@ export function calculateInvoiceTotals(lines: LineItem[]): InvoiceTotals {
 }
 
 // ============================================================
+// RETENUE À LA SOURCE — Services & Honoraires (Tunisie)
+// Taux officiel: 1.5% du TTC (Art. 52bis CF)
+// Plafond: 20% du HT (pour certains prestataires)
+// ============================================================
+
+export const RS_RATE = 0.015 // 1.5%
+export const RS_MAX_RATIO = 0.20 // Plafond 20% du HT
+
+/**
+ * Calcule la Retenue à la Source pour les prestations de services.
+ * Utilisée principalement pour les notes d'honoraires et jetons de présence.
+ *
+ * @param totalTTC - Montant TTC de la prestation
+ * @param totalHT  - Montant HT (pour contrôle du plafond)
+ * @returns Montant RS en TND
+ */
+export function calculateRetenueSource(totalTTC: number, totalHT: number): number {
+  if (totalTTC <= 0) return 0
+  const rsRaw = totalTTC * RS_RATE
+  const rsCapped = Math.min(rsRaw, totalHT * RS_MAX_RATIO)
+  return Math.round(rsCapped * 1000) / 1000
+}
+
+/**
+ * Calcule l'IRPP catégoriel pour les honoraires (revenus catégoriels).
+ * Taux fixe 15% sur le montant HT (barème catégoriel).
+ *
+ * @param totalHT - Montant HT des honoraires
+ * @returns Montant IRPP catégoriel
+ */
+export function calculateIRCPHonitaires(totalHT: number): number {
+  return Math.round(totalHT * 0.15 * 1000) / 1000
+}
+
+// ============================================================
 // IRPP — Impôt sur le Revenu des Personnes Physiques (Tunisie)
 // Barème officiel 2024 — revenus annuels
 // Source : جدول الضريبة على الدخل

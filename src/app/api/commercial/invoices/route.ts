@@ -22,6 +22,16 @@ export async function GET(req: Request) {
       orderBy: { date: 'desc' },
     })
 
+    // Single invoice fetch by id
+    const id = searchParams.get('id')
+    if (id) {
+      const single = await prisma.invoice.findUnique({
+        where: { id },
+        include: { client: true, items: true, tenant: true },
+      })
+      return NextResponse.json(single || { error: 'Not found' }, { status: single ? 200 : 404 })
+    }
+
     return NextResponse.json(docs)
   } catch (e) {
     console.error(e)

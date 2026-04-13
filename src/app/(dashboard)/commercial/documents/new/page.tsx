@@ -19,6 +19,7 @@ export default function NewInvoicePage() {
     number: `FAC-${Date.now().toString().slice(-6)}`,
     date: new Date().toISOString().split('T')[0],
     dueDate: '',
+    currency: 'TND',
     items: [
       { productId: '', description: '', quantity: 1, unitPriceHT: 0, discount: 0, vatRate: 19, fodecApply: false, unit: 'EA' }
     ],
