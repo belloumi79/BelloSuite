@@ -67,6 +67,7 @@ model Tenant {
   bankAccounts       BankAccount[]
   bankStatements     BankStatement[]
   bankReconciliations BankReconciliation[]
+  withholdingTaxes WithholdingTax[]
   exchangeRates     ExchangeRate[]
   exportInvoices    ExportInvoice[]
 }
@@ -425,6 +426,7 @@ model Invoice {
 
   // ─── Pipeline Commercial ────────────────────────────────
   exportInvoice   ExportInvoice?
+  withholdingTaxes WithholdingTax[]
   items           InvoiceItem[]
   paymentFollowUp PaymentFollowUp?
 }
@@ -1409,4 +1411,87 @@ model BankReconciliation {
 
   @@unique([statementLineId, journalEntryLineId])
   @@index([tenantId, status])
+}
+
+// ============================================
+// MODULE: TEJ 2026 — RETENUE À LA SOURCE
+// ============================================
+
+model WithholdingTax {
+  id              String          @id @default(uuid())
+  tenantId        String
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  invoiceId       String?
+  invoice         Invoice?        @relation(fields: [invoiceId], references: [id])
+
+  beneficiaryTin     String?
+  beneficiaryName    String
+  beneficiaryAddress String?
+  beneficiaryType    BeneficiaryType @default(INDIVIDU)
+
+  serviceType        ServiceType   @default(PRESTATION_SERVICE)
+  serviceDescription String?
+
+  grossAmount        Decimal       @default(0)
+  rate               Decimal       @default(0)
+  taxAmount          Decimal       @default(0)
+  netAmount          Decimal       @default(0)
+  teeJAmount         Decimal       @default(0)
+
+  periodMonth        Int
+  periodYear        Int
+
+  tejId             String?
+  tejXmlId           String?
+  tejReference       String?
+  tejStatus          TEJStatus     @default(DRAFT)
+  exportedAt        DateTime?
+  submittedAt       DateTime?
+  acceptedAt        DateTime?
+  rejectedAt        DateTime?
+  rejectionReason   String?
+
+  paymentDate        DateTime?
+  paymentMethod     PaymentMethodType?
+  paymentReference  String?
+
+  notes             String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([tenantId, tejId])
+  @@index([tenantId, periodYear, periodMonth])
+  @@index([tenantId, tejStatus])
+  @@index([tenantId, beneficiaryTin])
+}
+
+enum BeneficiaryType {
+  INDIVIDU
+  SOCIETE
+}
+
+enum ServiceType {
+  PRESTATION_SERVICE
+  HONORAIRES
+  LOYERS
+  DIVIDENDES
+  INTERETS
+  ROYALTIES
+  REMUNERATION
+  AUTRE
+}
+
+enum TEJStatus {
+  DRAFT
+  EXPORTED
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum PaymentMethodType {
+  VIREMENT
+  CHEQUE
+  ESPECE
 }

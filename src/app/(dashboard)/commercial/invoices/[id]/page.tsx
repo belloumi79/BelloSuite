@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, FileText, User, Calendar, Printer, Download,
   ExternalLink, Send, CheckCircle, XCircle, Clock, AlertTriangle,
-  RefreshCw, QrCode, Zap, FileCode
+  RefreshCw, QrCode, Zap, FileCode, Receipt, DollarSign
 } from 'lucide-react'
 import { generateTEIFXml } from '@/lib/teif-generator'
 
@@ -37,6 +37,10 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [tenantId, setTenantId] = useState('')
+  const [withholdingTax, setWithholdingTax] = useState<any>(null)
+  const [generatingRS, setGeneratingRS] = useState(false)
+  const [rsStatus, setRsStatus] = useState<'none' | 'loading' | 'generated' | 'pending'>('none')
+  const [rsData, setRsData] = useState<any>(null)
 
   const fetchInvoice = async (id: string, tid: string) => {
     try {
@@ -52,14 +56,69 @@ export default function InvoiceDetailPage() {
     }
   }
 
+  const fetchRS = async (tid: string, invId: string) => {
+    try {
+      const res = await fetch(`/api/commercial/retenue-source?tenantId=${tid}&invoiceId=${invId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setWithholdingTax(Array.isArray(data) ? data[0] : data)
+      }
+    } catch (e) { console.error(e) }
+  }
+
   useEffect(() => {
     const session = localStorage.getItem('bello_session')
     if (session) {
       const { tenantId: tid } = JSON.parse(session)
       setTenantId(tid)
-      if (params.id) fetchInvoice(params.id as string, tid)
+      if (params.id) { fetchInvoice(params.id as string, tid); fetchRS(tid, params.id as string) }
     }
   }, [params.id])
+
+  const handleNoteHonorairesPDF = async () => {
+    if (!invoice || invoice.type !== 'HONORAIRES') return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/commercial/invoices/${invoice.id}/note-honoraires-pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId }),
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Note_Honoraires_${invoice.number}.pdf`;
+        a.click();
+      } else {
+        const err = await res.json();
+        alert('Erreur: ' + (err.error || 'Échec'));
+      }
+    } catch (e) { alert('Erreur de connexion'); }
+    finally { setSubmitting(false); }
+  };
+
+  const handleGenerateRS = async () => {
+    if (!invoice || !tenantId) return
+    if (!confirm('Générer une déclaration de retenue à la source pour cette facture ?')) return
+    setGeneratingRS(true)
+    try {
+      const res = await fetch('/api/commercial/invoices/' + invoice.id + '/generer-rs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId }),
+      })
+      const result = await res.json()
+      if (res.ok) {
+        setWithholdingTax(result)
+        alert('Retenue à la source générée avec succès !')
+      } else {
+        alert('Erreur: ' + (result.error || 'Échec'))
+      }
+    } catch (e) { alert('Erreur de connexion') }
+    finally { setGeneratingRS(false) }
+  }
 
   const handleTTNSubmit = async () => {
     if (!invoice) return
@@ -152,6 +211,12 @@ export default function InvoiceDetailPage() {
           <button onClick={exportTEIF} className="flex items-center gap-2 px-4 py-2.5 border border-stone-200 rounded-xl text-stone-600 hover:bg-stone-50 font-bold text-sm shadow-sm">
             <FileCode className="w-4 h-4" /> TEIF XML
           </button>
+          {invoice.type === 'HONORAIRES' && (
+            <button onClick={handleNoteHonorairesPDF} disabled={submitting}
+              className="flex items-center gap-2 px-4 py-2.5 border border-amber-200 rounded-xl text-amber-700 hover:bg-amber-50 font-bold text-sm shadow-sm">
+              <Receipt className="w-4 h-4" /> Note Honoraires PDF
+            </button>
+          )}
           <button className="flex items-center gap-2 px-4 py-2.5 border border-stone-200 rounded-xl text-stone-600 hover:bg-stone-50 font-bold text-sm shadow-sm">
             <Printer className="w-4 h-4" /> Imprimer
           </button>
@@ -198,6 +263,58 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
 
+      {/* RS / TEJ Widget */}
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <DollarSign className="w-7 h-7 text-amber-600" />
+            <div>
+              <p className="font-black text-stone-900">Retenue à la Source</p>
+              <p className="text-xs text-amber-700 font-medium">Déclaration TEJ 2026</p>
+            </div>
+          </div>
+          {!withholdingTax && (
+            <button
+              onClick={handleGenerateRS}
+              disabled={generatingRS}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-white rounded-xl font-black text-xs shadow"
+            >
+              <Receipt className="w-4 h-4" />
+              {generatingRS ? 'Génération...' : 'Générer RS'}
+            </button>
+          )}
+        </div>
+        {withholdingTax ? (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-xl p-3 border border-amber-100">
+                <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Taux RS</p>
+                <p className="text-lg font-black text-stone-900">{(Number(withholdingTax.rate) * 100).toFixed(1)}%</p>
+              </div>
+              <div className="bg-white rounded-xl p-3 border border-amber-100">
+                <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Montant RS</p>
+                <p className="text-lg font-black text-stone-900">{Number(withholdingTax.taxAmount).toFixed(3)} DT</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-xl p-3 border border-amber-100">
+                <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Net Versé</p>
+                <p className="text-lg font-black text-stone-900">{Number(withholdingTax.netAmount).toFixed(3)} DT</p>
+              </div>
+              <div className="bg-white rounded-xl p-3 border border-amber-100">
+                <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Statut TEJ</p>
+                <p className="text-sm font-black text-stone-900 capitalize">{withholdingTax.tejStatus || 'DRAFT'}</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-3">
+            <p className="text-xs text-amber-700 font-medium">Aucune RS générée pour cette facture</p>
+            <p className="text-[10px] text-amber-500 mt-1">Cliquez sur "Générer RS" pour créer une déclaration</p>
+          </div>
+        )}
+      </div>
+
       {/* Invoice Details */}
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 bg-white rounded-2xl border border-stone-200 shadow-sm p-8 space-y-6">
@@ -240,7 +357,7 @@ export default function InvoiceDetailPage() {
                   <th className="px-4 py-3 text-center">Qté</th>
                   <th className="px-4 py-3 text-center">Unité</th>
                   <th className="px-4 py-3 text-right">P.U HT</th>
-                  <th className="px-4 py-3 text-right">TVA</th>
+                  <th className="px-4 py-3 text-center">TVA</th>
                   <th className="px-4 py-3 text-right">Total HT</th>
                   <th className="px-4 py-3 text-right">Total TTC</th>
                 </tr>
