@@ -10,7 +10,9 @@
     "postinstall": "node scripts/postinstall.js",
     "db:push": "prisma db push",
     "db:deploy": "prisma migrate deploy",
-    "vercel-build": "npx prisma generate && next build"
+    "vercel-build": "npx prisma generate && next build",
+    "prebuild": "npx prisma generate",
+    "postbuild": "npx prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
