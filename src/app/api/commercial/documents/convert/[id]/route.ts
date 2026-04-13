@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 
 // POST /api/commercial/documents/convert/:id
 // Body: { tenantId, targetType: 'INVOICE' | 'ORDER' | 'DELIVERY_NOTE' }
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await req.json()
     const { tenantId, targetType } = body
@@ -12,7 +12,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const source = await prisma.invoice.findFirst({
-      where: { id: params.id, tenantId },
+      where: { id: (await params).id, tenantId },
       include: { items: true, client: true },
     })
     if (!source) return NextResponse.json({ error: 'Document not found' }, { status: 404 })
