@@ -4,7 +4,7 @@ import { sendPaymentReminder } from '@/lib/reminder-service'
 
 // POST /api/commercial/payments/:id/remind
 // Body: { tenantId, method: 'EMAIL' | 'SMS' | 'WHATSAPP' }
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await req.json()
     const { tenantId, method = 'EMAIL' } = body

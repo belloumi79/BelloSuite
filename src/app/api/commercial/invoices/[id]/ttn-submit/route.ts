@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 import { submitToTTN, testASPConnection } from '@/lib/ttn-asp'
 
 // POST /api/commercial/invoices/:id/ttn-submit
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await req.json().catch(() => ({}))
     const tenantId = body.tenantId
