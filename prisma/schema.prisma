@@ -1273,8 +1273,8 @@ enum ReminderMethod {
 
 model ExchangeRate {
   id         String   @id @default(uuid())
-  tenantId   String
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId   String   @unique // relation 1-1 avec Tenant
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   currency   String   // EUR | USD | GBP | DZD | ...
   rateToTND  Decimal  // 1 unité = rateToTND TND
   source     String?  // 'CBC' | 'BCT' | 'MANUAL'
