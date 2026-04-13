@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate",
+    "postinstall": "node scripts/postinstall.js",
     "db:push": "prisma db push",
     "db:deploy": "prisma migrate deploy",
     "vercel-build": "npx prisma generate && next build"
