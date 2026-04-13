@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db"
  * Génère le formulaire CI5 (Déclaration en Detail dédouanement)
  * pour l'exportation tunisienne.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const exp = await prisma.exportInvoice.findUnique({
       where: { id: params.id },
