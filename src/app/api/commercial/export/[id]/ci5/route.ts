@@ -7,9 +7,10 @@ import { prisma } from "@/lib/db"
  * pour l'exportation tunisienne.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
   try {
     const exp = await prisma.exportInvoice.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         invoice: { include: { client: true, tenant: true, items: true } },
       },

@@ -4,13 +4,14 @@ import { submitToTTN, testASPConnection } from '@/lib/ttn-asp'
 
 // POST /api/commercial/invoices/:id/ttn-submit
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
   try {
     const body = await req.json().catch(() => ({}))
     const tenantId = body.tenantId
 
     // Fetch invoice with relations
     const invoice = await prisma.invoice.findFirst({
-      where: { id: params.id, ...(tenantId ? { tenantId } : {}) },
+      where: { id: id, ...(tenantId ? { tenantId } : {}) },
       include: { client: true, items: true, tenant: true },
     })
 

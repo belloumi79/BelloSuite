@@ -5,10 +5,11 @@ import { sendPaymentReminder } from '@/lib/reminder-service'
 // POST /api/commercial/payments/:id/remind
 // Body: { tenantId, method: 'EMAIL' | 'SMS' | 'WHATSAPP' }
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
   try {
     const body = await req.json()
     const { tenantId, method = 'EMAIL' } = body
-    const invoiceId = params.id
+    const invoiceId = id
 
     const invoice = await prisma.invoice.findUnique({
       where: { id: invoiceId },
