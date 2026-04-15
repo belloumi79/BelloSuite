@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, CheckCircle2, Shield, TrendingUp, Headphones, Zap, Layers, Boxes, Users, Briefcase, FileText, Wrench } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Shield, TrendingUp, Headphones, Zap, Layers, Boxes, Users, Briefcase, FileText, Wrench, Factory } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -134,6 +134,16 @@ export default function Home() {
               <h3 className="text-xl font-bold text-zinc-900 mb-3">Maintenance (GMAO)</h3>
               <p className="text-zinc-600">
                 Gérez vos équipements, planifiez vos interventions préventives et suivez vos ordres de travail en temps réel.
+              </p>
+            </div>
+            {/* GPAO */}
+            <div className="bg-zinc-50 p-8 rounded-2xl border border-zinc-100 hover:border-teal-200 hover:shadow-lg transition-all group">
+              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-6 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                <Factory className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-zinc-900 mb-3">Production (GPAO)</h3>
+              <p className="text-zinc-600">
+                Postes de charges, gammes opératoires, nomenclatures (BOM) et exécution des ordres de fabrication.
               </p>
             </div>
           </div>
