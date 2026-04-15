@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Cairo, Inter } from 'next/font/google'
+import { CookieConsentBanner } from '@/components/ui/CookieConsentBanner'
+import { NotificationCenter } from '@/components/ui/NotificationCenter'
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -29,6 +31,8 @@ export default function RootLayout({
     <html lang="fr" dir="ltr" className={`${cairo.variable} ${inter.variable}`}>
       <body className="font-sans antialiased bg-zinc-950 text-zinc-100">
         {children}
+        <CookieConsentBanner />
+        <NotificationCenter />
       </body>
     </html>
   )

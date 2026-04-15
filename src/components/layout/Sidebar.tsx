@@ -18,6 +18,7 @@ import {
   BarChart3,
   Receipt as POSIcon,
 } from 'lucide-react'
+import { NotificationBell } from '@/components/ui/NotificationBell'
 
 
 // The master module registry — keys MUST match the `name` field in the Module table.
@@ -185,6 +186,10 @@ export default function Sidebar() {
 
       {/* Footer / User */}
       <div className="p-4 border-t border-zinc-800/50 space-y-4 shrink-0">
+        {/* Notification Bell — always visible in sidebar */}
+        <div className="flex items-center justify-center">
+          <NotificationBell />
+        </div>
         {!isCollapsed && user && (
           <div className="bg-zinc-900/50 rounded-2xl p-4 animate-in fade-in slide-in-from-bottom duration-500">
             <div className="flex items-center gap-3 mb-4">

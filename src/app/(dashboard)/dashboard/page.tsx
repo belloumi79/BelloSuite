@@ -15,6 +15,7 @@ import {
   Target
 } from 'lucide-react'
 import Link from 'next/link'
+import { RealtimeDashboard } from '@/components/ui/RealtimeDashboard'
 
 const modules = [
   { 
@@ -140,6 +141,17 @@ export default function DashboardSummary() {
           </div>
         </div>
       </div>
+
+      {/* ── TEMPS RÉEL: Supabase Realtime Dashboard ── */}
+      {user.tenantId && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+            <h2 className="text-xl font-black text-stone-900 tracking-tight">Vue en Temps Réel</h2>
+          </div>
+          <RealtimeDashboard tenantId={user.tenantId} />
+        </div>
+      )}
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
