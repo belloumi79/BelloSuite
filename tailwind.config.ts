@@ -15,6 +15,10 @@ const config: Config = {
           600: '#d97706',
         },
       },
+      fontFamily: {
+        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui'],
+        arabic: ['var(--font-ibm-plex-arabic)', 'var(--font-cairo)', 'serif'],
+      },
     },
   },
   plugins: [],

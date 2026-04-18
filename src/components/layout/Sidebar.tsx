@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/routing";
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Package,
   ShoppingCart,
@@ -19,24 +19,28 @@ import {
   Receipt as POSIcon,
 } from 'lucide-react'
 import { NotificationBell } from '@/components/ui/NotificationBell'
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 
 
-// The master module registry — keys MUST match the `name` field in the Module table.
-const MODULE_REGISTRY: Record<string, { name: string; icon: any; path: string; alwaysVisible?: boolean }> = {
-  dashboard:   { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', alwaysVisible: true },
-  stock:       { name: 'Stock', icon: Package, path: '/stock' },
-  commercial:  { name: 'Commercial', icon: ShoppingCart, path: '/commercial' },
-  accounting:  { name: 'Comptabilité', icon: Wallet, path: '/accounting/chart' },
-  hr:          { name: 'RH & Paie', icon: Users, path: '/hr' },
-  pos:         { name: 'ShoppingCart', icon: ShoppingCart, path: '/pos' },
-  gmao:        { name: 'GMAO', icon: Wrench, path: '/gmao' },
-  gpao:        { name: 'GPAO', icon: Factory, path: '/gpao' },
+// The master module registry — keys MUST match the dictionary keys under Home.modules or SideBar
+const MODULE_REGISTRY: Record<string, { tKey: string; icon: any; path: string; alwaysVisible?: boolean }> = {
+  dashboard:   { tKey: 'Common.dashboard', icon: LayoutDashboard, path: '/dashboard', alwaysVisible: true },
+  stock:       { tKey: 'Home.modules.stock.title', icon: Package, path: '/stock' },
+  commercial:  { tKey: 'Home.modules.commercial.title', icon: ShoppingCart, path: '/commercial' },
+  accounting:  { tKey: 'Home.modules.accounting.title', icon: Wallet, path: '/accounting/chart' },
+  hr:          { tKey: 'Home.modules.hr.title', icon: Users, path: '/hr' },
+  pos:         { tKey: 'Home.modules.commercial.title', icon: ShoppingCart, path: '/pos' }, // POS uses commercial icon/path usually
+  gmao:        { tKey: 'Home.modules.maintenance.title', icon: Wrench, path: '/gmao' },
+  gpao:        { tKey: 'Home.modules.production.title', icon: Factory, path: '/gpao' },
 }
 
 // Display order in the sidebar (must match MODULE_REGISTRY keys)
 const MODULE_ORDER = ['dashboard', 'stock', 'commercial', 'accounting', 'hr', 'pos', 'gmao', 'gpao']
 
 export default function Sidebar() {
+  const t = useTranslations();
+  const locale = useLocale();
+  const isRtl = locale === 'ar';
   const pathname = usePathname()
   const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -85,20 +89,20 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`bg-zinc-950 border-r border-zinc-800/50 flex flex-col transition-all duration-500 ease-in-out h-screen sticky top-0 z-[60] ${
+      className={`bg-zinc-950 border-inline-end border-zinc-800/50 flex flex-col transition-all duration-500 ease-in-out h-screen sticky top-0 z-[60] ${
         isCollapsed ? 'w-20' : 'w-72'
       }`}
     >
       {/* Brand */}
       <div className="p-6 flex items-center justify-between shrink-0">
         {!isCollapsed && (
-          <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left duration-500">
+          <div className="flex items-center gap-3 animate-in fade-in slide-in-from-inline-start duration-500">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
               <span className="text-white font-black text-xl">B</span>
             </div>
             <div>
               <h1 className="text-xl font-bold text-white tracking-wide">BelloSuite</h1>
-              <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Smart ERP</p>
+              <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">{t('Sidebar.smart_erp')}</p>
             </div>
           </div>
         )}
@@ -109,9 +113,9 @@ export default function Sidebar() {
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 hover:bg-zinc-900 rounded-xl text-zinc-400 transition-colors hidden sm:block ml-2"
+          className="p-2 hover:bg-zinc-900 rounded-xl text-zinc-400 transition-colors hidden sm:block margin-inline-start-2"
         >
-          {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+          {isCollapsed ? (isRtl ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />) : (isRtl ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />)}
         </button>
       </div>
 
@@ -138,12 +142,12 @@ export default function Sidebar() {
                   }`}
                 >
                   {isActive && (
-                    <div className="absolute left-0 w-1.5 h-6 bg-teal-500 rounded-r-full transition-all" />
+                    <div className="absolute inset-inline-start-0 w-1.5 h-6 bg-teal-500 rounded-inline-end-full transition-all" />
                   )}
                   <module.icon className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-teal-400' : ''}`} />
                   {!isCollapsed && (
-                    <span className="font-semibold text-sm tracking-wide grow animate-in fade-in slide-in-from-left duration-300">
-                      {module.name}
+                    <span className="font-semibold text-sm tracking-wide grow animate-in fade-in slide-in-from-inline-start duration-300">
+                      {t(module.tKey as any)}
                     </span>
                   )}
                 </Link>
@@ -153,15 +157,15 @@ export default function Sidebar() {
             {/* Separator + locked modules */}
             {lockedItems.length > 0 && !isCollapsed && (
               <div className="pt-3">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700 px-4 mb-2">Non abonné</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700 px-4 mb-2">{t('Sidebar.unsubscribed')}</p>
                 {lockedItems.map((module) => (
                   <div
                     key={module.path}
-                    title={`Module ${module.name} — Non activé`}
+                    title={t('Sidebar.locked_title', { name: t(module.tKey as any) })}
                     className="flex items-center gap-3 px-4 py-3 rounded-2xl text-zinc-700 opacity-50 cursor-not-allowed select-none"
                   >
                     <module.icon className="w-5 h-5 flex-shrink-0" />
-                    <span className="font-semibold text-sm tracking-wide grow">{module.name}</span>
+                    <span className="font-semibold text-sm tracking-wide grow">{t(module.tKey as any)}</span>
                     <Lock className="w-3 h-3 flex-shrink-0" />
                   </div>
                 ))}
@@ -172,7 +176,7 @@ export default function Sidebar() {
                 {lockedItems.map((module) => (
                   <div
                     key={module.path}
-                    title={`${module.name} — Non activé`}
+                    title={t('Sidebar.locked_title', { name: t(module.tKey as any) })}
                     className="flex items-center justify-center p-3 rounded-2xl text-zinc-800 cursor-not-allowed"
                   >
                     <module.icon className="w-5 h-5" />
@@ -186,7 +190,9 @@ export default function Sidebar() {
 
       {/* Footer / User */}
       <div className="p-4 border-t border-zinc-800/50 space-y-4 shrink-0">
-        {/* Notification Bell — always visible in sidebar */}
+        <div className="flex items-center justify-center gap-2">
+            <LanguageSwitcher />
+        </div>
         <div className="flex items-center justify-center">
           <NotificationBell />
         </div>
@@ -206,7 +212,7 @@ export default function Sidebar() {
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-red-500/10 text-zinc-400 hover:text-red-400 rounded-xl transition-all font-bold text-xs"
             >
               <LogOut className="w-4 h-4" />
-              Déconnexion
+              {t('Sidebar.logout')}
             </button>
           </div>
         )}
