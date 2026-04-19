@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { useRouter } from '@/i18n/routing'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 
 export default function DashboardLayout({
@@ -10,18 +10,36 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
+    // Check for session in URL params (from OAuth callback)
+    const sessionParam = searchParams?.get('session')
+    if (sessionParam) {
+      try {
+        const session = JSON.parse(Buffer.from(sessionParam, 'base64url').toString())
+        localStorage.setItem('bello_session', JSON.stringify(session))
+        // Remove session param from URL
+        const url = new URL(window.location.href)
+        url.searchParams.delete('session')
+        window.history.replaceState({}, '', url.toString())
+      } catch (e) {
+        console.error('Failed to parse session from URL:', e)
+      }
+    }
+
     const session = localStorage.getItem('bello_session')
     if (session) {
-      const { role } = JSON.parse(session)
+      const { role, tenantId } = JSON.parse(session)
       if (role === 'SUPER_ADMIN') {
         router.replace('/super-admin')
+      } else if (!tenantId) {
+        router.replace('/onboarding')
       }
     } else {
       router.replace('/login')
     }
-  }, [router])
+  }, [router, searchParams])
 
   return (
     <div className="flex bg-zinc-950 min-h-screen font-sans">

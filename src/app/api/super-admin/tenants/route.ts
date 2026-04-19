@@ -21,54 +21,55 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { name, subdomain, matriculeFiscal, address, city, phone, email, moduleIds, adminUser } = body
+    const { companyName, subdomain, matriculeFiscal, vatNumber, address, city, zipCode, phone, email, userEmail } = body
 
-    if (!name || !subdomain) {
-      return NextResponse.json({ error: 'name and subdomain are required' }, { status: 400 })
+    if (!companyName || !subdomain) {
+      return NextResponse.json({ error: 'Nom de l\'entreprise et sous-domaine requis' }, { status: 400 })
     }
 
     // Create tenant
     const tenant = await prisma.tenant.create({
       data: {
-        name,
+        name: companyName,
         subdomain: subdomain.toLowerCase().replace(/\s+/g, '-'),
         matriculeFiscal,
+        vatNumber,
         address,
         city,
+        zipCode,
         phone,
         email,
         isActive: true
       }
     })
 
-    // Assign modules
-    if (moduleIds && moduleIds.length > 0) {
+    // Get default modules and assign them
+    const defaultModules = await prisma.module.findMany({
+      take: 3 // Stock, Commercial, Accounting
+    })
+    
+    if (defaultModules.length > 0) {
       await prisma.tenantModule.createMany({
-        data: moduleIds.map((moduleId: string) => ({
+        data: defaultModules.map(m => ({
           tenantId: tenant.id,
-          moduleId,
+          moduleId: m.id,
           isEnabled: true
         }))
       })
     }
 
-    // Create admin user if provided
-    if (adminUser?.email && adminUser?.password) {
-      const hashedPassword = await bcrypt.hash(adminUser.password, 10)
-      await prisma.user.create({
-        data: {
-          email: adminUser.email,
-          password: hashedPassword,
-          firstName: adminUser.firstName || '',
-          lastName: adminUser.lastName || '',
-          role: 'ADMIN',
+    // Link existing user to tenant if provided
+    if (userEmail) {
+      await prisma.user.update({
+        where: { email: userEmail },
+        data: { 
           tenantId: tenant.id,
-          isActive: true
+          role: 'ADMIN'
         }
       })
     }
 
-    return NextResponse.json(tenant, { status: 201 })
+    return NextResponse.json({ tenant }, { status: 201 })
   } catch (error: any) {
     console.error(error)
     if (error.code === 'P2002') {
