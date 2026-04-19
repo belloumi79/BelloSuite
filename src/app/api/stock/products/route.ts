@@ -1,9 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getProducts, createProduct } from '@/services/products'
+import { handleApiError } from '@/lib/errors'
+import { getCurrentUser, requirePermission, Permission } from '@/lib/auth'
+import { z } from 'zod'
+
+export const createProductSchema = z.object({
+  tenantId: z.string().min(1, 'tenantId requis'),
+  code: z.string().min(1, 'code requis'),
+  name: z.string().min(1, 'name requis'),
+  description: z.string().optional(),
+  category: z.string().optional(),
+  unit: z.string().default('unit'),
+  purchasePrice: z.number().min(0).default(0),
+  salePrice: z.number().min(0).default(0),
+  vatRate: z.number().min(0).max(100).default(19),
+  fodec: z.boolean().default(false),
+  minStock: z.number().min(0).default(0),
+  initialStock: z.number().min(0).default(0),
+  barcode: z.string().optional(),
+})
 
 // GET /api/stock/products?tenantId=
 export async function GET(req: NextRequest) {
   try {
+    const user = await getCurrentUser(req)
+    if (!user) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+    requirePermission(user.role, Permission.READ_PRODUCT)
+
     const { searchParams } = new URL(req.url)
     let tenantId = searchParams.get('tenantId')
 
@@ -12,68 +37,47 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'tenantId requis' }, { status: 400 })
     }
 
-    const products = await prisma.product.findMany({
-      where: { tenantId },
-      orderBy: { name: 'asc' },
-    })
+    // Ensure user can only access their tenant
+    if (user.tenantId && user.tenantId !== tenantId) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+    }
+
+    const products = await getProducts(tenantId)
     return NextResponse.json(products)
   } catch (err) {
-    console.error('GET products error:', err)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    return handleApiError(err, 'GET products')
   }
 }
 
 // POST /api/stock/products
 export async function POST(req: NextRequest) {
   try {
+    const user = await getCurrentUser(req)
+    if (!user) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+    requirePermission(user.role, Permission.CREATE_PRODUCT)
+
     const body = await req.json()
-    const { tenantId, code, name, description, category, unit, purchasePrice, salePrice, vatRate, fodec, minStock, initialStock, barcode } = body
 
-    if (!tenantId || tenantId === 'null' || !code || !name) {
-      return NextResponse.json({ error: 'tenantId, code, name requis' }, { status: 400 })
+    let validatedData
+    try {
+      validatedData = createProductSchema.parse(body)
+    } catch (validationError) {
+      if (validationError instanceof z.ZodError) {
+        return NextResponse.json({ error: 'Données invalides', details: validationError.issues }, { status: 400 })
+      }
+      throw validationError
     }
 
-    const existing = await prisma.product.findUnique({
-      where: { tenantId_code: { tenantId, code } },
-    })
-    if (existing) {
-      return NextResponse.json({ error: 'Code produit déjà utilisé' }, { status: 409 })
+    // Ensure user can only create for their tenant
+    if (user.tenantId && user.tenantId !== validatedData.tenantId) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    const product = await prisma.product.create({
-      data: {
-        tenantId,
-        code,
-        barcode: barcode || null,
-        name,
-        description: description || null,
-        category: category || null,
-        unit: unit || 'unit',
-        purchasePrice: purchasePrice || 0,
-        salePrice: salePrice || 0,
-        vatRate: vatRate ?? 19,
-        fodec: fodec ?? false,
-        minStock: minStock || 0,
-        currentStock: initialStock || 0,
-      },
-    })
-
-    if (initialStock && Number(initialStock) > 0) {
-      await prisma.stockMovement.create({
-        data: {
-          tenantId,
-          productId: product.id,
-          type: 'ENTRY',
-          quantity: initialStock,
-          unitPrice: purchasePrice || 0,
-          notes: 'Stock initial',
-        },
-      })
-    }
-
+    const product = await createProduct(validatedData)
     return NextResponse.json(product, { status: 201 })
   } catch (err) {
-    console.error('POST product error:', err)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    return handleApiError(err, 'POST product')
   }
 }
