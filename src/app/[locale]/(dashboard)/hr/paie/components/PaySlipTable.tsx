@@ -7,39 +7,33 @@ interface PaySlip {
   employee: {
     firstName: string;
     lastName: string;
-    employeeCode: string;
-    department: string | null;
-    position: string | null;
+    employeeNumber: string;
+    departement: string | null;
+    poste: string | null;
   };
-  baseSalary: string | number;
-  grossSalary: string | number;
-  netSalary: string | number;
-  status: "DRAFT" | "VALIDATED" | "PAID" | "CANCELLED";
-  socialSecurity: string | number;
-  taxBracket: string | number;
-  transportAllowance: string | number;
-  mealAllowance: string | number;
-  familyAllowance: string | number;
-  overtimeAmount: string | number;
+  salaireBase: string | number;
+  brutGlobal: string | number;
+  netAPayer: string | number;
+  statut: "PENDING" | "PAID" | "CANCELLED";
+  totalCotisations: string | number;
+  irpp: string | number;
 }
 
 interface PaySlipTableProps {
   payslips: PaySlip[];
   loading: boolean;
-  onViewPayslip: (payslip: PaySlip) => void;
+  onViewPayslip: (payslip: any) => void;
 }
 
-const statusColors = {
-  DRAFT: "bg-yellow-100 text-yellow-800",
-  VALIDATED: "bg-blue-100 text-blue-800",
-  PAID: "bg-green-100 text-green-800",
+const statusColors: Record<string, string> = {
+  PENDING:   "bg-yellow-100 text-yellow-800",
+  PAID:      "bg-green-100 text-green-800",
   CANCELLED: "bg-red-100 text-red-800",
 };
 
-const statusLabels = {
-  DRAFT: "Brouillon",
-  VALIDATED: "Validé",
-  PAID: "Payé",
+const statusLabels: Record<string, string> = {
+  PENDING:   "En attente",
+  PAID:      "Payé",
   CANCELLED: "Annulé",
 };
 
@@ -60,6 +54,8 @@ export function PaySlipTable({ payslips, loading, onViewPayslip }: PaySlipTableP
     );
   }
 
+  const fmt = (v: any) => Number(v ?? 0).toLocaleString("fr-TN", { minimumFractionDigits: 3 });
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -69,7 +65,7 @@ export function PaySlipTable({ payslips, loading, onViewPayslip }: PaySlipTableP
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employé</th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Salaire Base</th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Brut</th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">CNSS</th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cotisations</th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">IRPP</th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Net</th>
             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Statut</th>
@@ -80,34 +76,34 @@ export function PaySlipTable({ payslips, loading, onViewPayslip }: PaySlipTableP
           {payslips.map((payslip) => (
             <tr key={payslip.id} className="hover:bg-gray-50">
               <td className="px-4 py-3 text-sm font-mono text-gray-900">
-                {payslip.employee.employeeCode}
+                {payslip.employee?.employeeNumber ?? "—"}
               </td>
               <td className="px-4 py-3">
                 <div className="text-sm font-medium text-gray-900">
-                  {payslip.employee.firstName} {payslip.employee.lastName}
+                  {payslip.employee?.firstName} {payslip.employee?.lastName}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {payslip.employee.position || "—"}
+                  {payslip.employee?.poste ?? "—"}
                 </div>
               </td>
               <td className="px-4 py-3 text-sm text-right text-gray-900">
-                {Number(payslip.baseSalary).toLocaleString("fr-TN", { minimumFractionDigits: 3 })}
+                {fmt(payslip.salaireBase)}
               </td>
               <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
-                {Number(payslip.grossSalary).toLocaleString("fr-TN", { minimumFractionDigits: 3 })}
+                {fmt(payslip.brutGlobal)}
               </td>
               <td className="px-4 py-3 text-sm text-right text-red-600">
-                -{Number(payslip.socialSecurity).toLocaleString("fr-TN", { minimumFractionDigits: 3 })}
+                -{fmt(payslip.totalCotisations)}
               </td>
               <td className="px-4 py-3 text-sm text-right text-red-600">
-                -{Number(payslip.taxBracket).toLocaleString("fr-TN", { minimumFractionDigits: 3 })}
+                -{fmt(payslip.irpp)}
               </td>
               <td className="px-4 py-3 text-sm text-right font-bold text-green-600">
-                {Number(payslip.netSalary).toLocaleString("fr-TN", { minimumFractionDigits: 3 })}
+                {fmt(payslip.netAPayer)}
               </td>
               <td className="px-4 py-3 text-center">
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[payslip.status]}`}>
-                  {statusLabels[payslip.status]}
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[payslip.statut] ?? "bg-gray-100 text-gray-600"}`}>
+                  {statusLabels[payslip.statut] ?? payslip.statut}
                 </span>
               </td>
               <td className="px-4 py-3 text-center">
