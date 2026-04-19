@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, CheckCircle, Circle, Save, ShieldAlert } from 'lucide-react'
-import { toggleTenantModule } from '@/app/super-admin/actions'
+import { toggleTenantModule } from '@/lib/actions/super-admin'
 import gsap from 'gsap'
 
 export default function ModuleManagementModal({ isOpen, onClose, tenant, allModules, onUpdate }: any) {

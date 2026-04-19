@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { getAllUsers, toggleUserStatus } from './actions'
+import { getAllUsers, toggleUserStatus } from '@/lib/actions/super-admin-users'
 import { 
   Users, 
   Search, 

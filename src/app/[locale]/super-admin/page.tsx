@@ -1,4 +1,4 @@
-import { getSuperAdminStats } from './actions'
+import { getSuperAdminStats } from '@/lib/actions/super-admin'
 import { redirect } from 'next/navigation'
 import SuperAdminDashboardClient from './SuperAdminDashboardClient'
 
