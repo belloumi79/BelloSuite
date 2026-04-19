@@ -95,6 +95,8 @@
   },
   "Auth": {
     "login_title": "Login to your space",
+    "google_login": "Continue with Google",
+    "or_separator": "or continue with",
     "email": "Email",
     "password": "Password",
     "login_button": "Login",

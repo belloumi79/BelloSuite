@@ -94,7 +94,10 @@
     "dashboard": "Tableau de Bord"
   },
   "Auth": {
-    "login_title": "Connexion à votre espace",
+    "login_title": "Bon retour sur BelloSuite",
+    "register_title": "Rejoindre BelloSuite",
+    "google_login": "Continuer avec Google",
+    "or_separator": "ou continuer avec",
     "email": "Email",
     "password": "Mot de passe",
     "login_button": "Se connecter",
@@ -102,7 +105,6 @@
     "no_account": "Pas encore de compte?",
     "register_link": "S'inscrire",
     "invalid_credentials": "Identifiants incorrects",
-    "register_title": "Créez votre compte gratuitement",
     "confirm_password": "Confirmer le mot de passe",
     "create_account_button": "Créer mon compte gratuit",
     "creating_account": "Création...",

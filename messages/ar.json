@@ -94,7 +94,10 @@
     "dashboard": "لوحة القيادة"
   },
   "Auth": {
-    "login_title": "تسجيل الدخول إلى مساحتك",
+    "login_title": "مرحبًا بك مجددًا في BelloSuite",
+    "register_title": "الانضمام إلى BelloSuite",
+    "google_login": "المتابعة باستخدام Google",
+    "or_separator": "أو المتابعة باستخدام",
     "email": "البريد الإلكتروني",
     "password": "كلمة المرور",
     "login_button": "دخول",
@@ -102,7 +105,6 @@
     "no_account": "ليس لديك حساب؟",
     "register_link": "إنشاء حساب",
     "invalid_credentials": "بيانات الدخول غير صحيحة",
-    "register_title": "أنشئ حسابك مجاناً",
     "confirm_password": "تأكيد كلمة المرور",
     "create_account_button": "أنشئ حسابي المجاني",
     "creating_account": "جاري الإنشاء...",
