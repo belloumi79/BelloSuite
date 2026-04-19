@@ -598,6 +598,7 @@
         "fodec": "FODEC (1%)",
         "tva": "Total TVA",
         "timbre": "Timbre Fiscal",
+        "currency": "DT",
         "total_ttc": "Total Net TTC",
         "taxes_detail": "Détail Taxes (TEIF)",
         "vat_base": "Base TVA {rate}%"

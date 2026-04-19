@@ -335,24 +335,24 @@ export default function NewInvoicePage() {
               <div className="space-y-6">
                  <div className="flex items-center justify-between">
                     <span className="text-stone-400 text-[10px] font-black uppercase tracking-widest">{t('summary.subtotal_ht')}</span>
-                    <span className="text-stone-900 dark:text-white font-mono text-lg font-bold">{fmt(totals.subtotalHT)} <span className="text-[10px] text-stone-400">{ti('currency') || 'TND'}</span></span>
+                    <span className="text-stone-900 dark:text-white font-mono text-lg font-bold">{fmt(totals.subtotalHT)} <span className="text-[10px] text-stone-400">{t('summary.currency')}</span></span>
                  </div>
                  <div className="flex items-center justify-between">
                     <span className="text-stone-400 text-[10px] font-black uppercase tracking-widest">{t('summary.fodec')}</span>
-                    <span className="text-amber-600 dark:text-amber-500 font-mono text-sm font-bold">{fmt(totals.totalFodec)} <span className="text-[10px] text-stone-400">{ti('currency') || 'TND'}</span></span>
+                    <span className="text-amber-600 dark:text-amber-500 font-mono text-sm font-bold">{fmt(totals.totalFodec)} <span className="text-[10px] text-stone-400">{t('summary.currency')}</span></span>
                  </div>
                  <div className="flex items-center justify-between">
                     <span className="text-stone-400 text-[10px] font-black uppercase tracking-widest">{t('summary.tva')}</span>
-                    <span className="text-stone-600 dark:text-zinc-400 font-mono text-sm font-bold">{fmt(totals.totalVAT)} <span className="text-[10px] text-stone-400">{ti('currency') || 'TND'}</span></span>
+                    <span className="text-stone-600 dark:text-zinc-400 font-mono text-sm font-bold">{fmt(totals.totalVAT)} <span className="text-[10px] text-stone-400">{t('summary.currency')}</span></span>
                  </div>
                  <div className="flex items-center justify-between border-t border-stone-100 dark:border-zinc-800 pt-4">
                     <span className="text-stone-400 text-[10px] font-black uppercase tracking-widest">{t('summary.timbre')}</span>
-                    <span className="text-stone-400 font-mono text-sm font-bold">{fmt(totals.timbreFiscal)} <span className="text-[10px] text-stone-400">{ti('currency') || 'TND'}</span></span>
+                    <span className="text-stone-400 font-mono text-sm font-bold">{fmt(totals.timbreFiscal)} <span className="text-[10px] text-stone-400">{t('summary.currency')}</span></span>
                  </div>
                  
                  <div className="p-6 bg-teal-50 dark:bg-teal-500/10 border border-teal-100 dark:border-teal-500/20 rounded-3xl mt-4 space-y-1">
                     <span className="text-teal-600 dark:text-teal-400 text-[10px] font-black uppercase tracking-widest">{t('summary.total_ttc')}</span>
-                    <p className="text-3xl font-black text-teal-900 dark:text-teal-400 tracking-tight">{fmt(totals.totalTTC)} <span className="text-xs font-bold opacity-60">{ti('currency') || 'TND'}</span></p>
+                    <p className="text-3xl font-black text-teal-900 dark:text-teal-400 tracking-tight">{fmt(totals.totalTTC)} <span className="text-xs font-bold opacity-60">{t('summary.currency')}</span></p>
                  </div>
 
                  {/* VAT Summary for TEIF */}
