@@ -24,7 +24,23 @@ export default function OnboardingPage() {
     email: '',
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Auto-generate subdomain from company name
+  const handleCompanyNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value
+    const generatedSubdomain = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 20)
+    setFormData({ 
+      ...formData, 
+      companyName: name,
+      subdomain: generatedSubdomain
+    })
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
@@ -120,7 +136,7 @@ export default function OnboardingPage() {
               placeholder="Mon Entreprise"
               className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white outline-none focus:border-teal-500 transition-colors"
               value={formData.companyName}
-              onChange={handleChange}
+              onChange={handleCompanyNameChange}
             />
           </div>
 

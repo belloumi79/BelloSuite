@@ -23,15 +23,20 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { companyName, subdomain, matriculeFiscal, vatNumber, address, city, zipCode, phone, email, userEmail } = body
 
-    if (!companyName || !subdomain) {
-      return NextResponse.json({ error: 'Nom de l\'entreprise et sous-domaine requis' }, { status: 400 })
+    if (!companyName) {
+      return NextResponse.json({ error: 'Nom de l\'entreprise requis' }, { status: 400 })
     }
+
+    // Generate subdomain if not provided
+    const generatedSubdomain = subdomain 
+      ? subdomain.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 20)
+      : companyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 20) + '-' + Date.now().toString(36)
 
     // Create tenant
     const tenant = await prisma.tenant.create({
       data: {
         name: companyName,
-        subdomain: subdomain.toLowerCase().replace(/\s+/g, '-'),
+        subdomain: generatedSubdomain,
         matriculeFiscal,
         vatNumber,
         address,
@@ -73,8 +78,8 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error(error)
     if (error.code === 'P2002') {
-      return NextResponse.json({ error: 'Un client avec ce sous-domaine existe déjà.' }, { status: 409 })
+      return NextResponse.json({ error: 'Ce sous-domaine existe déjà. Veuillez choisir un autre nom d\'entreprise.' }, { status: 409 })
     }
-    return NextResponse.json({ error: 'Failed to create tenant' }, { status: 500 })
+    return NextResponse.json({ error: 'Erreur lors de la création: ' + error.message }, { status: 500 })
   }
 }
