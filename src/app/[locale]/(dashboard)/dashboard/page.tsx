@@ -12,16 +12,69 @@ import {
   Factory,
   ArrowRight,
   TrendingUp,
+  TrendingDown,
   CreditCard,
-  Target
+  AlertTriangle,
+  DollarSign,
+  FileText,
+  Clock
 } from 'lucide-react'
-import { RealtimeDashboard } from '@/components/ui/RealtimeDashboard'
+import { useDashboardKPIs } from '@/hooks/useDashboardKPIs'
+import { QuickActions } from '@/components/dashboard/QuickActions'
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('fr-TN', {
+    style: 'currency',
+    currency: 'TND',
+    minimumFractionDigits: 0,
+  }).format(value)
+}
+
+function KPICard({ 
+  title, 
+  value, 
+  subtitle, 
+  icon: Icon, 
+  trend,
+  color 
+}: { 
+  title: string
+  value: string | number
+  subtitle?: string
+  icon: React.ElementType
+  trend?: 'up' | 'down' | 'neutral'
+  color: string
+}) {
+  return (
+    <div className="bg-white rounded-[2rem] p-6 border border-stone-200 shadow-sm hover:shadow-xl transition-all">
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-3 rounded-2xl bg-${color}-50 text-${color}-600`}>
+          <Icon className="w-6 h-6" />
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
+            trend === 'up' ? 'bg-emerald-100 text-emerald-700' :
+            trend === 'down' ? 'bg-red-100 text-red-700' : 'bg-stone-100 text-stone-600'
+          }`}>
+            {trend === 'up' && <TrendingUp className="w-3 h-3" />}
+            {trend === 'down' && <TrendingDown className="w-3 h-3" />}
+            {trend === 'up' ? '+' : trend === 'down' ? '-' : ''}
+          </div>
+        )}
+      </div>
+      <p className="text-2xl font-black text-stone-900">{value}</p>
+      <p className="text-sm font-semibold text-stone-500">{title}</p>
+      {subtitle && <p className="text-xs text-stone-400 mt-1">{subtitle}</p>}
+    </div>
+  )
+}
 
 export default function DashboardSummary() {
   const t = useTranslations()
   const locale = useLocale()
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
+  const { kpis, loading } = useDashboardKPIs(user?.tenantId)
 
   useEffect(() => {
     const sessionData = localStorage.getItem('bello_session')
@@ -115,49 +168,88 @@ export default function DashboardSummary() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-[32px] p-8 text-white shadow-2xl shadow-emerald-500/20 relative overflow-hidden group">
-           <TrendingUp className="w-24 h-24 absolute -right-6 -bottom-6 text-white/10 group-hover:scale-110 transition-transform duration-700 rtl:-left-6 rtl:right-auto rtl:rotate-180" />
-           <div className="relative z-10">
-             <p className="text-emerald-100 font-bold text-sm uppercase tracking-widest mb-2">{t('Dashboard.performance')}</p>
-             <h3 className="text-4xl font-black mb-4">+12.5% <span className="text-lg font-bold text-emerald-200/50 block">{t('Dashboard.processing_speed')}</span></h3>
-             <button className="bg-white/20 hover:bg-white/30 backdrop-blur-md px-5 py-2 rounded-xl text-sm font-bold transition-all">{t('Dashboard.view_analysis')}</button>
-           </div>
-        </div>
+      {/* KPI Cards with real data */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard
+          title="Chiffre d'affaires"
+          value={loading ? '...' : formatCurrency(kpis?.totalRevenue || 0)}
+          subtitle={kpis ? `${kpis.revenueChange > 0 ? '+' : ''}${kpis.revenueChange}% ce mois` : undefined}
+          icon={DollarSign}
+          trend={kpis?.revenueChange ? (kpis.revenueChange > 0 ? 'up' : 'down') : 'neutral'}
+          color="emerald"
+        />
+        <KPICard
+          title="Créances clients"
+          value={loading ? '...' : formatCurrency(kpis?.pendingRevenue || 0)}
+          subtitle={`${kpis?.pendingInvoices || 0} factures en attente`}
+          icon={CreditCard}
+          trend={kpis?.pendingInvoices ? 'down' : 'neutral'}
+          color="amber"
+        />
+        <KPICard
+          title="Valeur stock"
+          value={loading ? '...' : formatCurrency(kpis?.totalStockValue || 0)}
+          subtitle={`${kpis?.totalProducts || 0} produits`}
+          icon={Package}
+          color="blue"
+        />
+        <KPICard
+          title="Alertes stock"
+          value={loading ? '...' : (kpis?.lowStockProducts || 0) + (kpis?.outOfStock || 0)}
+          subtitle={kpis?.lowStockProducts ? 'articles critiques' : undefined}
+          icon={AlertTriangle}
+          trend={kpis?.lowStockProducts ? 'down' : 'neutral'}
+          color={kpis?.lowStockProducts ? 'red' : 'emerald'}
+        />
+      </div>
 
-        <div className="bg-white rounded-[32px] p-8 border border-stone-200 shadow-xl shadow-stone-200/50 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <div className="p-3 bg-stone-100 rounded-2xl"><Target className="w-6 h-6 text-stone-600" /></div>
-              <span className="text-[10px] bg-sky-100 text-sky-700 px-2.5 py-1 rounded-full font-black uppercase tracking-widest">{t('Dashboard.goals')}</span>
+      {/* Quick Actions and More Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <QuickActions userRole={user?.role} />
+        </div>
+        <div className="bg-white rounded-[2rem] p-6 border border-stone-200 shadow-sm">
+          <h3 className="font-black text-stone-900 mb-4">Résumé</h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-stone-500 font-medium">Clients actifs</span>
+              <span className="font-black text-stone-900">{loading ? '...' : kpis?.totalClients || 0}</span>
             </div>
-            <p className="text-stone-400 text-sm font-bold uppercase tracking-widest mb-1">{t('Dashboard.critical_stock')}</p>
-            <p className="text-3xl font-black text-stone-900">12 {t('Dashboard.items')}</p>
-          </div>
-           <p className="text-xs text-stone-400 font-medium mt-4 italic">{t('Dashboard.total_references', { count: 180 })}</p>
-        </div>
-
-        <div className="bg-stone-900 rounded-[32px] p-8 text-white shadow-2xl relative overflow-hidden group">
-          <CreditCard className="w-20 h-20 absolute -right-4 -bottom-4 text-stone-700 group-hover:scale-110 transition-transform duration-700 rtl:-left-4 rtl:right-auto" />
-          <div className="relative z-10">
-            <p className="text-stone-500 font-bold text-sm uppercase tracking-widest mb-2">{t('Dashboard.treasury')}</p>
-            <h3 className="text-3xl font-black mb-4">42 850<span className="text-lg font-bold text-stone-500 mx-1">TND</span></h3>
-             <div className="h-1.5 bg-stone-800 rounded-full w-full overflow-hidden">
-                <div className="h-full bg-emerald-500 w-[65%]" />
-             </div>
-             <p className="text-[10px] text-stone-500 mt-2 font-bold uppercase">{t('Dashboard.budget_reached', { percent: 65 })}</p>
+            <div className="flex justify-between items-center">
+              <span className="text-stone-500 font-medium">Employés</span>
+              <span className="font-black text-stone-900">{loading ? '...' : kpis?.totalEmployees || 0}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-stone-500 font-medium">Factures ce mois</span>
+              <span className="font-black text-stone-900">{loading ? '...' : kpis?.invoicesThisMonth || 0}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-stone-500 font-medium">DSO (jours)</span>
+              <span className="font-black text-stone-900">{loading ? '...' : kpis?.dso || 0}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-stone-100">
+              <span className="text-stone-500 font-medium">Factures impayées</span>
+              <span className="font-black text-red-600">{loading ? '...' : kpis?.overdueInvoices || 0}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── TEMPS RÉEL: Supabase Realtime Dashboard ── */}
-      {user.tenantId && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-            <h2 className="text-xl font-black text-stone-900 tracking-tight">{t('Dashboard.realtime_view')}</h2>
+      {/* Top Products */}
+      {kpis && kpis.topProducts.length > 0 && (
+        <div className="bg-white rounded-[2rem] p-6 border border-stone-200 shadow-sm">
+          <h3 className="font-black text-stone-900 mb-4">Produits les plus vendus</h3>
+          <div className="space-y-3">
+            {kpis.topProducts.map((product, idx) => (
+              <div key={product.productId} className="flex items-center gap-4 p-3 bg-stone-50 rounded-xl">
+                <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 font-black text-sm flex items-center justify-center">
+                  {idx + 1}
+                </span>
+                <span className="flex-1 font-medium text-stone-700">{product.name}</span>
+                <span className="font-black text-emerald-600">{product.quantity} unités</span>
+              </div>
+            ))}
           </div>
-          <RealtimeDashboard tenantId={user.tenantId} />
         </div>
       )}
 
