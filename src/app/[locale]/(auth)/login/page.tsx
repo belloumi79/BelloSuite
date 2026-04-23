@@ -22,7 +22,7 @@ export default function LoginPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        router.push(data.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard')
+        router.push(data.role === 'SUPER_ADMIN' ? '/fr/super-admin' : '/fr/dashboard')
       } else {
         alert(data.error || t('invalid_credentials'))
       }
@@ -38,7 +38,7 @@ export default function LoginPage() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback?next=/dashboard`,
+        redirectTo: `${window.location.origin}/fr/api/auth/callback?next=/fr/dashboard`,
       },
     })
   }
@@ -117,7 +117,7 @@ export default function LoginPage() {
 
         <p className="text-center text-zinc-500 text-sm mt-8">
           {t('no_account')}{' '}
-          <Link href="/register" className="text-teal-400 hover:text-teal-300 font-bold transition-colors">
+          <Link href="/fr/register" className="text-teal-400 hover:text-teal-300 font-bold transition-colors">
             {t('register_link')}
           </Link>
         </p>

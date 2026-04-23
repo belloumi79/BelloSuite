@@ -6,7 +6,7 @@ import { createSessionCookie } from '@/lib/session'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
+  const next = searchParams.get('next') ?? '/fr/dashboard'
 
   if (code) {
     const supabase = await supabaseServer()
@@ -18,7 +18,10 @@ export async function GET(request: Request) {
       let firstName = ''
 
       try {
-        const dbUser = await prisma.user.findUnique({ where: { email: data.user.email! } })
+        const dbUser = await prisma.user.findUnique({
+          where: { email: data.user.email! }
+        })
+
         if (dbUser) {
           role = dbUser.role
           tenantId = dbUser.tenantId
@@ -32,30 +35,38 @@ export async function GET(request: Request) {
               password: 'OAUTH_USER',
               role: 'USER',
               isActive: true,
-            },
+            }
           })
           role = newUser.role
           firstName = newUser.firstName || ''
         }
-      } catch (e) {
-        console.error('Prisma sync error:', e)
+      } catch (prismaError) {
+        console.error('Error syncing user with Prisma:', prismaError)
         role = data.user.user_metadata?.role || 'USER'
       }
 
-      const session = {
-        id: data.user.id,
-        email: data.user.email!,
-        role,
-        tenantId,
-        firstName: firstName || data.user.email?.split('@')[0] || '',
-      }
-
+      const session = { id: data.user.id, email: data.user.email!, role, tenantId, firstName }
       await createSessionCookie(session)
 
-      const redirectTarget = (!tenantId) ? '/onboarding' : (next === '/' ? '/dashboard' : next)
-      return NextResponse.redirect(`${origin}${redirectTarget}`)
+      // Preserve locale prefix in redirect
+      const locale = next.startsWith('/') ? next.split('/')[1] : 'fr'
+      const target = (!tenantId || tenantId === null) ? `/${locale}/onboarding` : next
+
+      const forwardedHost = request.headers.get('x-forwarded-host')
+      const isLocalEnv = process.env.NODE_ENV === 'development'
+
+      let redirectUrl: string
+      if (isLocalEnv) {
+        redirectUrl = `${origin}${target}`
+      } else if (forwardedHost) {
+        redirectUrl = `https://${forwardedHost}${target}`
+      } else {
+        redirectUrl = `${origin}${target}`
+      }
+
+      return NextResponse.redirect(redirectUrl)
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+  return NextResponse.redirect(`${origin}/fr/login?error=auth_failed`)
 }

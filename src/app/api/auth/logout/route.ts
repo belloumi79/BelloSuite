@@ -6,7 +6,7 @@ export async function POST() {
   return NextResponse.json({ success: true })
 }
 
-export async function GET() {
+export async function DELETE() {
   await clearSessionCookie()
-  return NextResponse.redirect('/login')
+  return NextResponse.json({ success: true })
 }
