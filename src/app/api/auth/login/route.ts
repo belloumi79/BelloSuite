@@ -1,30 +1,39 @@
-export const runtime = 'nodejs'
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createSessionCookie } from '@/lib/session'
 import { rateLimit } from '@/lib/rate-limit'
 
+export const runtime = 'nodejs'
+
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get('x-forwarded-for') || 'unknown'
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
     const limit = rateLimit(`login:${ip}`, 5, 60)
     if (!limit.success) {
-      return NextResponse.json({ error: 'Trop de tentatives. Réessayez plus tard.' }, { status: 429 })
+      return NextResponse.json({ error: 'Trop de tentatives. Réessayez dans quelques minutes.' }, { status: 429 })
     }
 
-    const { email, password } = await req.json()
+    let email: string, password: string
+    try {
+      const body = await req.json()
+      email = body.email
+      password = body.password
+    } catch {
+      return NextResponse.json({ error: 'Body JSON invalide' }, { status: 400 })
+    }
+
     if (!email || !password) {
       return NextResponse.json({ error: 'Email et mot de passe requis' }, { status: 400 })
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error || !data.user) {
-      return NextResponse.json({ error: error?.message || 'Identifiants incorrects' }, { status: 401 })
+      return NextResponse.json({ error: 'Identifiants incorrects' }, { status: 401 })
     }
 
     let tenantId: string | null = data.user.user_metadata?.tenant_id || null
