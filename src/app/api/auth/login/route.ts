@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createSessionCookie } from '@/lib/session'
@@ -8,7 +10,7 @@ export async function POST(req: NextRequest) {
     const ip = req.headers.get('x-forwarded-for') || 'unknown'
     const limit = rateLimit(`login:${ip}`, 5, 60)
     if (!limit.success) {
-      return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
+      return NextResponse.json({ error: 'Trop de tentatives. Réessayez plus tard.' }, { status: 429 })
     }
 
     const { email, password } = await req.json()
@@ -22,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error || !data.user) {
-      return NextResponse.json({ error: 'Identifiants incorrects' }, { status: 401 })
+      return NextResponse.json({ error: error?.message || 'Identifiants incorrects' }, { status: 401 })
     }
 
     let tenantId: string | null = data.user.user_metadata?.tenant_id || null

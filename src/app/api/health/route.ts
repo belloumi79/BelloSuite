@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'
+
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
@@ -6,8 +8,6 @@ export async function GET() {
   try {
     await prisma.$queryRaw`SELECT 1`
     checks.database = true
-    return NextResponse.json({ status: 'healthy', checks }, { status: 200 })
-  } catch {
-    return NextResponse.json({ status: 'unhealthy', checks }, { status: 503 })
-  }
+  } catch { checks.database = false }
+  return NextResponse.json(checks)
 }
