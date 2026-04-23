@@ -16,16 +16,26 @@ export async function proxy(request: NextRequest) {
   )
 
   if (pathnameHasLocale) {
-    const sessionCookie = request.cookies.get('bello_session')?.value
-    const isApi = pathname.startsWith('/api/')
+    // Extract locale-prefixed path for public page check
+    const locale = routing.locales.find(
+      l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`
+    ) || 'fr'
+    const pathWithoutLocale = pathname.replace(`/${locale}`, '') || '/'
+
+    const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/reset-password', '/onboarding']
+    const isPublicPage = PUBLIC_PATHS.some(p => pathWithoutLocale === p || pathWithoutLocale.startsWith(`${p}/`))
+
+    // Public API paths (auth endpoints)
     const isPublicApi = pathname.startsWith('/api/auth/') && (
       pathname.includes('/login') || pathname.includes('/register') ||
       pathname.includes('/forgot-password') || pathname.includes('/reset-password') ||
       pathname.includes('/callback')
     )
 
-    if (!sessionCookie && !isPublicApi) {
-      if (isApi) {
+    const sessionCookie = request.cookies.get('bello_session')?.value
+
+    if (!sessionCookie && !isPublicPage && !isPublicApi) {
+      if (pathname.startsWith('/api/')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
       return NextResponse.redirect(new URL('/login', request.url))
@@ -35,23 +45,24 @@ export async function proxy(request: NextRequest) {
       try {
         await jwtVerify(sessionCookie, getSecretKey(), { clockTolerance: 60 })
       } catch {
-        if (isApi) {
+        if (pathname.startsWith('/api/')) {
           return NextResponse.json({ error: 'Session expired' }, { status: 401 })
         }
-        const response = NextResponse.redirect(new URL('/login', request.url))
-        response.cookies.delete('bello_session')
-        return response
+        const resp = NextResponse.redirect(new URL('/login', request.url))
+        resp.cookies.delete('bello_session')
+        return resp
       }
     }
 
     return NextResponse.next()
   }
 
+  // No locale → add default locale
   const url = request.nextUrl.clone()
   url.pathname = `/fr${pathname === '/' ? '' : pathname}`
   return NextResponse.redirect(url)
 }
 
 export const config = {
-  matcher: ['/((?!api/auth/callback|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
