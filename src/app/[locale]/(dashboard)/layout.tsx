@@ -5,9 +5,9 @@ import Sidebar from '@/components/layout/Sidebar'
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
 
-  if (!session) redirect('/fr/login')
-  if (session.role === 'SUPER_ADMIN') redirect('/fr/super-admin')
-  if (!session.tenantId) redirect('/fr/onboarding')
+  if (!session) redirect('/login')
+  if (session.role === 'SUPER_ADMIN') redirect('/super-admin')
+  if (!session.tenantId) redirect('/onboarding')
 
   return (
     <div className="flex bg-zinc-950 min-h-screen font-sans">
