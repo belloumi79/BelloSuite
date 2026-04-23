@@ -8,15 +8,31 @@ function getSecretKey(): Uint8Array {
   return new TextEncoder().encode(secret.slice(0, 32).padEnd(32, '!'))
 }
 
+// API routes are always accessible (auth handled in route handlers)
+const PUBLIC_API_PATHS = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/callback',
+  '/api/auth/session',
+  '/api/health',
+]
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Let next-intl handle locale routing for its own routes
+  // Skip public API routes
+  if (PUBLIC_API_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+    return NextResponse.next()
+  }
+
+  // Handle locale-prefixed routes
   const pathnameHasLocale = routing.locales.some(
     locale => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   )
+
   if (pathnameHasLocale) {
-    // Check session cookie for protected routes
     const sessionCookie = request.cookies.get('bello_session')?.value
     const isApi = pathname.startsWith('/api/')
 
@@ -48,5 +64,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api/auth/callback|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
