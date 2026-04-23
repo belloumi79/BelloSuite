@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
-import { routing, getLocaleFromPathname } from '@/i18n/routing'
+import { routing } from '@/i18n/routing'
 
 function getSecretKey(): Uint8Array {
   const secret = process.env.SESSION_SECRET || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -10,7 +10,11 @@ function getSecretKey(): Uint8Array {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const locale = getLocaleFromPathname(pathname)
+
+  // Detect locale from pathname
+  const locale = routing.locales.find(
+    l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`
+  ) ?? null
 
   const PUBLIC_ROUTES = ['login', 'register', 'forgot-password', 'reset-password', 'onboarding', 'confirm']
   if (PUBLIC_ROUTES.some(p => pathname === `/${p}` || pathname === `/${locale}/${p}`)) {
