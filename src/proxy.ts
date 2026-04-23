@@ -8,43 +8,40 @@ function getSecretKey(): Uint8Array {
   return new TextEncoder().encode(secret.slice(0, 32).padEnd(32, '!'))
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Detect locale from pathname
-  const locale = routing.locales.find(
-    l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`
-  ) ?? null
+  const pathnameHasLocale = routing.locales.some(
+    locale => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+  )
 
-  const PUBLIC_ROUTES = ['login', 'register', 'forgot-password', 'reset-password', 'onboarding', 'confirm']
-  if (PUBLIC_ROUTES.some(p => pathname === `/${p}` || pathname === `/${locale}/${p}`)) {
-    return NextResponse.next()
-  }
-
-  const PUBLIC_API_PREFIXES = [
-    '/api/auth/login', '/api/auth/register', '/api/auth/forgot-password',
-    '/api/auth/reset-password', '/api/auth/callback', '/api/auth/session', '/api/health',
-  ]
-  if (PUBLIC_API_PREFIXES.some(p => pathname === p || pathname.startsWith(p + '/'))) {
-    return NextResponse.next()
-  }
-
-  if (locale) {
+  if (pathnameHasLocale) {
     const sessionCookie = request.cookies.get('bello_session')?.value
     const isApi = pathname.startsWith('/api/')
+    const isPublicApi = pathname.startsWith('/api/auth/') && (
+      pathname.includes('/login') || pathname.includes('/register') ||
+      pathname.includes('/forgot-password') || pathname.includes('/reset-password') ||
+      pathname.includes('/callback')
+    )
 
-    if (!sessionCookie) {
-      if (isApi) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      return NextResponse.redirect(new URL(`/${locale}/login`, request.url))
+    if (!sessionCookie && !isPublicApi) {
+      if (isApi) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    try {
-      await jwtVerify(sessionCookie, getSecretKey(), { clockTolerance: 60 })
-    } catch {
-      if (isApi) return NextResponse.json({ error: 'Session expired' }, { status: 401 })
-      const resp = NextResponse.redirect(new URL(`/${locale}/login`, request.url))
-      resp.cookies.delete('bello_session')
-      return resp
+    if (sessionCookie) {
+      try {
+        await jwtVerify(sessionCookie, getSecretKey(), { clockTolerance: 60 })
+      } catch {
+        if (isApi) {
+          return NextResponse.json({ error: 'Session expired' }, { status: 401 })
+        }
+        const response = NextResponse.redirect(new URL('/login', request.url))
+        response.cookies.delete('bello_session')
+        return response
+      }
     }
 
     return NextResponse.next()
@@ -56,5 +53,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!api/auth/callback|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }

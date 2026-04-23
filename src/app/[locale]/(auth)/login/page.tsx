@@ -22,8 +22,7 @@ export default function LoginPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        const dest = data.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
-        router.push(dest)
+        router.push(data.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard')
       } else {
         alert(data.error || t('invalid_credentials'))
       }
@@ -56,10 +55,7 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-4 text-start">
-          <button
-            onClick={handleGoogleLogin}
-            className="w-full py-3.5 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg"
-          >
+          <button onClick={handleGoogleLogin} className="w-full py-3.5 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg">
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
               <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -73,55 +69,24 @@ export default function LoginPage() {
             <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">{t('or_separator')}</span>
             <div className="h-px bg-zinc-800 flex-1"></div>
           </div>
-
           <div>
-            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-1 block px-1">
-                {t('email')}
-            </label>
-            <input
-                type="email"
-                placeholder={t('email')}
-                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white outline-none focus:border-teal-500 transition-colors placeholder:text-zinc-600"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-            />
+            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-1 block px-1">{t('email')}</label>
+            <input type="email" placeholder={t('email')} className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white outline-none focus:border-teal-500 transition-colors placeholder:text-zinc-600" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div>
-            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-1 block px-1">
-                {t('password')}
-            </label>
+            <label className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-1 block px-1">{t('password')}</label>
             <div className="relative">
-                <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder={t('password')}
-                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white outline-none focus:border-teal-500 transition-colors placeholder:text-zinc-600"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                />
-                <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-inline-end-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-1"
-                >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+              <input type={showPassword ? 'text' : 'password'} placeholder={t('password')} className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white outline-none focus:border-teal-500 transition-colors placeholder:text-zinc-600" value={password} onChange={e => setPassword(e.target.value)} />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-inline-end-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors p-1">
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
             </div>
           </div>
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full py-4 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 mt-4 shadow-lg shadow-teal-500/20"
-          >
+          <button onClick={handleLogin} disabled={loading} className="w-full py-4 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 mt-4 shadow-lg shadow-teal-500/20">
             {loading ? t('logging_in') : t('login_button')}
           </button>
         </div>
-
-        <p className="text-center text-zinc-500 text-sm mt-8">
-          {t('no_account')}{' '}
-          <Link href="/register" className="text-teal-400 hover:text-teal-300 font-bold transition-colors">
-            {t('register_link')}
-          </Link>
-        </p>
+        <p className="text-center text-zinc-500 text-sm mt-8">{t('no_account')}{' '}<Link href="/register" className="text-teal-400 hover:text-teal-300 font-bold transition-colors">{t('register_link')}</Link></p>
       </div>
     </div>
   )
