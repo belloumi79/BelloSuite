@@ -30,7 +30,7 @@ export default function ImportSuppliersPage() {
 
   useState(() => {
     try {
-      const session = localStorage.getItem('bello_session')
+      async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const sessionData = await res.json(); setTenantId(sessionData.tenantId || ''); } } catch (err) { console.error('Session check failed:', err); } } checkSession(); /* const session = null
       if (session) {
         const parsed = JSON.parse(session)
         // tenantId will be set by the form
@@ -68,7 +68,7 @@ export default function ImportSuppliersPage() {
   const handleSubmit = async () => {
     if (!file) return
     setLoading(true)
-    const sessionData = localStorage.getItem('bello_session')
+    async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const sessionData = await res.json(); setTenantId(sessionData.tenantId || ''); } } catch (err) { console.error('Session check failed:', err); } } checkSession(); /* const sessionData = null
     if (!sessionData) { setLoading(false); return }
     const { tenantId } = JSON.parse(sessionData)
     if (!tenantId) { setLoading(false); return }

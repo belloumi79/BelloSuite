@@ -10,14 +10,23 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (!session) return
-    const { tenantId: tid } = JSON.parse(session)
-    setTenantId(tid)
-    fetch(`/api/projects?tenantId=${tid}`)
-      .then(r => r.json())
-      .then(data => { setProjects(Array.isArray(data) ? data : []); setLoading(false) })
-      .catch(() => setLoading(false))
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/auth/session')
+        if (!res.ok) return
+        const sessionData = await res.json()
+        const tid = sessionData.tenantId || ''
+        setTenantId(tid)
+        fetch(`/api/projects?tenantId=${tid}`)
+          .then(r => r.json())
+          .then(data => { setProjects(Array.isArray(data) ? data : []); setLoading(false) })
+          .catch(() => setLoading(false))
+      } catch (err) {
+        console.error('Session check failed:', err)
+        setLoading(false)
+      }
+    }
+    checkSession()
   }, [])
 
   return (

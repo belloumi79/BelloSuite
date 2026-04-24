@@ -11,7 +11,7 @@ export default function TrialBalancePage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
+    async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const sessionData = await res.json(); setTenantId(sessionData.tenantId || ''); } } catch (err) { console.error('Session check failed:', err); } } checkSession(); /* const session = null
     if (session) setTenantId(JSON.parse(session).tenantId || '')
   }, [])
 

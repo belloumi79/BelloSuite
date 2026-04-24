@@ -59,7 +59,7 @@ export default function ImportChartPage() {
   const handleSubmit = async () => {
     if (!file) return
     setLoading(true)
-    const sessionData = localStorage.getItem('bello_session')
+    async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const sessionData = await res.json(); setTenantId(sessionData.tenantId || ''); } } catch (err) { console.error('Session check failed:', err); } } checkSession(); /* const sessionData = null
     if (!sessionData) { setLoading(false); return }
     const { tenantId } = JSON.parse(sessionData)
     if (!tenantId) { setLoading(false); return }

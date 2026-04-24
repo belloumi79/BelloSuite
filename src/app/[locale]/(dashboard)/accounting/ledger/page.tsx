@@ -18,15 +18,24 @@ export default function LedgerPage() {
   const [periods, setPeriods] = useState<any[]>([])
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const parsed = JSON.parse(session)
-      setTenantId(parsed.tenantId || '')
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/auth/session')
+        if (res.ok) {
+          const sessionData = await res.json()
+          const tid = sessionData.tenantId || ''
+          setTenantId(tid)
+
+          fetch(`/api/accounting/periods?tenantId=${tid}`)
+            .then(r => r.json())
+            .then(data => setPeriods(Array.isArray(data) ? data : []))
+            .catch(() => setPeriods([]))
+        }
+      } catch (err) {
+        console.error('Session check failed:', err)
+      }
     }
-    fetch('/api/accounting/periods?tenantId=' + (JSON.parse(localStorage.getItem('bello_session') || '{}').tenantId || ''))
-      .then(r => r.json())
-      .then(data => setPeriods(Array.isArray(data) ? data : []))
-      .catch(() => setPeriods([]))
+    checkSession()
   }, [])
 
   const fetchLedger = async () => {

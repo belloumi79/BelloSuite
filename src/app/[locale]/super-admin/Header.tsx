@@ -19,7 +19,7 @@ export default function Header({ title, subtitle }: { title: string, subtitle: s
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem('bello_session')
+    fetch('/api/auth/logout', { method: 'POST' }).then(() => window.location.reload())
     router.push('/login')
   }
 

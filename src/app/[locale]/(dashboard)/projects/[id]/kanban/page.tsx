@@ -22,7 +22,7 @@ export default function ProjectKanbanPage() {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
+    async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const sessionData = await res.json(); setTenantId(sessionData.tenantId || ''); } } catch (err) { console.error('Session check failed:', err); } } checkSession(); /* const session = null
     if (!session) return
     const { tenantId } = JSON.parse(session)
     setProjectId(tenantId)

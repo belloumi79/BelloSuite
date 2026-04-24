@@ -11,7 +11,7 @@ export default function TransfersPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const s = localStorage.getItem('bello_session')
+    async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const sessionData = await res.json(); setTenantId(sessionData.tenantId || ''); } } catch (err) { console.error('Session check failed:', err); } } checkSession(); /* const s = null
     if (s) {
       const { tenantId } = JSON.parse(s)
       setTenantId(tenantId)

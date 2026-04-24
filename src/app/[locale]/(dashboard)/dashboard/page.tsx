@@ -77,16 +77,16 @@ export default function DashboardSummary() {
   const { kpis, loading } = useDashboardKPIs(user?.tenantId)
 
   useEffect(() => {
-    const sessionData = localStorage.getItem('bello_session')
+    async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const session = await res.json(); setUser(session); return;; } else { router.push('/login'); } } catch { router.push('/login'); } } checkSession(); /*
     if (!sessionData) {
       router.push('/login')
       return
     }
     try {
       const session = JSON.parse(sessionData)
-      setUser(session)
+      setUser(session); return;
     } catch {
-      localStorage.removeItem('bello_session')
+      // localStorage.removeItem('bello_session')
       router.push('/login')
     }
   }, [router])

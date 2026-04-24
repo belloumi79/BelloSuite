@@ -44,12 +44,18 @@ export default function WorkOrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    try {
-      const session = localStorage.getItem("bello_session");
-      if (session) {
-        setTenantId(JSON.parse(session).tenantId || "");
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/auth/session')
+        if (res.ok) {
+          const session = await res.json()
+          setTenantId(session.tenantId || "")
+        }
+      } catch (err) {
+        console.error('Session check failed:', err)
       }
-    } catch {}
+    }
+    checkSession()
   }, []);
 
   useEffect(() => {
