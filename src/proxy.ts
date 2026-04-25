@@ -1,60 +1,58 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { jwtVerify } from 'jose'
-import { routing } from '@/i18n/routing'
+import { verifySessionToken } from './lib/session'
 
-function getSecretKey(): Uint8Array {
-  const secret = process.env.SESSION_SECRET || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  return new TextEncoder().encode(secret.slice(0, 32).padEnd(32, '!'))
-}
-
-// Strip locale prefix from pathname for route matching
-function stripLocale(pathname: string): string {
-  const locale = routing.locales.find(
-    l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`
-  )
-  return locale ? pathname.replace(`/${locale}`, '') || '/' : pathname
-}
+const PUBLIC_PATHS = ['/login', '/register', '/api/auth', '/auth/callback', '/confirm']
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const cleanPath = stripLocale(pathname)
 
-  // Detect locale for redirects
-  const locale = routing.locales.find(
-    l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`
-  ) || 'fr'
+  // 1. Determine if we have a locale and what's the path without it
+  const match = pathname.match(/^\/([a-z]{2})(\/|$)/)
+  const locale = match ? match[1] : null
+  const pathnameWithoutLocale = locale ? pathname.replace(/^\/[a-z]{2}/, '') || '/' : pathname
 
-  // Auth public paths (no session required)
-  const PUBLIC_AUTH = ['/login', '/register', '/forgot-password', '/reset-password', '/onboarding']
-  const isPublicPage = PUBLIC_AUTH.some(p => cleanPath === p || cleanPath.startsWith(`${p}/`))
-
-  // Public API routes (no session required)
-  const isPublicApi = cleanPath.startsWith('/api/auth/') && (
-    cleanPath.includes('/login') || cleanPath.includes('/register') ||
-    cleanPath.includes('/forgot-password') || cleanPath.includes('/reset-password') ||
-    cleanPath.includes('/callback') || cleanPath.includes('/session')
-  )
-
-  const sessionCookie = request.cookies.get('bello_session')?.value
-
-  if (!sessionCookie && !isPublicPage && !isPublicApi) {
-    if (cleanPath.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    return NextResponse.redirect(new URL(`/${locale}/login`, request.url))
+  // 2. Normalize: if locale is missing, redirect to default locale (/fr)
+  if (!locale && !pathname.startsWith('/api') && !pathname.startsWith('/_next') && !pathname.includes('.')) {
+    return NextResponse.redirect(new URL(`/fr${pathname}`, request.url))
   }
 
-  if (sessionCookie) {
-    try {
-      await jwtVerify(sessionCookie, getSecretKey(), { clockTolerance: 60 })
-    } catch {
-      if (cleanPath.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Session expired' }, { status: 401 })
-      }
-      const resp = NextResponse.redirect(new URL(`/${locale}/login`, request.url))
-      resp.cookies.delete('bello_session')
-      return resp
+  const isPublicPath = PUBLIC_PATHS.some(path => pathnameWithoutLocale.startsWith(path)) || pathnameWithoutLocale === '/'
+
+  // Get token from cookies
+  const token = request.cookies.get('bello_session')?.value
+  const session = token ? await verifySessionToken(token) : null
+
+  // 3. Auth and RBAC logic
+  if (!session && !isPublicPath) {
+    if (pathname.startsWith('/api')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    return NextResponse.redirect(new URL(`/${locale || 'fr'}/login`, request.url))
+  }
+
+  if (session && isPublicPath && pathnameWithoutLocale !== '/' && !pathname.startsWith('/api')) {
+    const target = session.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard'
+    return NextResponse.redirect(new URL(`/${locale || 'fr'}${target}`, request.url))
+  }
+
+  if (session) {
+    if (pathnameWithoutLocale.startsWith('/super-admin') && session.role !== 'SUPER_ADMIN') {
+      return NextResponse.redirect(new URL(`/${locale || 'fr'}/dashboard`, request.url))
+    }
+    if (!session.tenantId && pathnameWithoutLocale.startsWith('/dashboard') && !pathnameWithoutLocale.includes('/onboarding')) {
+      return NextResponse.redirect(new URL(`/${locale || 'fr'}/onboarding`, request.url))
+    }
+  }
+
+  // 4. CSRF Protection for mutations
+  const mutations = ['POST', 'PUT', 'DELETE', 'PATCH']
+  if (mutations.includes(request.method)) {
+    const origin = request.headers.get('origin')
+    const host = request.headers.get('host')
+
+    if (origin && !origin.includes(host || '')) {
+      return NextResponse.json({ error: 'CSRF Protection: Invalid Origin' }, { status: 403 })
     }
   }
 
@@ -62,5 +60,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+  ],
 }
