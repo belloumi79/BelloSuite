@@ -100,7 +100,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <Link href="/login"
+          <Link href="/fr/login"
             className="block w-full py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-center transition-all">
             {t('login_link')}
           </Link>
@@ -200,7 +200,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-zinc-500 text-sm mt-8">
           {t('already_have_account')}{' '}
-          <Link href="/login" className="text-teal-400 hover:text-teal-300 font-bold transition-colors">
+          <Link href="/fr/login" className="text-teal-400 hover:text-teal-300 font-bold transition-colors">
             {t('login_link')}
           </Link>
         </p>

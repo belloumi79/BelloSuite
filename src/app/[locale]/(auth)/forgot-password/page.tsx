@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
                 Si un compte existe avec cette adresse, vous recevrez un lien de réinitialisation.
               </p>
 
-              <Link href="/login" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors group">
+              <Link href="/fr/login" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors group">
                 <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
@@ -137,7 +137,7 @@ export default function ForgotPasswordPage() {
                 </button>
 
                 <div className="text-center">
-                  <Link href="/login" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors inline-flex items-center gap-1 group">
+                  <Link href="/fr/login" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors inline-flex items-center gap-1 group">
                     <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>

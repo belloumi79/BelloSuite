@@ -34,7 +34,7 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-4">
               <LanguageSwitcher />
-              <Link href="/login" className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">
+              <Link href="/fr/login" className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">
                 {t('nav.login')}
               </Link>
               <Link href="/register" className="text-sm font-medium px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-sm">
@@ -58,7 +58,7 @@ export default function Home() {
             {t('hero.cta_primary')}
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
           </Link>
-          <Link href="/login" className="px-8 py-4 bg-white text-zinc-700 border border-zinc-200 rounded-xl font-medium text-lg hover:bg-zinc-50 transition-colors shadow-sm flex items-center justify-center gap-2">
+          <Link href="/fr/login" className="px-8 py-4 bg-white text-zinc-700 border border-zinc-200 rounded-xl font-medium text-lg hover:bg-zinc-50 transition-colors shadow-sm flex items-center justify-center gap-2">
             {t('hero.cta_secondary')}
           </Link>
         </div>

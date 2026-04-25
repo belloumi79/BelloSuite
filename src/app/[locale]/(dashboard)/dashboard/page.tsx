@@ -77,9 +77,9 @@ export default function DashboardSummary() {
   const { kpis, loading } = useDashboardKPIs(user?.tenantId)
 
   useEffect(() => {
-    async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const session = await res.json(); setUser(session); return;; } else { router.push('/login'); } } catch { router.push('/login'); } } checkSession(); /*
+    async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const session = await res.json(); setUser(session); return;; } else { router.push('/fr/login'); } } catch { router.push('/fr/login'); } } checkSession(); /*
     if (!sessionData) {
-      router.push('/login')
+      router.push('/fr/login')
       return
     }
     try {
@@ -87,7 +87,7 @@ export default function DashboardSummary() {
       setUser(session); return;
     } catch {
       // localStorage.removeItem('bello_session')
-      router.push('/login')
+      router.push('/fr/login')
     }
   }, [router])
 

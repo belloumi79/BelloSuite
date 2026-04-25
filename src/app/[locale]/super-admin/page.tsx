@@ -1,5 +1,5 @@
 import { getSuperAdminStats } from '@/lib/actions/super-admin'
-import { redirect } from 'next/navigation'
+import { redirect } from '@/i18n/routing'
 import SuperAdminDashboardClient from './SuperAdminDashboardClient'
 
 export const dynamic = 'force-dynamic'

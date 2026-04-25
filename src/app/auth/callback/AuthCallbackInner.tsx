@@ -97,7 +97,7 @@ export default function AuthCallbackInner() {
               className="inline-block w-full py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-center transition-all mb-3">
               Recommencer l'inscription
             </Link>
-            <Link href="/login"
+            <Link href="/fr/login"
               className="block w-full py-2.5 border border-zinc-700 hover:border-teal-500 text-zinc-400 hover:text-teal-400 rounded-xl font-bold text-center transition-all">
               Se connecter
             </Link>
