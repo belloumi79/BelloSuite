@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import { Building2, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 
@@ -53,11 +53,11 @@ export default function OnboardingPage() {
     setErrorMsg('')
     setLoading(true)
 
-    // Get user email from session
-    const session = JSON.parse(localStorage.getItem('bello_session') || '{}')
-    const userEmail = session?.email
-
     try {
+      const sessionRes = await fetch('/api/auth/session')
+      const sessionData = await sessionRes.json()
+      const userEmail = sessionData?.email
+
       const res = await fetch('/api/super-admin/tenants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -67,11 +67,13 @@ export default function OnboardingPage() {
       
       if (res.ok && data.tenant) {
         setSuccess(true)
-        // Update session with new tenant
-        const session = JSON.parse(localStorage.getItem('bello_session') || '{}')
-        session.tenantId = data.tenant.id
-        session.role = 'ADMIN'
-        localStorage.setItem('bello_session', JSON.stringify(session))
+
+        // Let's call an endpoint to update the session cookie with the new tenant info
+        await fetch('/api/auth/session/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenantId: data.tenant.id, role: 'ADMIN' })
+        })
         
         // Redirect after short delay
         setTimeout(() => {

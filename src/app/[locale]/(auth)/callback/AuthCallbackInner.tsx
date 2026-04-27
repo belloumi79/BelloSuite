@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams } from '@/i18n/routing'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -23,7 +23,7 @@ export default function AuthCallbackInner() {
 
     if (confirmed === '1') {
       setDisplay('success')
-      setTimeout(() => { window.location.href = '/dashboard' }, 3000)
+      setTimeout(() => { window.location.href = '/fr/dashboard' }, 3000)
       return
     }
 
@@ -35,7 +35,7 @@ export default function AuthCallbackInner() {
       return
     }
 
-    fetch(`/api/auth/callback/route?code=${code}`)
+    fetch(`/api/auth/callback?code=${code}`)
       .then(res => {
         if (res.ok) setDisplay('success')
         else setDisplay('error')
@@ -75,7 +75,7 @@ export default function AuthCallbackInner() {
             <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden mb-4">
               <div className="h-full bg-teal-500 w-full animate-pulse" />
             </div>
-            <Link href="/dashboard"
+            <Link href="/fr/dashboard"
               className="inline-block w-full py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-center transition-all">
               Accéder à mon dashboard
             </Link>
@@ -93,11 +93,11 @@ export default function AuthCallbackInner() {
               <p className="text-red-400 text-sm font-bold">Erreur</p>
               <p className="text-zinc-500 text-xs mt-1">{message}</p>
             </div>
-            <Link href="/register"
+            <Link href="/fr/register"
               className="inline-block w-full py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-center transition-all mb-3">
               Recommencer l'inscription
             </Link>
-            <Link href="/login"
+            <Link href="/fr/login"
               className="block w-full py-2.5 border border-zinc-700 hover:border-teal-500 text-zinc-400 hover:text-teal-400 rounded-xl font-bold text-center transition-all">
               Se connecter
             </Link>

@@ -24,21 +24,28 @@ export default function POSPage() {
   const [loading, setLoading] = useState<boolean>(false)
 
   useEffect(() => {
-    const s = localStorage.getItem('bello_session')
-    if (!s) return
-    const parsed = JSON.parse(s)
-    setTenantId(parsed.tenantId || '')
-    setUser(parsed)
-    const tid = parsed.tenantId || ''
-    if (!tid) return
-    fetch('/api/pos/sessions?tenantId=' + tid + '&status=OPEN')
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          const d = data[0]
-          setSession({ id: d.id, tenantId: tid, userId: d.userId, userName: d.userName, openingCash: d.openingCash, status: 'OPEN', ordersCount: d.ordersCount || 0, totalSales: d.totalSales || 0 })
-        } else { setShowSess(true) }
-      })
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/auth/session')
+        if (!res.ok) return
+        const sessionData = await res.json()
+        setTenantId(sessionData.tenantId || '')
+        setUser(sessionData)
+        const tid = sessionData.tenantId || ''
+        if (!tid) return
+        fetch('/api/pos/sessions?tenantId=' + tid + '&status=OPEN')
+          .then(r => r.json())
+          .then(data => {
+            if (Array.isArray(data) && data.length > 0) {
+              const d = data[0]
+              setSession({ id: d.id, tenantId: tid, userId: d.userId, userName: d.userName, openingCash: d.openingCash, status: 'OPEN', ordersCount: d.ordersCount || 0, totalSales: d.totalSales || 0 })
+            } else { setShowSess(true) }
+          })
+      } catch (err) {
+        console.error('Session check failed:', err)
+      }
+    }
+    checkSession()
   }, [])
 
   const loadProducts = useCallback(async (tid: string) => {

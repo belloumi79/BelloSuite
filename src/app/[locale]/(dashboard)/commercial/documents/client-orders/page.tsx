@@ -9,7 +9,7 @@ export default function ClientOrdersPage() {
   const [tenantId, setTenantId] = useState('')
 
   useEffect(() => {
-    const s = localStorage.getItem('bello_session')
+    async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const sessionData = await res.json(); setTenantId(sessionData.tenantId || ''); } } catch (err) { console.error('Session check failed:', err); } } checkSession(); /* const s = null
     if (s) setTenantId(JSON.parse(s).tenantId)
   }, [])
 

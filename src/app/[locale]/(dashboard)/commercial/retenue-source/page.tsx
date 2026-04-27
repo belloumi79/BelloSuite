@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import {
@@ -39,7 +39,7 @@ export default function RetenueSourcePage() {
   });
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session');
+    async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const sessionData = await res.json(); setTenantId(sessionData.tenantId || ''); } } catch (err) { console.error('Session check failed:', err); } } checkSession(); /* const session = null;
     if (session) {
       const { tenantId: tid } = JSON.parse(session);
       setTenantId(tid);

@@ -76,12 +76,19 @@ export default function ProductsListPage() {
   }, [])
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId: tid } = JSON.parse(session)
-      setTenantId(tid)
-      fetchProducts(tid)
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/auth/session')
+        if (res.ok) {
+          const session = await res.json()
+          setTenantId(session.tenantId || "")
+          fetchProducts(session.tenantId || "")
+        }
+      } catch (err) {
+        console.error('Session check failed:', err)
+      }
     }
+    checkSession()
   }, [fetchProducts])
 
   const handleDelete = async (id: string) => {

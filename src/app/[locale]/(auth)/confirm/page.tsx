@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
+import { useSearchParams } from 'next/navigation'
 
 function ConfirmContent() {
   const router = useRouter()
@@ -13,7 +14,7 @@ function ConfirmContent() {
     if (token && type === 'signup') {
       router.push('/login?confirmed=1')
     } else {
-      router.push('/login')
+      router.push('/fr/login')
     }
   }, [token, type, router])
 

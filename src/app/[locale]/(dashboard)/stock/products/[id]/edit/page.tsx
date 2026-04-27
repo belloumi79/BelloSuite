@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter } from '@/i18n/routing'
 import Link from 'next/link'
 import { ArrowLeft, Save, Package, Image, Hash, DollarSign, Layers, Trash2, Plus } from 'lucide-react'
 
@@ -28,7 +28,7 @@ export default function EditProductPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
+    async function checkSession() { try { const res = await fetch('/api/auth/session'); if (res.ok) { const sessionData = await res.json(); setTenantId(sessionData.tenantId || ''); } } catch (err) { console.error('Session check failed:', err); } } checkSession(); /* const session = null
     if (session) {
       const { tenantId: tid } = JSON.parse(session)
       setTenantId(tid)

@@ -1,8 +1,7 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import Link from 'next/link'
+import { useRouter, usePathname, Link } from '@/i18n/routing'
 import { Plus, Search, Activity, Users, Building2, LayoutGrid, LogOut, ChevronLeft, ArrowLeft } from 'lucide-react'
 import gsap from 'gsap'
 
@@ -18,9 +17,9 @@ export default function Header({ title, subtitle }: { title: string, subtitle: s
     )
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem('bello_session')
-    router.push('/login')
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/fr/login')
   }
 
   const navItems = [

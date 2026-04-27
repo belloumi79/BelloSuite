@@ -18,12 +18,19 @@ export default function StockManagementPage() {
   const [categories, setCategories] = useState<string[]>([])
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const parsed = JSON.parse(session)
-      setTenantId(parsed.tenantId)
-      fetchData(parsed.tenantId)
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/auth/session')
+        if (res.ok) {
+          const session = await res.json()
+          setTenantId(session.tenantId)
+          fetchData(session.tenantId)
+        }
+      } catch (err) {
+        console.error('Session check failed:', err)
+      }
     }
+    checkSession()
   }, [])
 
   const fetchData = async (tid: string) => {

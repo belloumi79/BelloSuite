@@ -43,9 +43,9 @@ export async function GET(request: Request) {
       const session = { id: data.user.id, email: data.user.email!, role, tenantId, firstName }
       await createSessionCookie(session)
 
-      const target = (!tenantId) ? '/onboarding' : next
+      const target = (!tenantId) ? '/fr/onboarding' : `/fr${next}`
       return NextResponse.redirect(`${origin}${target}`)
     }
   }
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+  return NextResponse.redirect(`${origin}/fr/login?error=auth_failed`)
 }

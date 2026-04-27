@@ -63,8 +63,8 @@ export default function Sidebar() {
   }, [])
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'DELETE' })
-    router.push('/login')
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/fr/login')
   }
 
   const sidebarItems = MODULE_ORDER.map(key => {
