@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState, useEffect, useRef } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams, useRouter } from '@/i18n/routing'
 import Link from 'next/link'
 import gsap from 'gsap'
 import { supabase } from '@/lib/supabase/client'

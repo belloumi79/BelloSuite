@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
 import {
   BookOpen, ChevronDown, ChevronRight, Download, FileText,
   Filter, ArrowLeft, Printer, Calendar
