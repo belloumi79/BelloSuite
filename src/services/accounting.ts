@@ -287,6 +287,82 @@ export async function postPaymentToAccounting(invoiceId: string, tenantId: strin
   })
 }
 
+export async function postPurchaseToAccounting(purchaseOrderId: string, tenantId: string) {
+  return prisma.$transaction(async (tx) => {
+    // 1. Get purchase order
+    const po = await tx.purchaseOrder.findUnique({
+      where: { id: purchaseOrderId },
+      include: { supplier: true, items: true }
+    })
+
+    if (!po || po.tenantId !== tenantId) throw new Error('Bon de commande fournisseur introuvable')
+    if (po.accountingEntryId) throw new Error('Achat déjà comptabilisé')
+
+    // 2. Find target accounts
+    const acc401 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '401' } }) // Fournisseur
+    const acc601 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '601' } }) // Achats
+    const acc445 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '445' } }) // TVA Déductible (Simplified)
+
+    if (!acc401 || !acc601) {
+      throw new Error('Comptes comptables de base (401, 601) non configurés')
+    }
+
+    // 3. Find Purchase Journal
+    const journal = await tx.accountingJournal.findFirst({ where: { tenantId, code: 'AC' } })
+    if (!journal) throw new Error('Journal des Achats (AC) non configuré')
+
+    // 4. Find/Create Period
+    const currentYear = new Date().getFullYear().toString()
+    let period = await tx.accountingPeriod.findFirst({ where: { tenantId, name: currentYear } })
+    if (!period) {
+      period = await tx.accountingPeriod.create({
+        data: {
+          tenantId,
+          name: currentYear,
+          startDate: new Date(`${currentYear}-01-01`),
+          endDate: new Date(`${currentYear}-12-31`),
+        }
+      })
+    }
+
+    // 5. Prepare lines
+    const lines = [
+      { accountId: acc601.id, debit: Number(po.subtotal), credit: 0, description: `Achat ${po.number}` },
+    ]
+
+    if (Number(po.taxAmount) > 0) {
+      const vatAccId = acc445?.id || (await tx.accountingAccount.create({ data: { tenantId, accountNumber: '445', name: 'TVA Déductible', type: 'ASSET' } })).id
+      lines.push({ accountId: vatAccId, debit: Number(po.taxAmount), credit: 0, description: `TVA déductible sur ${po.number}` })
+    }
+
+    // Liability
+    lines.push({ accountId: acc401.id, debit: 0, credit: Number(po.total), description: `Dette fournisseur ${po.number}` })
+
+    // 6. Create Journal Entry
+    const entry = await tx.journalEntry.create({
+      data: {
+        tenantId,
+        journalId: journal.id,
+        periodId: period.id,
+        entryNumber: `ACH-${po.number}`,
+        date: po.date,
+        description: `Comptabilisation Achat ${po.number}`,
+        lines: {
+          createMany: { data: lines }
+        }
+      }
+    })
+
+    // 7. Link to PO
+    await tx.purchaseOrder.update({
+      where: { id: purchaseOrderId },
+      data: { accountingEntryId: entry.id }
+    })
+
+    return entry
+  })
+}
+
 export async function getTrialBalance(tenantId: string, params: { startDate?: string; endDate?: string } = {}) {
   const { startDate, endDate } = params
 
