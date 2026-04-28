@@ -18,10 +18,16 @@ export async function GET(req: NextRequest) {
       employees,
       movements,
     ] = await Promise.all([
-      prisma.product.findMany({ where: { tenantId } }),
-      prisma.client.findMany({ where: { tenantId, isActive: true } }),
-      prisma.invoice.findMany({ where: { tenantId } }),
-      prisma.employee.findMany({ where: { tenantId } }),
+      prisma.product.findMany({ 
+        where: { tenantId },
+        select: { id: true, currentStock: true, minStock: true, purchasePrice: true, name: true }
+      }),
+      prisma.client.count({ where: { tenantId, isActive: true } }),
+      prisma.invoice.findMany({ 
+        where: { tenantId },
+        select: { status: true, totalTTC: true, createdAt: true, dueDate: true }
+      }),
+      prisma.employee.count({ where: { tenantId } }),
       prisma.stockMovement.findMany({ 
         where: { tenantId },
         orderBy: { createdAt: 'desc' },
@@ -126,8 +132,8 @@ export async function GET(req: NextRequest) {
       lowStockProducts: lowStockProducts.length,
       outOfStock: outOfStock.length,
       
-      totalClients: clients.length,
-      totalEmployees: employees.length,
+      totalClients: clients,
+      totalEmployees: employees,
       
       topProducts,
       recentMovements,

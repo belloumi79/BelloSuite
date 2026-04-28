@@ -1,0 +1,473 @@
+// ============================================
+// MODULE: COMMERCIAL
+// ============================================
+
+model Client {
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  code            String
+  name            String
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  zipCode         String?
+  country         String   @default("Tunisie")
+  matriculeFiscal String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  invoices       Invoice[]
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([tenantId, code])
+}
+
+model Supplier {
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  code            String
+  name            String
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  country         String   @default("Tunisie")
+  matriculeFiscal String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([tenantId, code])
+}
+
+model Invoice {
+  id       String        @id @default(uuid())
+  tenantId String
+  tenant   Tenant        @relation(fields: [tenantId], references: [id])
+  clientId String
+  client   Client        @relation(fields: [clientId], references: [id])
+  number   String
+  type     String        @default("INVOICE")
+  status   InvoiceStatus @default(DRAFT)
+  date     DateTime      @default(now())
+  dueDate  DateTime?
+
+  subtotalHT   Decimal @default(0)
+  totalFodec   Decimal @default(0)
+  totalVAT     Decimal @default(0)
+  timbreFiscal Decimal @default(1.000)
+  totalTTC     Decimal @default(0)
+  vatSummary   Json?
+
+  currency        String    @default("TND")
+  exchangeRate    Decimal   @default(1)
+  originalAmount  Decimal?
+  rsAmount        Decimal   @default(0)
+  irppAmount      Decimal   @default(0)
+  totalInCurrency Decimal?
+  convertedFromId String?
+  convertedAt     DateTime?
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ─── TTN / El Fatoora E-Invoicing ───────────────────────
+  ttnStatus       String    @default("DRAFT")
+  ttnReference    String?
+  ttnQRCode       String?
+  ttnSubmittedAt  DateTime?
+  ttnAcceptedAt   DateTime?
+  ttnErrorCode    String?
+  ttnErrorMessage String?
+  ttnPDFUrl       String?
+  ttnXMLSignedUrl String?
+  aspProvider     String?
+  aspReference    String?
+
+  // ─── Relances / Suivi Paiement ──────────────────────────
+  lastReminderSentAt DateTime?
+  reminders          PaymentReminder[]
+
+  // ─── Pipeline Commercial ────────────────────────────────
+  exportInvoice    ExportInvoice?
+  withholdingTaxes WithholdingTax[]
+  items            InvoiceItem[]
+  paymentFollowUp  PaymentFollowUp?
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  SUBMITTED
+  CONFIRMED
+  SENT
+  ACCEPTED
+  PAID
+  REJECTED
+  CANCELLED
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId   String?
+  description String
+  unit        String  @default("EA")
+  quantity    Decimal
+  unitPriceHT Decimal
+  discount    Decimal @default(0)
+  fodecApply  Boolean @default(false)
+  fodecAmount Decimal @default(0)
+  vatRate     Decimal @default(19)
+  vatAmount   Decimal @default(0)
+  totalHT     Decimal @default(0)
+  totalTTC    Decimal @default(0)
+}
+
+model PurchaseOrder {
+  id           String    @id @default(uuid())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id])
+  clientId     String?
+  client       Client?   @relation(fields: [clientId], references: [id])
+  supplierId   String?
+  supplier     Supplier? @relation(fields: [supplierId], references: [id])
+  number       String
+  type         String
+  status       String    @default("DRAFT")
+  date         DateTime  @default(now())
+  expectedDate DateTime?
+  subtotal     Decimal   @default(0)
+  taxRate      Decimal   @default(0)
+  taxAmount    Decimal   @default(0)
+  total        Decimal   @default(0)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  items PurchaseOrderItem[]
+
+  @@unique([tenantId, number])
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String?
+  description     String
+  quantity        Decimal
+  unitPrice       Decimal
+  total           Decimal
+}
+
+// ============================================
+// MODULE: POS
+// ============================================
+
+model CashDrawer {
+  id        String   @id @default(uuid())
+  tenantId  String   @unique
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  balance   Decimal  @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model POSSession {
+  id          String           @id @default(uuid())
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id])
+  userId      String
+  userName    String
+  openingCash Decimal
+  closingCash Decimal?
+  status      POSSessionStatus @default(OPEN)
+  openedAt    DateTime         @default(now())
+  closedAt    DateTime?
+  notes       String?
+
+  orders POSOrder[]
+}
+
+enum POSSessionStatus {
+  OPEN
+  CLOSED
+}
+
+model POSOrder {
+  id              String         @id @default(uuid())
+  tenantId        String
+  tenant          Tenant         @relation(fields: [tenantId], references: [id])
+  sessionId       String
+  session         POSSession     @relation(fields: [sessionId], references: [id])
+  orderNumber     String
+  type            POSType        @default(SALE)
+  status          POSOrderStatus @default(CONFIRMED)
+  clientId        String?
+  clientName      String?
+  subtotalHT      Decimal        @default(0)
+  totalVAT        Decimal        @default(0)
+  timbreFiscal    Decimal        @default(1)
+  totalTTC        Decimal        @default(0)
+  paidAmount      Decimal        @default(0)
+  changeGiven     Decimal        @default(0)
+  paymentMethod   PaymentMethod  @default(CASH)
+  isPaid          Boolean        @default(false)
+  discountPercent Decimal        @default(0)
+  discountAmount  Decimal        @default(0)
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  items    POSOrderItem[]
+  payments POSPayment[]
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId, sessionId])
+}
+
+enum POSType {
+  SALE
+  RETURN
+}
+
+enum POSOrderStatus {
+  DRAFT
+  CONFIRMED
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  CHECK
+  BANK_TRANSFER
+  MIXED
+}
+
+model POSOrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       POSOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  productCode String?
+  description String
+  quantity    Decimal
+  unitPriceHT Decimal
+  vatRate     Decimal  @default(19)
+  vatAmount   Decimal  @default(0)
+  discount    Decimal  @default(0)
+  totalHT     Decimal  @default(0)
+  totalTTC    Decimal  @default(0)
+}
+
+model POSPayment {
+  id        String        @id @default(uuid())
+  tenantId  String
+  tenant    Tenant        @relation(fields: [tenantId], references: [id])
+  orderId   String
+  order     POSOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method    PaymentMethod
+  amount    Decimal
+  reference String?
+  notes     String?
+  createdAt DateTime      @default(now())
+}
+
+// ============================================
+// MODULE: COMMERCIAL — RELANCES PAIEMENT
+// ============================================
+
+model PaymentFollowUp {
+  id               String              @id @default(uuid())
+  tenantId         String
+  tenant           Tenant              @relation(fields: [tenantId], references: [id])
+  invoiceId        String              @unique
+  invoice          Invoice             @relation(fields: [invoiceId], references: [id])
+  status           PaymentFollowStatus @default(PENDING)
+  nextReminderDate DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  reminders PaymentReminder[]
+}
+
+enum PaymentFollowStatus {
+  PENDING
+  REMINDED
+  PARTIAL
+  PAID
+  DISPUTED
+  CANCELLED
+}
+
+model PaymentReminder {
+  id           String           @id @default(uuid())
+  invoiceId    String
+  invoice      Invoice          @relation(fields: [invoiceId], references: [id])
+  followUpId   String?
+  followUp     PaymentFollowUp? @relation(fields: [followUpId], references: [id])
+  method       ReminderMethod
+  response     String?
+  errorMessage String?
+  sentAt       DateTime         @default(now())
+}
+
+enum ReminderMethod {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+// ============================================
+// MODULE: ASP CONFIGURATION (TTN)
+// ============================================
+
+model ASPConfiguration {
+  id            String            @id @default(uuid())
+  tenantId      String            @unique
+  tenant        Tenant            @relation(fields: [tenantId], references: [id])
+  provider      String
+  apiKey        String
+  apiSecret     String
+  mode          TTNSubmissionMode @default(EDI)
+  sftpUsername  String?
+  sftpPassword  String?
+  sftpEndpoint  String?
+  isActive      Boolean           @default(false)
+  webhookSecret String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+// ============================================
+// MODULE: DEVISES & TAUX DE CHANGE
+// ============================================
+
+model ExchangeRate {
+  id        String    @id @default(uuid())
+  tenantId  String    @unique
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  currency  String
+  rateToTND Decimal
+  source    String?
+  fetchedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([tenantId, currency])
+}
+
+// ============================================
+// MODULE: EXPORT & DOCUMENTS INTERNATIONAUX
+// ============================================
+
+model ExportInvoice {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  invoiceId     String   @unique
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id])
+  countryDest   String
+  incoterm      String
+  hsCode        String?
+  netWeightKg   Decimal?
+  countryOrigin String   @default("TN")
+  exportRegime  String?
+  customsPort   String?
+  transportMode String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ============================================
+// MODULE: TEJ 2026 — RETENUE À LA SOURCE
+// ============================================
+
+model WithholdingTax {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id])
+
+  beneficiaryTin     String?
+  beneficiaryName    String
+  beneficiaryAddress String?
+  beneficiaryType    BeneficiaryType @default(INDIVIDU)
+
+  serviceType        ServiceType @default(PRESTATION_SERVICE)
+  serviceDescription String?
+
+  grossAmount Decimal @default(0)
+  rate        Decimal @default(0)
+  taxAmount   Decimal @default(0)
+  netAmount   Decimal @default(0)
+  teeJAmount  Decimal @default(0)
+
+  periodMonth Int
+  periodYear  Int
+
+  tejId           String?
+  tejXmlId        String?
+  tejReference    String?
+  tejStatus       TEJStatus @default(DRAFT)
+  exportedAt      DateTime?
+  submittedAt     DateTime?
+  acceptedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  paymentDate      DateTime?
+  paymentMethod    PaymentMethodType?
+  paymentReference String?
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, tejId])
+  @@index([tenantId, periodYear, periodMonth])
+  @@index([tenantId, tejStatus])
+  @@index([tenantId, beneficiaryTin])
+}
+
+enum BeneficiaryType {
+  INDIVIDU
+  SOCIETE
+}
+
+enum ServiceType {
+  PRESTATION_SERVICE
+  HONORAIRES
+  LOYERS
+  DIVIDENDES
+  INTERETS
+  ROYALTIES
+  REMUNERATION
+  AUTRE
+}
+
+enum TEJStatus {
+  DRAFT
+  EXPORTED
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum PaymentMethodType {
+  VIREMENT
+  CHEQUE
+  ESPECE
+}

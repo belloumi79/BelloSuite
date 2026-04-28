@@ -1,0 +1,251 @@
+// ============================================
+// MODULE: COMPTABILITE
+// ============================================
+
+model AccountingAccount {
+  id            String      @id @default(uuid())
+  tenantId      String
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  accountNumber String
+  name          String
+  type          AccountType
+  parentId      String?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  journalEntryLines JournalEntryLine[]
+  parent            AccountingAccount?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children          AccountingAccount[] @relation("AccountHierarchy")
+  bankAccounts      BankAccount[]
+
+  @@unique([tenantId, accountNumber])
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model AccountingPeriod {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  isClosed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  journalEntries JournalEntry[]
+
+  @@unique([tenantId, name])
+}
+
+model AccountingJournal {
+  id        String      @id @default(uuid())
+  tenantId  String
+  tenant    Tenant      @relation(fields: [tenantId], references: [id])
+  code      String
+  name      String
+  type      JournalType
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  entries JournalEntry[]
+
+  @@unique([tenantId, code])
+}
+
+enum JournalType {
+  SALES
+  PURCHASES
+  BANK
+  CASH
+  GENERAL
+  INVENTORY
+}
+
+model JournalEntry {
+  id          String            @id @default(uuid())
+  tenantId    String
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  journalId   String
+  journal     AccountingJournal @relation(fields: [journalId], references: [id])
+  periodId    String
+  period      AccountingPeriod  @relation(fields: [periodId], references: [id])
+  entryNumber String
+  date        DateTime
+  description String
+  reference   String?
+  isPosted    Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  lines JournalEntryLine[]
+
+  @@unique([tenantId, entryNumber])
+  @@index([tenantId, journalId])
+  @@index([tenantId, periodId])
+}
+
+model JournalEntryLine {
+  id                   String               @id @default(uuid())
+  journalEntryId       String
+  journalEntry         JournalEntry         @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  accountId            String
+  account              AccountingAccount    @relation(fields: [accountId], references: [id])
+  debit                Decimal              @default(0)
+  credit               Decimal              @default(0)
+  description          String?
+  reconciliations      BankReconciliation[]
+  matchedStatementLine BankStatementLine?
+}
+
+// ============================================
+// MODULE: COMPTABILITE ANALYTIQUE
+// ============================================
+
+model CostCenter {
+  id        String         @id @default(uuid())
+  tenantId  String
+  tenant    Tenant         @relation(fields: [tenantId], references: [id])
+  code      String
+  name      String
+  type      CostCenterType
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  costEntries CostEntry[]
+
+  @@unique([tenantId, code])
+}
+
+enum CostCenterType {
+  PRODUCTION
+  DISTRIBUTION
+  ADMINISTRATION
+  RESEARCH
+}
+
+model CostEntry {
+  id           String     @id @default(uuid())
+  tenantId     String
+  tenant       Tenant     @relation(fields: [tenantId], references: [id])
+  costCenterId String
+  costCenter   CostCenter @relation(fields: [costCenterId], references: [id])
+  description  String
+  amount       Decimal
+  date         DateTime
+  reference    String?
+  createdAt    DateTime   @default(now())
+}
+
+// ============================================
+// MODULE: COMPTA — COMPTE BANCAIRE & RAPPROCHEMENT
+// ============================================
+
+enum ReconciliationStatus {
+  OPEN
+  MATCHED
+  UNMATCHED
+  DISPUTED
+}
+
+model BankAccount {
+  id                  String             @id @default(uuid())
+  tenantId            String
+  tenant              Tenant             @relation(fields: [tenantId], references: [id])
+  label               String
+  bankName            String
+  accountNumber       String
+  rib                 String?
+  currency            String             @default("TND")
+  accountingAccountId String?
+  accountingAccount   AccountingAccount? @relation(fields: [accountingAccountId], references: [id])
+  isActive            Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  statements      BankStatement[]
+  reconciliations BankReconciliation[]
+
+  @@unique([tenantId, accountNumber])
+}
+
+model BankStatement {
+  id                 String       @id @default(uuid())
+  tenantId           String
+  tenant             Tenant       @relation(fields: [tenantId], references: [id])
+  bankAccountId      String
+  bankAccount        BankAccount  @relation(fields: [bankAccountId], references: [id])
+  statementDate      DateTime
+  startBalance       Decimal      @default(0)
+  endBalance         Decimal      @default(0)
+  currency           String       @default("TND")
+  filename           String?
+  importStatus       ImportStatus @default(PENDING)
+  reconciledAmount   Decimal      @default(0)
+  unreconciledAmount Decimal      @default(0)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  lines           BankStatementLine[]
+  reconciliations BankReconciliation[]
+
+  @@unique([tenantId, bankAccountId, statementDate])
+  @@index([tenantId, bankAccountId])
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  IMPORTED
+  FAILED
+}
+
+model BankStatementLine {
+  id                 String               @id @default(uuid())
+  statementId        String
+  statement          BankStatement        @relation(fields: [statementId], references: [id], onDelete: Cascade)
+  lineDate           DateTime
+  label              String
+  reference          String?
+  debit              Decimal              @default(0)
+  credit             Decimal              @default(0)
+  balance            Decimal              @default(0)
+  matchedEntryLineId String?              @unique
+  matchedEntryLine   JournalEntryLine?    @relation(fields: [matchedEntryLineId], references: [id])
+  status             ReconciliationStatus @default(OPEN)
+  createdAt          DateTime             @default(now())
+
+  @@index([statementId, status])
+}
+
+model BankReconciliation {
+  id                 String               @id @default(uuid())
+  tenantId           String
+  tenant             Tenant               @relation(fields: [tenantId], references: [id])
+  bankStatementId    String
+  bankStatement      BankStatement        @relation(fields: [bankStatementId], references: [id])
+  bankAccountId      String
+  bankAccount        BankAccount          @relation(fields: [bankAccountId], references: [id])
+  statementLineId    String
+  journalEntryLineId String
+  journalEntryLine   JournalEntryLine     @relation(fields: [journalEntryLineId], references: [id])
+  amount             Decimal
+  matchedAt          DateTime             @default(now())
+  matchedBy          String?
+  notes              String?
+  status             ReconciliationStatus @default(MATCHED)
+  createdAt          DateTime             @default(now())
+
+  @@unique([statementLineId, journalEntryLineId])
+  @@index([tenantId, status])
+}

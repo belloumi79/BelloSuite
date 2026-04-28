@@ -1,0 +1,184 @@
+// ============================================
+// MODULE: KANBAN (PROJECTS)
+// ============================================
+
+model Project {
+  id          String          @id @default(uuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  name        String
+  description String?
+  status      ProjectStatus   @default(DRAFT)
+  priority    ProjectPriority @default(MEDIUM)
+  color       String          @default("#6366f1")
+  startDate   DateTime?
+  endDate     DateTime?
+  budget      Decimal         @default(0)
+  managerId   String?
+  clientId    String?
+  isArchived  Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  columns ProjectColumn[]
+  members ProjectMember[]
+  tags    ProjectTag[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, status])
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  ON_HOLD
+  CANCELLED
+  COMPLETED
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model ProjectColumn {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  position  Int
+  color     String   @default("#6366f1")
+  isDone    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks ProjectTask[]
+
+  @@unique([projectId, position])
+  @@index([projectId])
+}
+
+model ProjectTask {
+  id             String          @id @default(uuid())
+  columnId       String
+  column         ProjectColumn   @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  position       Int             @default(0)
+  priority       ProjectPriority @default(MEDIUM)
+  dueDate        DateTime?
+  estimatedHours Decimal         @default(0)
+  spentHours     Decimal         @default(0)
+  startDate      DateTime?
+  completedAt    DateTime?
+  assigneeId     String?
+  createdBy      String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  checklists  ProjectChecklist[]
+  attachments ProjectAttachment[]
+  comments    ProjectComment[]
+  tags        ProjectTaskTag[]
+
+  @@index([columnId, position])
+  @@index([columnId, assigneeId])
+}
+
+model ProjectChecklist {
+  id        String      @id @default(uuid())
+  taskId    String
+  task      ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title     String
+  completed Boolean     @default(false)
+  position  Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  items ProjectChecklistItem[]
+
+  @@index([taskId])
+}
+
+model ProjectChecklistItem {
+  id          String           @id @default(uuid())
+  checklistId String
+  checklist   ProjectChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  text        String
+  isChecked   Boolean          @default(false)
+  position    Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([checklistId])
+}
+
+model ProjectAttachment {
+  id         String      @id @default(uuid())
+  taskId     String
+  task       ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  name       String
+  url        String
+  size       Int         @default(0)
+  mimeType   String?
+  uploadedBy String?
+  createdAt  DateTime    @default(now())
+
+  @@index([taskId])
+}
+
+model ProjectComment {
+  id         String      @id @default(uuid())
+  taskId     String
+  task       ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId   String
+  authorName String
+  content    String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([taskId])
+}
+
+model ProjectTag {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  color     String   @default("#6366f1")
+  createdAt DateTime @default(now())
+
+  tasks    ProjectTaskTag[]
+  projects Project[]
+
+  @@unique([tenantId, name])
+}
+
+model ProjectTaskTag {
+  taskId String
+  task   ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    ProjectTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@index([tagId])
+}
+
+model ProjectMember {
+  projectId String
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  role      ProjectRole @default(MEMBER)
+  addedAt   DateTime    @default(now())
+
+  @@id([projectId, userId])
+}
+
+enum ProjectRole {
+  OWNER
+  MANAGER
+  MEMBER
+  VIEWER
+}

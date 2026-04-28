@@ -1,0 +1,148 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["prismaSchemaFolder"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// TENANT MANAGEMENT
+// ============================================
+
+model Tenant {
+  id              String   @id @default(uuid())
+  name            String
+  subdomain       String   @unique
+  matriculeFiscal String?
+  vatNumber       String?
+  address         String?
+  city            String?
+  zipCode         String?
+  phone           String?
+  email           String?
+  logo            String?
+  settings        Json     @default("{}")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  users               User[]
+  modules             TenantModule[]
+  products            Product[]
+  clients             Client[]
+  suppliers           Supplier[]
+  invoices            Invoice[]
+  purchaseOrders      PurchaseOrder[]
+  accounts            AccountingAccount[]
+  journalEntries      JournalEntry[]
+  employees           Employee[]
+  paySlips            PaySlip[]
+  assets              Asset[]
+  workOrders          WorkOrder[]
+  workStations        WorkStation[]
+  billsOfMaterials    BillOfMaterials[]
+  productionOrders    ProductionOrder[]
+  qualityControls     QualityControl[]
+  costCenters         CostCenter[]
+  costEntries         CostEntry[]
+  accountingPeriods   AccountingPeriod[]
+  accountingJournals  AccountingJournal[]
+  qualifications      Qualification[]
+  absences            Absence[]
+  delays              Delay[]
+  mutations           Mutation[]
+  paieParameters      PaieParameters[]
+  cashDrawer          CashDrawer?
+  warehouses          Warehouse[]
+  stockMovements      StockMovement[]
+  posSessions         POSSession[]
+  posOrders           POSOrder[]
+  posPayments         POSPayment[]
+  inventories         Inventory[]
+  stockTransfers      StockTransfer[]
+  aspConfiguration    ASPConfiguration?
+  paymentFollowUps    PaymentFollowUp[]
+  bankAccounts        BankAccount[]
+  bankStatements      BankStatement[]
+  bankReconciliations BankReconciliation[]
+  withholdingTaxes    WithholdingTax[]
+  exchangeRates       ExchangeRate[]
+  exportInvoices      ExportInvoice[]
+  projects            Project[]
+  projectTags         ProjectTag[]
+}
+
+// ============================================
+// USER & AUTH
+// ============================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  role      UserRole @default(USER)
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+// ============================================
+// TTN / EL FATOORA — E-INVOICING STATUS
+// ============================================
+
+enum TTNStatus {
+  DRAFT
+  SUBMITTED
+  SIGNED
+  TRANSMITTED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum TTNSubmissionMode {
+  WEB
+  EDI
+}
+
+// ============================================
+// MODULES
+// ============================================
+
+model Module {
+  id           String         @id @default(uuid())
+  name         String         @unique
+  displayName  String
+  description  String?
+  icon         String?
+  monthlyPrice Decimal        @default(0)
+  isActive     Boolean        @default(true)
+  tenants      TenantModule[]
+  createdAt    DateTime       @default(now())
+}
+
+model TenantModule {
+  id        String   @id @default(uuid())
+  tenantId  String
+  moduleId  String
+  isEnabled Boolean  @default(true)
+  settings  Json     @default("{}")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  module    Module   @relation(fields: [moduleId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, moduleId])
+}

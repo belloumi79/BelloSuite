@@ -1,0 +1,182 @@
+// ============================================
+// MODULE: STOCK
+// ============================================
+
+model Product {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  code          String
+  barcode       String?
+  name          String
+  description   String?
+  category      String?
+  unit          String   @default("unit")
+  purchasePrice Decimal  @default(0)
+  salePrice     Decimal  @default(0)
+  vatRate       Decimal  @default(19)
+  fodec         Boolean  @default(false)
+  minStock      Decimal  @default(0)
+  currentStock  Decimal  @default(0)
+  images        String[] @default([])
+  variants      Json     @default("[]")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  movements      StockMovement[]
+  warehouseStock ProductWarehouse[]
+
+  @@unique([tenantId, code])
+}
+
+model StockMovement {
+  id          String            @id @default(uuid())
+  tenantId    String
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  productId   String
+  product     Product           @relation(fields: [productId], references: [id])
+  type        StockMovementType
+  quantity    Decimal
+  unitPrice   Decimal?
+  reference   String?
+  notes       String?
+  warehouseId String?
+  warehouse   Warehouse?        @relation(fields: [warehouseId], references: [id])
+  createdAt   DateTime          @default(now())
+
+  @@index([tenantId, productId])
+}
+
+enum StockMovementType {
+  ENTRY
+  EXIT
+  ADJUSTMENT
+  TRANSFER
+}
+
+// ============================================
+// MODULE: WAREHOUSE
+// ============================================
+
+model Warehouse {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  code      String
+  name      String
+  address   String?
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inventoryItems InventoryItem[]
+  transfersFrom  StockTransfer[]    @relation("TransferFrom")
+  transfersTo    StockTransfer[]    @relation("TransferTo")
+  productStock   ProductWarehouse[]
+  stockMovements StockMovement[]
+  inventories    Inventory[]
+
+  @@unique([tenantId, code])
+}
+
+model ProductWarehouse {
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  stock       Decimal   @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@id([productId, warehouseId])
+  @@index([productId])
+  @@index([warehouseId])
+}
+
+// ============================================
+// MODULE: INVENTORY
+// ============================================
+
+model Inventory {
+  id          String          @id @default(uuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  warehouseId String?
+  warehouse   Warehouse?      @relation(fields: [warehouseId], references: [id])
+  reference   String
+  date        DateTime
+  status      InventoryStatus @default(DRAFT)
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  items InventoryItem[]
+
+  @@unique([tenantId, reference])
+  @@index([tenantId, warehouseId, status])
+  @@index([tenantId, date])
+}
+
+enum InventoryStatus {
+  DRAFT
+  VALIDATED
+  CANCELLED
+}
+
+model InventoryItem {
+  id          String     @id @default(uuid())
+  inventoryId String
+  inventory   Inventory  @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  warehouseId String?
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id])
+  productId   String
+  expectedQty Decimal
+  actualQty   Decimal
+  unitCost    Decimal?
+  variance    Decimal    @default(0)
+  notes       String?
+}
+
+// ============================================
+// MODULE: STOCK TRANSFER
+// ============================================
+
+model StockTransfer {
+  id              String         @id @default(uuid())
+  tenantId        String
+  tenant          Tenant         @relation(fields: [tenantId], references: [id])
+  reference       String
+  date            DateTime
+  fromWarehouseId String
+  fromWarehouse   Warehouse      @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouseId   String
+  toWarehouse     Warehouse      @relation("TransferTo", fields: [toWarehouseId], references: [id])
+  status          TransferStatus @default(DRAFT)
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  items StockTransferItem[]
+
+  @@unique([tenantId, reference])
+  @@index([tenantId, status])
+  @@index([tenantId, date])
+}
+
+enum TransferStatus {
+  DRAFT
+  IN_PROGRESS
+  TRANSFERRED
+  CANCELLED
+}
+
+model StockTransferItem {
+  id         String        @id @default(uuid())
+  transferId String
+  transfer   StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  productId  String
+  quantity   Decimal
+  notes      String?
+}

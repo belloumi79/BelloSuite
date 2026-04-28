@@ -1,0 +1,175 @@
+// ============================================
+// MODULE: GMAO (Gestion de la Maintenance)
+// ============================================
+
+model Asset {
+  id           String      @id @default(uuid())
+  tenantId     String
+  tenant       Tenant      @relation(fields: [tenantId], references: [id])
+  code         String
+  name         String
+  description  String?
+  category     String?
+  location     String?
+  purchaseDate DateTime?
+  purchaseCost Decimal?
+  warrantyEnd  DateTime?
+  status       AssetStatus @default(ACTIVE)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  workOrders WorkOrder[]
+
+  @@unique([tenantId, code])
+}
+
+enum AssetStatus {
+  ACTIVE
+  IN_MAINTENANCE
+  BROKEN
+  RETIRED
+}
+
+model WorkOrder {
+  id            String          @id @default(uuid())
+  tenantId      String
+  tenant        Tenant          @relation(fields: [tenantId], references: [id])
+  assetId       String
+  asset         Asset           @relation(fields: [assetId], references: [id])
+  title         String
+  description   String?
+  type          WorkOrderType
+  priority      Priority        @default(MEDIUM)
+  status        WorkOrderStatus @default(OPEN)
+  assignedTo    String?
+  scheduledDate DateTime?
+  completedDate DateTime?
+  cost          Decimal?
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+enum WorkOrderType {
+  PREVENTIVE
+  CORRECTIVE
+  EMERGENCY
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum WorkOrderStatus {
+  OPEN
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// MODULE: GPAO (Gestion de la Production)
+// ============================================
+
+model WorkStation {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  code        String
+  name        String
+  description String?
+  location    String?
+  capacity    Decimal  @default(1)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  productionOrders ProductionOrder[]
+
+  @@unique([tenantId, code])
+}
+
+model BillOfMaterials {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  productId String
+  version   String   @default("1")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items BillOfMaterialsItem[]
+
+  @@unique([tenantId, productId, version])
+}
+
+model BillOfMaterialsItem {
+  id                String          @id @default(uuid())
+  billOfMaterialsId String
+  billOfMaterials   BillOfMaterials @relation(fields: [billOfMaterialsId], references: [id], onDelete: Cascade)
+  productId         String
+  quantity          Decimal
+}
+
+model ProductionOrder {
+  id               String           @id @default(uuid())
+  tenantId         String
+  tenant           Tenant           @relation(fields: [tenantId], references: [id])
+  workStationId    String?
+  workStation      WorkStation?     @relation(fields: [workStationId], references: [id])
+  productId        String
+  quantity         Decimal
+  status           ProductionStatus @default(PENDING)
+  plannedStartDate DateTime?
+  plannedEndDate   DateTime?
+  actualStartDate  DateTime?
+  actualEndDate    DateTime?
+  notes            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+enum ProductionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// MODULE: GQAO (Gestion de la Qualité)
+// ============================================
+
+model QualityControl {
+  id            String        @id @default(uuid())
+  tenantId      String
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  reference     String
+  type          String
+  status        QualityStatus @default(PENDING)
+  inspectedItem String?
+  quantity      Decimal?
+  defects       Decimal?
+  result        String?
+  inspector     String?
+  notes         String?
+  controlledAt  DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([tenantId, reference])
+  @@index([tenantId, status])
+}
+
+enum QualityStatus {
+  PENDING
+  PASSED
+  FAILED
+  UNDER_REVIEW
+}
