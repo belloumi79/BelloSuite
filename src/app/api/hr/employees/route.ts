@@ -1,86 +1,39 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { getEmployees, createEmployee, createEmployeeSchema } from '@/services/hr'
 
-export async function GET(request: Request) {
+// GET /api/hr/employees?tenantId=&isActive=
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
-    const isActive = searchParams.get('isActive')
+    const isActiveParam = searchParams.get('isActive')
+    const isActive = isActiveParam !== null ? isActiveParam === 'true' : undefined
 
-    if (!tenantId) {
-      return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
-    }
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    const where: any = { tenantId }
-    if (isActive !== null) where.isActive = isActive === 'true'
-
-    const employees = await prisma.employee.findMany({
-      where,
-      include: { qualification: true },
-      orderBy: { employeeNumber: 'asc' },
-    })
-
+    const employees = await getEmployees(ctx.tenantId, isActive)
     return NextResponse.json(employees)
-  } catch (error) {
-    console.error('Error fetching employees:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'GET employees')
   }
 }
 
-export async function POST(request: Request) {
+// POST /api/hr/employees
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json()
-    const {
-      tenantId, employeeNumber, firstName, lastName, email, phone, cin,
-      birthDate, birthPlace, nationality, genre, etatCivil, enfantsCharge,
-      situationFamiliale, address, city, hireDate, departement, poste,
-      qualificationId, typeContrat, salary, modePaie, banque, compteBancaire,
-      cnssNumber, cnrpsNumber, amoNumber,
-    } = body
+    const body = await req.json()
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    if (!tenantId || !firstName || !lastName || !employeeNumber) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    const data = parseBody(createEmployeeSchema, { ...body, tenantId: ctx.tenantId })
+    if (data instanceof NextResponse) return data
 
-    const employee = await prisma.employee.create({
-      data: {
-        tenantId,
-        employeeNumber,
-        firstName,
-        lastName,
-        email,
-        phone,
-        cin,
-        birthDate: birthDate ? new Date(birthDate) : null,
-        birthPlace,
-        nationality: nationality || 'Tunisienne',
-        genre: genre || 'MALE',
-        etatCivil: etatCivil || 'CELIBATAIRE',
-        enfantsCharge: Number(enfantsCharge) || 0,
-        situationFamiliale: situationFamiliale || 'NON_CHEF_FAMILLE',
-        address,
-        city,
-        hireDate: new Date(hireDate),
-        departement,
-        poste,
-        qualificationId,
-        typeContrat: typeContrat || 'CDI',
-        salary: Number(salary) || 0,
-        modePaie: modePaie || 'VIREMENT',
-        banque,
-        compteBancaire,
-        cnssNumber,
-        cnrpsNumber,
-        amoNumber,
-      },
-    })
-
-    return NextResponse.json(employee)
-  } catch (error: any) {
-    console.error('Error creating employee:', error)
-    if (error.code === 'P2002') {
-      return NextResponse.json({ error: 'Employee number already exists' }, { status: 409 })
-    }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    const employee = await createEmployee(data)
+    return NextResponse.json(employee, { status: 201 })
+  } catch (err) {
+    return handleApiError(err, 'POST employee')
   }
 }
