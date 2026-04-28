@@ -1,53 +1,39 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { getClients, createClient, createClientSchema } from '@/services/clients'
 
-export async function GET(request: Request) {
+// GET /api/commercial/clients?tenantId=&activeOnly=true
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
 
-    if (!tenantId) {
-      return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
-    }
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    const clients = await prisma.client.findMany({
-      where: { tenantId },
-      orderBy: { name: 'asc' },
-    })
-
+    const activeOnly = searchParams.get('activeOnly') === 'true'
+    const clients = await getClients(ctx.tenantId, activeOnly)
     return NextResponse.json(clients)
-  } catch (error) {
-    console.error('Error fetching clients:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'GET clients')
   }
 }
 
-export async function POST(request: Request) {
+// POST /api/commercial/clients
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json()
-    const { tenantId, code, name, email, phone, address, city, zipCode, matriculeFiscal } = body
+    const body = await req.json()
 
-    if (!tenantId || !name) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    const client = await prisma.client.create({
-      data: {
-        tenantId,
-        code: code || `CLT-${Date.now()}`,
-        name,
-        email,
-        phone,
-        address,
-        city,
-        zipCode,
-        matriculeFiscal,
-      },
-    })
+    const data = parseBody(createClientSchema, { ...body, tenantId: ctx.tenantId })
+    if (data instanceof NextResponse) return data
 
-    return NextResponse.json(client)
-  } catch (error) {
-    console.error('Error creating client:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    const client = await createClient(data)
+    return NextResponse.json(client, { status: 201 })
+  } catch (err) {
+    return handleApiError(err, 'POST client')
   }
 }

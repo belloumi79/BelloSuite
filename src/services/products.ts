@@ -28,38 +28,39 @@ export async function createProduct(data: CreateProductData) {
     throw new BusinessError('Code produit déjà utilisé', 409)
   }
 
-  // Create product
-  const product = await prisma.product.create({
-    data: {
-      tenantId,
-      code,
-      barcode: barcode || null,
-      name,
-      description: description || null,
-      category: category || null,
-      unit,
-      purchasePrice,
-      salePrice,
-      vatRate,
-      fodec,
-      minStock,
-      currentStock: initialStock,
-    },
-  })
-
-  // Create initial stock movement if initialStock > 0
-  if (initialStock > 0) {
-    await prisma.stockMovement.create({
+  // Atomic transaction: create product + initial stock movement
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.create({
       data: {
         tenantId,
-        productId: product.id,
-        type: 'ENTRY',
-        quantity: initialStock,
-        unitPrice: purchasePrice,
-        notes: 'Stock initial',
+        code,
+        barcode: barcode || null,
+        name,
+        description: description || null,
+        category: category || null,
+        unit,
+        purchasePrice,
+        salePrice,
+        vatRate,
+        fodec,
+        minStock,
+        currentStock: initialStock,
       },
     })
-  }
 
-  return product
+    if (initialStock > 0) {
+      await tx.stockMovement.create({
+        data: {
+          tenantId,
+          productId: product.id,
+          type: 'ENTRY',
+          quantity: initialStock,
+          unitPrice: purchasePrice,
+          notes: 'Stock initial',
+        },
+      })
+    }
+
+    return product
+  })
 }

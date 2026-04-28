@@ -1,83 +1,59 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { getInvoices, createInvoice, createInvoiceSchema, invoiceFiltersSchema } from '@/services/invoices'
+import { InvoiceStatus } from '@prisma/client'
+import { z } from 'zod'
 
-// GET /api/commercial/invoices?tenantId=&status=
-// POST /api/commercial/invoices - Create invoice
-export async function GET(req: Request) {
+// GET /api/commercial/invoices?tenantId=&status=&type=&id=
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
-    const status = searchParams.get('status')
-    const type = searchParams.get('type')
 
-    if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    const where: any = { tenantId }
-    if (status && status !== 'TOUT') where.status = status
-    if (type) where.type = type
-
-    const docs = await prisma.invoice.findMany({
-      where,
-      include: { client: true, items: true, tenant: true },
-      orderBy: { date: 'desc' },
+    // Parse & validate filters
+    const rawStatus = searchParams.get('status')
+    const filtersResult = invoiceFiltersSchema.safeParse({
+      tenantId: ctx.tenantId,
+      status: rawStatus && rawStatus !== 'TOUT' ? rawStatus as InvoiceStatus : undefined,
+      type: searchParams.get('type') ?? undefined,
+      id: searchParams.get('id') ?? undefined,
     })
 
-    // Single invoice fetch by id
-    const id = searchParams.get('id')
-    if (id) {
-      const single = await prisma.invoice.findUnique({
-        where: { id },
-        include: { client: true, items: true, tenant: true },
-      })
-      return NextResponse.json(single || { error: 'Not found' }, { status: single ? 200 : 404 })
+    if (!filtersResult.success) {
+      return NextResponse.json(
+        { error: 'Paramètres invalides', details: filtersResult.error.issues },
+        { status: 400 }
+      )
     }
 
-    return NextResponse.json(docs)
-  } catch (e) {
-    console.error(e)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    const result = await getInvoices(filtersResult.data)
+    return NextResponse.json(result)
+  } catch (err) {
+    return handleApiError(err, 'GET invoices')
   }
 }
 
-export async function POST(req: Request) {
+// POST /api/commercial/invoices
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const { tenantId, clientId, number, type = 'INVOICE', date, dueDate, items,
-      subtotalHT, totalFodec, totalVAT, timbreFiscal, totalTTC, vatSummary, notes } = body
+    const tenantId = (await req.json().then(b => b?.tenantId)) as string | null
 
-    if (!tenantId || !number || !items?.length) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    // Re-parse body for validation
+    const body = await req.clone().json()
 
-    const doc = await prisma.invoice.create({
-      data: {
-        tenantId, clientId: clientId || null, number,
-        type: type as any, status: 'PENDING',
-        date: new Date(date || Date.now()),
-        dueDate: dueDate ? new Date(dueDate) : null,
-        subtotalHT: subtotalHT || 0, totalFodec: totalFodec || 0,
-        totalVAT: totalVAT || 0, timbreFiscal: timbreFiscal || 1,
-        totalTTC: totalTTC || 0, vatSummary: vatSummary || {},
-        notes,
-        items: { create: items.map((item: any) => ({
-          productId: item.productId || null,
-          description: item.description,
-          quantity: Number(item.quantity),
-          unitPriceHT: Number(item.unitPriceHT),
-          discount: Number(item.discount) || 0,
-          fodecApply: item.fodecApply || false,
-          fodecAmount: Number(item.fodecAmount) || 0,
-          vatRate: Number(item.vatRate) || 19,
-          vatAmount: Number(item.vatAmount) || 0,
-          totalHT: Number(item.totalHT) || 0,
-          totalTTC: Number(item.totalTTC) || 0,
-        })) },
-      },
-      include: { client: true, items: true },
-    })
-    return NextResponse.json(doc, { status: 201 })
-  } catch (e) {
-    console.error(e)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    const ctx = getApiContext(req, tenantId ?? body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
+    const data = parseBody(createInvoiceSchema, { ...body, tenantId: ctx.tenantId })
+    if (data instanceof NextResponse) return data
+
+    const invoice = await createInvoice(data)
+    return NextResponse.json(invoice, { status: 201 })
+  } catch (err) {
+    return handleApiError(err, 'POST invoice')
   }
 }
