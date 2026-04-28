@@ -135,3 +135,108 @@ export async function createJournalEntry(data: JournalEntryData) {
     return entry
   })
 }
+
+export async function getTrialBalance(tenantId: string, params: { startDate?: string; endDate?: string } = {}) {
+  const { startDate, endDate } = params
+
+  const where: any = { tenantId }
+  if (startDate || endDate) {
+    where.journalEntry = {
+      date: {
+        ...(startDate && { gte: new Date(startDate) }),
+        ...(endDate && { lte: new Date(endDate) }),
+      }
+    }
+  }
+
+  const lines = await prisma.journalEntryLine.findMany({
+    where,
+    include: { account: true }
+  })
+
+  // Group by account
+  const balanceMap = new Map<string, any>()
+
+  for (const line of lines) {
+    const acc = line.account
+    if (!balanceMap.has(acc.id)) {
+      balanceMap.set(acc.id, {
+        id: acc.id,
+        accountNumber: acc.accountNumber,
+        name: acc.name,
+        debit: 0,
+        credit: 0,
+        balance: 0
+      })
+    }
+
+    const entry = balanceMap.get(acc.id)
+    entry.debit += Number(line.debit)
+    entry.credit += Number(line.credit)
+    entry.balance = entry.debit - entry.credit
+  }
+
+  return Array.from(balanceMap.values()).sort((a, b) => a.accountNumber.localeCompare(b.accountNumber))
+}
+
+export async function getGeneralLedger(tenantId: string, params: { startDate?: string; endDate?: string; accountId?: string } = {}) {
+  const { startDate, endDate, accountId } = params
+
+  const where: any = { tenantId }
+  if (accountId) where.accountId = accountId
+  if (startDate || endDate) {
+    where.journalEntry = {
+      date: {
+        ...(startDate && { gte: new Date(startDate) }),
+        ...(endDate && { lte: new Date(endDate) }),
+      }
+    }
+  }
+
+  const lines = await prisma.journalEntryLine.findMany({
+    where,
+    include: {
+      account: true,
+      journalEntry: {
+        include: { journal: true }
+      }
+    },
+    orderBy: [
+      { account: { accountNumber: 'asc' } },
+      { journalEntry: { date: 'asc' } }
+    ]
+  })
+
+  // Group by account for the Ledger view
+  const ledger: Record<string, any> = {}
+
+  for (const line of lines) {
+    const accNum = line.account.accountNumber
+    if (!ledger[accNum]) {
+      ledger[accNum] = {
+        account: line.account,
+        lines: [],
+        totalDebit: 0,
+        totalCredit: 0,
+        balance: 0
+      }
+    }
+
+    ledger[accNum].lines.push({
+      id: line.id,
+      date: line.journalEntry.date,
+      entryNumber: line.journalEntry.entryNumber,
+      description: line.description || line.journalEntry.description,
+      journal: line.journalEntry.journal.code,
+      debit: Number(line.debit),
+      credit: Number(line.credit)
+    })
+
+    ledger[accNum].totalDebit += Number(line.debit)
+    ledger[accNum].totalCredit += Number(line.credit)
+    ledger[accNum].balance = ledger[accNum].totalDebit - ledger[accNum].totalCredit
+  }
+
+  return ledger
+}
+
