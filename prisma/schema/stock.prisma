@@ -26,6 +26,8 @@ model Product {
 
   movements      StockMovement[]
   warehouseStock ProductWarehouse[]
+  inventoryItems InventoryItem[]
+  transferItems  StockTransferItem[]
 
   @@unique([tenantId, code])
 }
@@ -132,6 +134,7 @@ model InventoryItem {
   warehouseId String?
   warehouse   Warehouse? @relation(fields: [warehouseId], references: [id])
   productId   String
+  product     Product    @relation(fields: [productId], references: [id])
   expectedQty Decimal
   actualQty   Decimal
   unitCost    Decimal?
@@ -177,6 +180,7 @@ model StockTransferItem {
   transferId String
   transfer   StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
   productId  String
+  product    Product       @relation(fields: [productId], references: [id])
   quantity   Decimal
   notes      String?
 }

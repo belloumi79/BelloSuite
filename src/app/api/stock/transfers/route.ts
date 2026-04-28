@@ -1,121 +1,98 @@
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { validateTransfer } from '@/services/stock'
+import { prisma } from '@/lib/db'
+import { TransferStatus } from '@prisma/client'
 
+// GET /api/stock/transfers?tenantId=
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const tenantId = searchParams.get("tenantId")
-    if (!tenantId) return NextResponse.json({ error: "tenantId required" }, { status: 400 })
+    const tenantId = searchParams.get('tenantId')
+
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
     const transfers = await prisma.stockTransfer.findMany({
-      where: { tenantId },
+      where: { tenantId: ctx.tenantId },
       include: {
         fromWarehouse: { select: { code: true, name: true } },
         toWarehouse: { select: { code: true, name: true } },
-        items: { include: { transfer: false } },
+        items: { include: { product: { select: { name: true, code: true } } } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     })
     return NextResponse.json(transfers)
-  } catch (e) {
-    return NextResponse.json({ error: "internal" }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'GET stock transfers')
   }
 }
 
+// POST /api/stock/transfers
 export async function POST(req: NextRequest) {
   try {
-    const { tenantId, fromWarehouseId, toWarehouseId, items, notes, date } = await req.json()
-    if (!tenantId || !fromWarehouseId || !toWarehouseId || !items?.length) {
-      return NextResponse.json({ error: "required" }, { status: 400 })
+    const body = await req.json()
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
+    const { fromWarehouseId, toWarehouseId, items, notes, date } = body
+
+    if (!fromWarehouseId || !toWarehouseId || !items?.length) {
+      return NextResponse.json({ error: 'Champs requis manquants' }, { status: 400 })
     }
 
     const ref = `TRF-${Date.now()}`
     const transfer = await prisma.stockTransfer.create({
       data: {
-        tenantId, reference: ref, date: new Date(date),
-        fromWarehouseId, toWarehouseId,
-        status: "DRAFT", notes,
-        items: { create: items.map((i: any) => ({ productId: i.productId, quantity: i.quantity, notes: i.notes })) },
+        tenantId: ctx.tenantId,
+        reference: ref,
+        date: new Date(date),
+        fromWarehouseId,
+        toWarehouseId,
+        status: TransferStatus.DRAFT,
+        notes,
+        items: {
+          create: items.map((i: any) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            notes: i.notes,
+          })),
+        },
       },
       include: { items: true },
     })
     return NextResponse.json(transfer, { status: 201 })
-  } catch (e) {
-    console.error(e)
-    return NextResponse.json({ error: "internal" }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'POST stock transfer')
   }
 }
 
+// PATCH /api/stock/transfers?id=
 export async function PATCH(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const id = searchParams.get("id")
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'id requis' }, { status: 400 })
 
     const body = await req.json()
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
     const { status } = body
 
-    const transfer = await prisma.stockTransfer.findUnique({
-      where: { id },
-      include: { items: true },
-    })
-    if (!transfer) return NextResponse.json({ error: "not found" }, { status: 404 })
-
-    // CONFIRM transfer → update stock
-    if (status === "TRANSFERRED" && transfer.status !== "TRANSFERRED") {
-      await prisma.$transaction(async (tx) => {
-        for (const item of transfer.items) {
-          // Decrement source warehouse
-          await tx.productWarehouse.update({
-            where: { productId_warehouseId: { productId: item.productId, warehouseId: transfer.fromWarehouseId } },
-            data: { stock: { decrement: item.quantity } },
-          }).catch(() => {
-            // Create if doesn't exist
-            return tx.productWarehouse.create({
-              data: { productId: item.productId, warehouseId: transfer.fromWarehouseId, stock: -item.quantity },
-            })
-          })
-          // Increment destination warehouse
-          await tx.productWarehouse.upsert({
-            where: { productId_warehouseId: { productId: item.productId, warehouseId: transfer.toWarehouseId } },
-            update: { stock: { increment: item.quantity } },
-            create: { productId: item.productId, warehouseId: transfer.toWarehouseId, stock: item.quantity },
-          })
-          // Create stock movement for audit trail
-          await tx.stockMovement.create({
-            data: {
-              tenantId: transfer.tenantId,
-              productId: item.productId,
-              warehouseId: transfer.fromWarehouseId,
-              type: "TRANSFER",
-              quantity: item.quantity,
-              reference: transfer.reference,
-              notes: `Transfert vers ${transfer.toWarehouseId}`,
-            },
-          })
-          await tx.stockMovement.create({
-            data: {
-              tenantId: transfer.tenantId,
-              productId: item.productId,
-              warehouseId: transfer.toWarehouseId,
-              type: "ENTRY",
-              quantity: item.quantity,
-              reference: transfer.reference,
-              notes: `Transfert depuis ${transfer.fromWarehouseId}`,
-            },
-          })
-        }
-      })
+    if (status === TransferStatus.TRANSFERRED) {
+      const updated = await validateTransfer(id, ctx.tenantId)
+      return NextResponse.json(updated)
     }
 
     const updated = await prisma.stockTransfer.update({
-      where: { id },
+      where: { id, tenantId: ctx.tenantId },
       data: { status },
       include: { items: true },
     })
     return NextResponse.json(updated)
-  } catch (e) {
-    console.error(e)
-    return NextResponse.json({ error: "internal" }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'PATCH stock transfer')
   }
 }

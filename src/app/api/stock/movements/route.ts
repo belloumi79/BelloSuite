@@ -1,74 +1,57 @@
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { createStockMovement, createStockMovementSchema } from '@/services/stock'
+import { prisma } from '@/lib/db'
 
+// GET /api/stock/movements?tenantId=&productId=&warehouseId=&type=&limit=
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const tenantId = searchParams.get("tenantId")
-    const productId = searchParams.get("productId")
-    const warehouseId = searchParams.get("warehouseId")
-    const type = searchParams.get("type")
-    const dateFrom = searchParams.get("dateFrom")
-    const dateTo = searchParams.get("dateTo")
-    const limit = parseInt(searchParams.get("limit") || "50")
+    const tenantId = searchParams.get('tenantId')
 
-    if (!tenantId) return NextResponse.json({ error: "tenantId required" }, { status: 400 })
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    const where: any = { tenantId }
-    if (productId) where.productId = productId
-    if (warehouseId) where.warehouseId = warehouseId
-    if (type) where.type = type
-    if (dateFrom || dateTo) {
-      where.createdAt = {}
-      if (dateFrom) where.createdAt.gte = new Date(dateFrom)
-      if (dateTo) where.createdAt.lte = new Date(dateTo)
-    }
+    const productId = searchParams.get('productId')
+    const warehouseId = searchParams.get('warehouseId')
+    const type = searchParams.get('type')
+    const limit = parseInt(searchParams.get('limit') || '50')
 
     const movements = await prisma.stockMovement.findMany({
-      where,
+      where: {
+        tenantId: ctx.tenantId,
+        ...(productId ? { productId } : {}),
+        ...(warehouseId ? { warehouseId } : {}),
+        ...(type ? { type: type as any } : {}),
+      },
       include: {
         product: { select: { id: true, name: true, code: true } },
         warehouse: { select: { id: true, name: true, code: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       take: limit,
     })
 
     return NextResponse.json(movements)
-  } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'GET stock movements')
   }
 }
 
+// POST /api/stock/movements
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { tenantId, productId, warehouseId, type, quantity, unitPrice, reference, notes } = body
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    if (!tenantId || !productId || !type || !quantity) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
+    const data = parseBody(createStockMovementSchema, { ...body, tenantId: ctx.tenantId })
+    if (data instanceof NextResponse) return data
 
-    const movement = await prisma.$transaction(async (tx) => {
-      const mv = await tx.stockMovement.create({
-        data: { tenantId, productId, warehouseId: warehouseId || null, type, quantity, unitPrice: unitPrice || 0, reference, notes },
-      })
-
-      const q = Number(quantity)
-      await tx.product.update({
-        where: { id: productId },
-        data: {
-          currentStock: { increment: type === "EXIT" ? -q : q },
-        },
-      })
-
-      return mv
-    })
-
+    const movement = await createStockMovement(data)
     return NextResponse.json(movement, { status: 201 })
-  } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'POST stock movement')
   }
 }
