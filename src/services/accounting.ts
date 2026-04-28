@@ -363,6 +363,82 @@ export async function postPurchaseToAccounting(purchaseOrderId: string, tenantId
   })
 }
 
+export async function postPayrollToAccounting(month: number, year: number, tenantId: string) {
+  return prisma.$transaction(async (tx) => {
+    // 1. Get all payslips for the period
+    const payslips = await tx.paySlip.findMany({
+      where: { tenantId, mois: month, annee: year, statut: 'PENDING' }
+    })
+
+    if (payslips.length === 0) throw new Error('Aucun bulletin de paie en attente trouvé pour cette période')
+    if (payslips.some(p => p.accountingEntryId)) throw new Error('Certains bulletins sont déjà comptabilisés')
+
+    // 2. Aggregate amounts
+    const totals = payslips.reduce((acc, p) => ({
+      gross: acc.gross + Number(p.brutGlobal),
+      cnss: acc.cnss + Number(p.cnssSalaire),
+      irpp: acc.irpp + Number(p.irpp),
+      net: acc.net + Number(p.netAPayer),
+    }), { gross: 0, cnss: 0, irpp: 0, net: 0 })
+
+    // 3. Find target accounts
+    const acc641 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '641' } }) // Rémunérations
+    const acc431 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '431' } }) // CNSS
+    const acc432 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '432' } }) // IRPP
+    const acc421 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '421' } }) // Salaires dus
+
+    if (!acc641 || !acc431 || !acc432 || !acc421) {
+      throw new Error('Comptes comptables RH (641, 431, 432, 421) non configurés')
+    }
+
+    // 4. Find Journal OD
+    const journal = await tx.accountingJournal.findFirst({ where: { tenantId, code: 'OD' } })
+    if (!journal) throw new Error('Journal OD non configuré')
+
+    // 5. Find/Create Period
+    const periodName = `${year}`
+    let period = await tx.accountingPeriod.findFirst({ where: { tenantId, name: periodName } })
+    if (!period) {
+      period = await tx.accountingPeriod.create({
+        data: {
+          tenantId,
+          name: periodName,
+          startDate: new Date(`${year}-01-01`),
+          endDate: new Date(`${year}-12-31`),
+        }
+      })
+    }
+
+    // 6. Create Journal Entry
+    const entry = await tx.journalEntry.create({
+      data: {
+        tenantId,
+        journalId: journal.id,
+        periodId: period.id,
+        entryNumber: `PAIE-${year}-${month.toString().padStart(2, '0')}`,
+        date: new Date(),
+        description: `Centralisation Paie ${month}/${year}`,
+        lines: {
+          create: [
+            { accountId: acc641.id, debit: totals.gross, credit: 0, description: `Salaires Bruts ${month}/${year}` },
+            { accountId: acc431.id, debit: 0, credit: totals.cnss, description: `CNSS Salariale ${month}/${year}` },
+            { accountId: acc432.id, debit: 0, credit: totals.irpp, description: `IRPP Salariale ${month}/${year}` },
+            { accountId: acc421.id, debit: 0, credit: totals.net, description: `Salaires Nets à payer ${month}/${year}` },
+          ]
+        }
+      }
+    })
+
+    // 7. Update payslips
+    await tx.paySlip.updateMany({
+      where: { id: { in: payslips.map(p => p.id) } },
+      data: { accountingEntryId: entry.id }
+    })
+
+    return entry
+  })
+}
+
 export async function getTrialBalance(tenantId: string, params: { startDate?: string; endDate?: string } = {}) {
   const { startDate, endDate } = params
 
