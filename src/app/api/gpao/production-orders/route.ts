@@ -1,64 +1,37 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { getProductionOrders, createProductionOrder, createProductionOrderSchema } from '@/services/operations'
 
-export async function GET(request: Request) {
+// GET /api/gpao/production-orders?tenantId=
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
 
-    if (!tenantId) {
-      return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
-    }
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    const productionOrders = await prisma.productionOrder.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        workStation: {
-          select: { name: true, code: true }
-        }
-      }
-    })
-
-    return NextResponse.json(productionOrders)
-  } catch (error) {
-    console.error('Error fetching production orders:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    const orders = await getProductionOrders(ctx.tenantId)
+    return NextResponse.json(orders)
+  } catch (err) {
+    return handleApiError(err, 'GET production orders')
   }
 }
 
-export async function POST(request: Request) {
+// POST /api/gpao/production-orders
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json()
-    const {
-      tenantId, workStationId, productId, quantity, status, plannedStartDate, plannedEndDate, notes
-    } = body
+    const body = await req.json()
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    if (!tenantId || !productId || !quantity) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    const data = parseBody(createProductionOrderSchema, { ...body, tenantId: ctx.tenantId })
+    if (data instanceof NextResponse) return data
 
-    const productionOrder = await prisma.productionOrder.create({
-      data: {
-        tenantId,
-        workStationId,
-        productId,
-        quantity: Number(quantity),
-        status: status || 'PENDING',
-        plannedStartDate: plannedStartDate ? new Date(plannedStartDate) : null,
-        plannedEndDate: plannedEndDate ? new Date(plannedEndDate) : null,
-        notes
-      },
-      include: {
-        workStation: {
-          select: { name: true, code: true }
-        }
-      }
-    })
-
-    return NextResponse.json(productionOrder)
-  } catch (error: any) {
-    console.error('Error creating production order:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    const order = await createProductionOrder(data)
+    return NextResponse.json(order, { status: 201 })
+  } catch (err) {
+    return handleApiError(err, 'POST production order')
   }
 }
