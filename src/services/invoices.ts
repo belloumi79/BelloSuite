@@ -134,3 +134,113 @@ export async function createInvoice(data: CreateInvoiceData) {
     return invoice
   })
 }
+
+export async function getPipelineData(tenantId: string) {
+  const documents = await prisma.invoice.findMany({
+    where: { tenantId, type: { in: ['QUOTE', 'ORDER'] } },
+    include: { client: { select: { name: true } } },
+    orderBy: { date: 'desc' },
+  })
+
+  const quotes = documents.filter((d) => d.type === 'QUOTE')
+  const orders = documents.filter((d) => d.type === 'ORDER')
+
+  const quoteStats = {
+    total: quotes.length,
+    draft: quotes.filter((d) => d.status === 'DRAFT').length,
+    sent: quotes.filter((d) => d.status === 'SENT').length,
+    confirmed: quotes.filter((d) => d.status === 'CONFIRMED').length,
+    expired: quotes.filter((d) => d.dueDate && new Date(d.dueDate) < new Date()).length,
+    converted: quotes.filter((d) => d.convertedFromId !== null).length,
+    totalValue: quotes.reduce((s, d) => s + Number(d.totalTTC), 0),
+  }
+
+  const orderStats = {
+    total: orders.length,
+    draft: orders.filter((d) => d.status === 'DRAFT').length,
+    pending: orders.filter((d) => d.status === 'PENDING').length,
+    confirmed: orders.filter((d) => d.status === 'CONFIRMED').length,
+    invoiced: orders.filter((d) => d.convertedFromId !== null).length,
+    totalValue: orders.reduce((s, d) => s + Number(d.totalTTC), 0),
+  }
+
+  const conversionRate = quoteStats.total > 0
+    ? Math.round((quoteStats.confirmed / quoteStats.total) * 100)
+    : 0
+
+  const pipelineItems = documents.map((doc) => ({
+    id: doc.id,
+    number: doc.number,
+    clientName: doc.client?.name || '—',
+    date: doc.date.toISOString().split('T')[0],
+    dueDate: doc.dueDate ? doc.dueDate.toISOString().split('T')[0] : null,
+    totalTTC: Number(doc.totalTTC),
+    status: doc.status,
+    type: doc.type,
+    daysUntilDue: doc.dueDate
+      ? Math.floor((new Date(doc.dueDate).getTime() - Date.now()) / 86400000)
+      : null,
+  }))
+
+  return { quoteStats, orderStats, conversionRate, pipelineItems }
+}
+
+export async function convertDocument(id: string, tenantId: string, targetType: string) {
+  const source = await prisma.invoice.findFirst({
+    where: { id, tenantId },
+    include: { items: true, client: true },
+  })
+
+  if (!source) throw new BusinessError('Document source introuvable', 404)
+
+  const typeMap: Record<string, string> = { QUOTE: 'ORDER', ORDER: 'INVOICE' }
+  const actualTarget = typeMap[source.type] || targetType
+  const prefix = actualTarget === 'ORDER' ? 'BC' : actualTarget === 'INVOICE' ? 'FAC' : actualTarget
+  const newNumber = `${prefix}-${source.client?.code || 'CL'}-${Date.now().toString(36).toUpperCase()}`
+
+  return prisma.$transaction(async (tx) => {
+    const newDoc = await tx.invoice.create({
+      data: {
+        tenantId,
+        clientId: source.clientId,
+        number: newNumber,
+        type: actualTarget as any,
+        status: InvoiceStatus.PENDING,
+        date: new Date(),
+        dueDate: new Date(Date.now() + 30 * 86400000),
+        subtotalHT: source.subtotalHT,
+        totalFodec: source.totalFodec,
+        totalVAT: source.totalVAT,
+        timbreFiscal: actualTarget === 'INVOICE' ? 1 : 0,
+        totalTTC: actualTarget === 'INVOICE' ? Number(source.totalTTC) + 1 : source.totalTTC,
+        vatSummary: (source.vatSummary ?? {}) as any,
+        notes: `Converti depuis ${source.type} ${source.number}`,
+        convertedFromId: source.id,
+        items: {
+          create: source.items.map((item) => ({
+            productId: item.productId,
+            description: item.description,
+            unit: item.unit,
+            quantity: item.quantity,
+            unitPriceHT: item.unitPriceHT,
+            discount: item.discount,
+            fodecApply: item.fodecApply,
+            fodecAmount: item.fodecAmount,
+            vatRate: item.vatRate,
+            vatAmount: item.vatAmount,
+            totalHT: item.totalHT,
+            totalTTC: item.totalTTC,
+          })),
+        },
+      },
+    })
+
+    // Update source status
+    await tx.invoice.update({
+      where: { id: source.id },
+      data: { status: InvoiceStatus.CONFIRMED },
+    })
+
+    return newDoc
+  })
+}

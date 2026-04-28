@@ -1,52 +1,39 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { getSuppliers, createSupplier, createSupplierSchema } from '@/services/suppliers'
 
-export async function GET(request: Request) {
+// GET /api/commercial/suppliers?tenantId=&activeOnly=true
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
 
-    if (!tenantId) {
-      return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
-    }
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    const suppliers = await prisma.supplier.findMany({
-      where: { tenantId },
-      orderBy: { name: 'asc' },
-    })
-
+    const activeOnly = searchParams.get('activeOnly') === 'true'
+    const suppliers = await getSuppliers(ctx.tenantId, activeOnly)
     return NextResponse.json(suppliers)
-  } catch (error) {
-    console.error('Error fetching suppliers:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'GET suppliers')
   }
 }
 
-export async function POST(request: Request) {
+// POST /api/commercial/suppliers
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json()
-    const { tenantId, code, name, email, phone, address, city, matriculeFiscal } = body
+    const body = await req.json()
 
-    if (!tenantId || !name) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    const supplier = await prisma.supplier.create({
-      data: {
-        tenantId,
-        code: code || `SUP-${Date.now()}`,
-        name,
-        email,
-        phone,
-        address,
-        city,
-        matriculeFiscal,
-      },
-    })
+    const data = parseBody(createSupplierSchema, { ...body, tenantId: ctx.tenantId })
+    if (data instanceof NextResponse) return data
 
-    return NextResponse.json(supplier)
-  } catch (error) {
-    console.error('Error creating supplier:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    const supplier = await createSupplier(data)
+    return NextResponse.json(supplier, { status: 201 })
+  } catch (err) {
+    return handleApiError(err, 'POST supplier')
   }
 }

@@ -1,38 +1,65 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { updateSupplier, updateSupplierSchema, deleteSupplier, getSupplierById } from '@/services/suppliers'
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+// GET /api/commercial/suppliers/[id]?tenantId=
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { searchParams } = new URL(req.url)
+    const tenantId = searchParams.get('tenantId')
+
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
     const { id } = await params
-    const body = await request.json()
-    const { name, email, phone, address, city, matriculeFiscal } = body
-
-    const supplier = await prisma.supplier.update({
-      where: { id },
-      data: {
-        name,
-        email,
-        phone,
-        address,
-        city,
-        matriculeFiscal,
-      },
-    })
-
+    const supplier = await getSupplierById(id, ctx.tenantId)
     return NextResponse.json(supplier)
-  } catch (error) {
-    console.error('Error updating supplier:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'GET supplier')
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+// PUT /api/commercial/suppliers/[id]
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const body = await req.json()
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
+    const data = parseBody(updateSupplierSchema, body)
+    if (data instanceof NextResponse) return data
+
     const { id } = await params
-    await prisma.supplier.delete({ where: { id } })
+    const supplier = await updateSupplier(id, ctx.tenantId, data)
+    return NextResponse.json(supplier)
+  } catch (err) {
+    return handleApiError(err, 'PUT supplier')
+  }
+}
+
+// DELETE /api/commercial/suppliers/[id]?tenantId=
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const tenantId = searchParams.get('tenantId')
+
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
+    const { id } = await params
+    await deleteSupplier(id, ctx.tenantId)
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error deleting supplier:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'DELETE supplier')
   }
 }
