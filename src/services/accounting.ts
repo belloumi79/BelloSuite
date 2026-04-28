@@ -136,6 +136,86 @@ export async function createJournalEntry(data: JournalEntryData) {
   })
 }
 
+export async function postInvoiceToAccounting(invoiceId: string, tenantId: string) {
+  return prisma.$transaction(async (tx) => {
+    // 1. Get invoice with details
+    const invoice = await tx.invoice.findUnique({
+      where: { id: invoiceId },
+      include: { client: true, items: true }
+    })
+
+    if (!invoice || invoice.tenantId !== tenantId) throw new Error('Facture introuvable')
+    if (invoice.accountingEntryId) throw new Error('Facture déjà comptabilisée')
+
+    // 2. Find target accounts
+    const acc411 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '411' } })
+    const acc701 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '701' } })
+    const acc445 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '445' } }) // TVA (Simplified)
+    const acc543 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '543' } }) // Timbre (Simplified)
+
+    if (!acc411 || !acc701) {
+      throw new Error('Comptes comptables de base (411, 701) non configurés')
+    }
+
+    // 3. Find Sales Journal
+    const journal = await tx.accountingJournal.findFirst({ where: { tenantId, code: 'VT' } })
+    if (!journal) throw new Error('Journal des Ventes (VT) non configuré')
+
+    // 4. Find/Create Period (simplified: current year)
+    const currentYear = new Date().getFullYear().toString()
+    let period = await tx.accountingPeriod.findFirst({ where: { tenantId, name: currentYear } })
+    if (!period) {
+      period = await tx.accountingPeriod.create({
+        data: {
+          tenantId,
+          name: currentYear,
+          startDate: new Date(`${currentYear}-01-01`),
+          endDate: new Date(`${currentYear}-12-31`),
+        }
+      })
+    }
+
+    // 5. Prepare lines
+    const lines = [
+      { accountId: acc411.id, debit: Number(invoice.totalTTC), credit: 0, description: `Facture ${invoice.number}` },
+      { accountId: acc701.id, debit: 0, credit: Number(invoice.subtotalHT), description: `Vente HT ${invoice.number}` },
+    ]
+
+    if (Number(invoice.totalVAT) > 0) {
+      const vatAccId = acc445?.id || (await tx.accountingAccount.create({ data: { tenantId, accountNumber: '445', name: 'TVA Collectée', type: 'LIABILITY' } })).id
+      lines.push({ accountId: vatAccId, debit: 0, credit: Number(invoice.totalVAT), description: `TVA sur ${invoice.number}` })
+    }
+
+    if (Number(invoice.timbreFiscal) > 0) {
+      const stampAccId = acc543?.id || (await tx.accountingAccount.create({ data: { tenantId, accountNumber: '543', name: 'Timbre Fiscal', type: 'LIABILITY' } })).id
+      lines.push({ accountId: stampAccId, debit: 0, credit: Number(invoice.timbreFiscal), description: `Timbre sur ${invoice.number}` })
+    }
+
+    // 6. Create Journal Entry
+    const entry = await tx.journalEntry.create({
+      data: {
+        tenantId,
+        journalId: journal.id,
+        periodId: period.id,
+        entryNumber: `POST-${invoice.number}`,
+        date: invoice.date,
+        description: `Comptabilisation Facture ${invoice.number}`,
+        lines: {
+          createMany: { data: lines }
+        }
+      }
+    })
+
+    // 7. Link to invoice
+    await tx.invoice.update({
+      where: { id: invoiceId },
+      data: { accountingEntryId: entry.id }
+    })
+
+    return entry
+  })
+}
+
 export async function getTrialBalance(tenantId: string, params: { startDate?: string; endDate?: string } = {}) {
   const { startDate, endDate } = params
 

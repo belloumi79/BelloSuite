@@ -74,8 +74,9 @@ model Invoice {
   convertedFromId String?
   convertedAt     DateTime?
 
-  notes     String?
-  createdAt DateTime @default(now())
+  notes             String?
+  accountingEntryId String?
+  createdAt         DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // ─── TTN / El Fatoora E-Invoicing ───────────────────────
