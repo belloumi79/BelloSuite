@@ -216,6 +216,77 @@ export async function postInvoiceToAccounting(invoiceId: string, tenantId: strin
   })
 }
 
+export async function postPaymentToAccounting(invoiceId: string, tenantId: string, method: 'CASH' | 'BANK' = 'BANK') {
+  return prisma.$transaction(async (tx) => {
+    // 1. Get invoice
+    const invoice = await tx.invoice.findUnique({
+      where: { id: invoiceId },
+      include: { client: true }
+    })
+
+    if (!invoice || invoice.tenantId !== tenantId) throw new Error('Facture introuvable')
+    if (invoice.paymentEntryId) throw new Error('Règlement déjà comptabilisé')
+
+    // 2. Find target accounts
+    const acc411 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '411' } })
+    const accTreasury = await tx.accountingAccount.findFirst({ 
+      where: { tenantId, accountNumber: method === 'BANK' ? '512' : '531' } 
+    })
+
+    if (!acc411 || !accTreasury) {
+      throw new Error(`Comptes comptables (411, ${method === 'BANK' ? '512' : '531'}) non configurés`)
+    }
+
+    // 3. Find Journal (BANK or CASH)
+    const journalCode = method === 'BANK' ? 'BQ' : 'CS'
+    const journal = await tx.accountingJournal.findFirst({ where: { tenantId, code: journalCode } })
+    if (!journal) throw new Error(`Journal ${journalCode} non configuré`)
+
+    // 4. Find/Create Period
+    const currentYear = new Date().getFullYear().toString()
+    let period = await tx.accountingPeriod.findFirst({ where: { tenantId, name: currentYear } })
+    if (!period) {
+      period = await tx.accountingPeriod.create({
+        data: {
+          tenantId,
+          name: currentYear,
+          startDate: new Date(`${currentYear}-01-01`),
+          endDate: new Date(`${currentYear}-12-31`),
+        }
+      })
+    }
+
+    // 5. Create Journal Entry
+    const entry = await tx.journalEntry.create({
+      data: {
+        tenantId,
+        journalId: journal.id,
+        periodId: period.id,
+        entryNumber: `PAY-${invoice.number}`,
+        date: new Date(),
+        description: `Règlement Facture ${invoice.number}`,
+        lines: {
+          create: [
+            { accountId: accTreasury.id, debit: Number(invoice.totalTTC), credit: 0, description: `Encaissement ${invoice.number}` },
+            { accountId: acc411.id, debit: 0, credit: Number(invoice.totalTTC), description: `Solder ${invoice.number}` },
+          ]
+        }
+      }
+    })
+
+    // 6. Update invoice status & link
+    await tx.invoice.update({
+      where: { id: invoiceId },
+      data: { 
+        status: 'PAID',
+        paymentEntryId: entry.id 
+      }
+    })
+
+    return entry
+  })
+}
+
 export async function getTrialBalance(tenantId: string, params: { startDate?: string; endDate?: string } = {}) {
   const { startDate, endDate } = params
 

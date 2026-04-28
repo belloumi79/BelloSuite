@@ -76,6 +76,7 @@ model Invoice {
 
   notes             String?
   accountingEntryId String?
+  paymentEntryId    String?
   createdAt         DateTime @default(now())
   updatedAt DateTime @updatedAt
 
