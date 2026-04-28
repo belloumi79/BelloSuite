@@ -11,6 +11,12 @@ import type { SessionPayload } from './session'
 export type ApiContext = {
   user: SessionPayload
   tenantId: string
+  userRole: string
+}
+
+export type SuperAdminContext = {
+  user: SessionPayload
+  userRole: string
 }
 
 /**
@@ -44,7 +50,31 @@ export function getApiContext(
     return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
   }
 
-  return { user, tenantId }
+  return { 
+    user, 
+    tenantId,
+    userRole: user.role
+  }
+}
+
+/**
+ * Specialized context for Super Admin routes that don't require a tenantId.
+ */
+export function getSuperAdminContext(req: NextRequest): SuperAdminContext | NextResponse {
+  const user = getCurrentUserFromHeaders(req)
+
+  if (!user) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
+
+  if (user.role !== 'SUPER_ADMIN') {
+    return NextResponse.json({ error: 'Accès réservé au Super Admin' }, { status: 403 })
+  }
+
+  return { 
+    user, 
+    userRole: user.role
+  }
 }
 
 /**
