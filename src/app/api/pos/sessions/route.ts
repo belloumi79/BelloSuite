@@ -1,87 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { getSessions, openSession, openSessionSchema } from '@/services/pos'
 
-// GET /api/pos/sessions - List sessions
-// POST /api/pos/sessions - Open new session
+// GET /api/pos/sessions
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const tenantId = searchParams.get('tenantId')
-  const status = searchParams.get('status')
+  try {
+    const { searchParams } = new URL(req.url)
+    const tenantId = searchParams.get('tenantId')
 
-  if (!tenantId) {
-    return NextResponse.json({ error: 'Missing tenantId' }, { status: 400 })
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
+    const sessions = await getSessions(ctx.tenantId)
+    return NextResponse.json(sessions)
+  } catch (err) {
+    return handleApiError(err, 'GET pos sessions')
   }
-
-  const where: any = { tenantId }
-  if (status) where.status = status
-
-  const sessions = await prisma.pOSSession.findMany({
-    where,
-    include: {
-      orders: {
-        select: {
-          id: true,
-          totalTTC: true,
-          isPaid: true,
-          status: true,
-        },
-      },
-    },
-    orderBy: { openedAt: 'desc' },
-    take: 20,
-  })
-
-  // Calculate totals per session
-  const sessionsWithTotals = sessions.map(s => ({
-    ...s,
-    ordersCount: s.orders.length,
-    totalSales: s.orders.reduce((sum, o) => sum + (o.isPaid ? Number(o.totalTTC) : 0), 0),
-  }))
-
-  return NextResponse.json(sessionsWithTotals)
 }
 
+// POST /api/pos/sessions
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { tenantId, userId, userName, openingCash } = body
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    if (!tenantId || !userId || !userName) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
-
-    // Check for open session
-    const existingOpen = await prisma.pOSSession.findFirst({
-      where: { tenantId, status: 'OPEN' },
+    const data = parseBody(openSessionSchema, {
+      ...body,
+      tenantId: ctx.tenantId,
+      userId: ctx.user.id,
+      userName: `${ctx.user.firstName}`
     })
+    if (data instanceof NextResponse) return data
 
-    if (existingOpen) {
-      return NextResponse.json(
-        { error: 'Une session est déjà ouverte', session: existingOpen },
-        { status: 409 }
-      )
-    }
-
-    // Create or update cash drawer
-    await prisma.cashDrawer.upsert({
-      where: { tenantId },
-      update: {},
-      create: { tenantId, balance: openingCash || 0 },
-    })
-
-    const session = await prisma.pOSSession.create({
-      data: {
-        tenantId,
-        userId,
-        userName,
-        openingCash: openingCash || 0,
-        status: 'OPEN',
-      },
-    })
-
+    const session = await openSession(data)
     return NextResponse.json(session, { status: 201 })
   } catch (err) {
-    console.error('POS session error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(err, 'POST pos session')
   }
 }
