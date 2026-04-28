@@ -1,76 +1,38 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { getReconciliationData, reconcile, reconcileSchema } from '@/services/bank'
 
 // GET /api/commercial/bank/reconcile?tenantId=&bankAccountId=
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
-    const bankAccountId = searchParams.get('bankAccountId')
-    const bankAccountFilter = bankAccountId ? { bankAccountId } : {}
-    if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
+    const bankAccountId = searchParams.get('bankAccountId') ?? undefined
 
-    // Fetch unreconciled bank statement lines
-    const statementLines = await prisma.bankStatementLine.findMany({
-      where: {
-        statement: { tenantId, ...bankAccountFilter },
-        status: 'OPEN',
-      },
-      include: { statement: true },
-      orderBy: { lineDate: 'asc' },
-    })
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    // Fetch unreconciled journal entry lines for bank/cash journals
-    const journalLines = await prisma.journalEntryLine.findMany({
-      where: {
-        journalEntry: { tenantId, isPosted: true, journal: { type: { in: ['BANK', 'CASH'] } } },
-        reconciliations: { none: {} },
-      },
-      include: { journalEntry: true, account: true },
-      orderBy: { journalEntry: { date: 'asc' } },
-    })
-
-    return NextResponse.json({ statementLines, journalLines })
-  } catch (e) {
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    const data = await getReconciliationData(ctx.tenantId, bankAccountId)
+    return NextResponse.json(data)
+  } catch (err) {
+    return handleApiError(err, 'GET reconciliation data')
   }
 }
 
 // POST /api/commercial/bank/reconcile
-// Body: { tenantId, bankAccountId, statementLineId, journalEntryLineId, amount }
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { tenantId, statementLineId, journalEntryLineId, amount, notes } = await req.json()
-    if (!tenantId || !statementLineId || !journalEntryLineId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    const body = await req.json()
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    // Derive bankAccountId from the statement line
-    const line = await prisma.bankStatementLine.findUnique({
-      where: { id: statementLineId },
-      include: { statement: { include: { bankAccount: true } } },
-    })
-    const bankAccountId = line?.statement.bankAccount.id
+    const data = parseBody(reconcileSchema, { ...body, tenantId: ctx.tenantId })
+    if (data instanceof NextResponse) return data
 
-    const reconciliation = await prisma.bankReconciliation.create({
-      data: {
-        tenantId,
-        statementLineId,
-        journalEntryLineId,
-        bankStatementId: line?.statementId || '',
-        bankAccountId: bankAccountId || '',
-        amount,
-        notes,
-      },
-    })
-
-    await prisma.bankStatementLine.update({
-      where: { id: statementLineId },
-      data: { status: 'MATCHED', matchedEntryLineId: journalEntryLineId },
-    })
-
-    return NextResponse.json(reconciliation, { status: 201 })
-  } catch (e) {
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    const result = await reconcile(data)
+    return NextResponse.json(result, { status: 201 })
+  } catch (err) {
+    return handleApiError(err, 'POST reconciliation')
   }
 }

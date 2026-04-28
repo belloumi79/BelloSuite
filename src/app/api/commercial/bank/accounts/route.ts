@@ -1,37 +1,37 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { getBankAccounts, createBankAccount, createBankAccountSchema } from '@/services/bank'
 
 // GET /api/commercial/bank/accounts?tenantId=
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
-    if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
-    const accounts = await prisma.bankAccount.findMany({
-      where: { tenantId, isActive: true },
-      include: { accountingAccount: true },
-      orderBy: { createdAt: 'desc' },
-    })
+
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
+    const accounts = await getBankAccounts(ctx.tenantId)
     return NextResponse.json(accounts)
-  } catch (e) {
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'GET bank accounts')
   }
 }
 
 // POST /api/commercial/bank/accounts
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { tenantId, label, bankName, accountNumber, rib, currency, accountingAccountId } = body
-    if (!tenantId || !label || !bankName || !accountNumber) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
-    const account = await prisma.bankAccount.create({
-      data: { tenantId, label, bankName, accountNumber, rib, currency: currency || 'TND', accountingAccountId },
-      include: { accountingAccount: true },
-    })
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
+    const data = parseBody(createBankAccountSchema, { ...body, tenantId: ctx.tenantId })
+    if (data instanceof NextResponse) return data
+
+    const account = await createBankAccount(data)
     return NextResponse.json(account, { status: 201 })
-  } catch (e) {
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'POST bank account')
   }
 }
