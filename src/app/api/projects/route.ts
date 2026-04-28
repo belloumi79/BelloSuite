@@ -1,45 +1,37 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { getProjects, createProject, createProjectSchema } from '@/services/projects'
 
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
-
-export async function GET(request: Request) {
+// GET /api/projects?tenantId=
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const tenantId = searchParams.get("tenantId")
-    if (!tenantId) return NextResponse.json({ error: "tenantId required" }, { status: 400 })
+    const { searchParams } = new URL(req.url)
+    const tenantId = searchParams.get('tenantId')
 
-    const projects = await prisma.project.findMany({
-      where: { tenantId },
-      include: {
-        columns: { orderBy: { position: 'asc' } },
-        members: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
+    const projects = await getProjects(ctx.tenantId)
     return NextResponse.json(projects)
-  } catch (error) {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'GET projects')
   }
 }
 
-export async function POST(request: Request) {
+// POST /api/projects
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json()
-    const { tenantId, name, description, color, endDate } = body
-    if (!tenantId || !name) return NextResponse.json({ error: "tenantId and name required" }, { status: 400 })
+    const body = await req.json()
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    const project = await prisma.project.create({
-      data: { tenantId, name, description, color: color || "#6366f1", endDate: endDate ? new Date(endDate) : null },
-    })
+    const data = parseBody(createProjectSchema, { ...body, tenantId: ctx.tenantId })
+    if (data instanceof NextResponse) return data
 
-    // Create default Kanban columns
-    const defaultColumns = ["À faire", "En cours", "Terminé"]
-    for (let i = 0; i < defaultColumns.length; i++) {
-      await prisma.projectColumn.create({ data: { projectId: project.id, name: defaultColumns[i], position: i, color: "#6366f1" } })
-    }
-
-    return NextResponse.json(project)
-  } catch (error) {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+    const project = await createProject(data)
+    return NextResponse.json(project, { status: 201 })
+  } catch (err) {
+    return handleApiError(err, 'POST project')
   }
 }
