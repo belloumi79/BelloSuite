@@ -1,51 +1,37 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext, parseBody } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { getJournals, createJournalEntry, journalEntrySchema } from '@/services/accounting'
 
-const prisma = new PrismaClient()
-
-export async function GET(req: Request) {
+// GET /api/accounting/journals
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
 
-    if (!tenantId) {
-      return NextResponse.json({ error: 'Missing tenantId' }, { status: 400 })
-    }
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    const journals = await prisma.accountingJournal.findMany({
-      where: { tenantId },
-      orderBy: { code: 'asc' }
-    })
-
+    const journals = await getJournals(ctx.tenantId)
     return NextResponse.json(journals)
-  } catch (error) {
-    console.error('Error fetching journals:', error)
-    return NextResponse.json({ error: 'Failed to fetch journals' }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err, 'GET journals')
   }
 }
 
-export async function POST(req: Request) {
+// POST /api/accounting/journals/entries
+export async function POST(req: NextRequest) {
   try {
-    const { tenantId, code, name, type } = await req.json()
+    const body = await req.json()
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
 
-    if (!tenantId || !code || !name || !type) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    const data = parseBody(journalEntrySchema, { ...body, tenantId: ctx.tenantId })
+    if (data instanceof NextResponse) return data
 
-    const newJournal = await prisma.accountingJournal.create({
-      data: {
-        code,
-        name,
-        type,
-        tenant: {
-          connect: { id: tenantId }
-        }
-      }
-    })
-
-    return NextResponse.json(newJournal, { status: 201 })
-  } catch (error) {
-    console.error('Error creating journal:', error)
-    return NextResponse.json({ error: 'Failed to create journal' }, { status: 500 })
+    const entry = await createJournalEntry(data)
+    return NextResponse.json(entry, { status: 201 })
+  } catch (err) {
+    return handleApiError(err, 'POST journal entry')
   }
 }

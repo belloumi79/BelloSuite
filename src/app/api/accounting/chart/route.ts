@@ -1,0 +1,41 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getApiContext } from '@/lib/api'
+import { handleApiError } from '@/lib/errors'
+import { getChartOfAccounts, initChartOfAccounts } from '@/services/accounting'
+
+// GET /api/accounting/chart
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const tenantId = searchParams.get('tenantId')
+
+    const ctx = getApiContext(req, tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
+    let accounts = await getChartOfAccounts(ctx.tenantId)
+
+    // Auto-init if empty
+    if (accounts.length === 0) {
+      await initChartOfAccounts(ctx.tenantId)
+      accounts = await getChartOfAccounts(ctx.tenantId)
+    }
+
+    return NextResponse.json(accounts)
+  } catch (err) {
+    return handleApiError(err, 'GET accounting chart')
+  }
+}
+
+// POST /api/accounting/chart/init (Manual init)
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const ctx = getApiContext(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
+
+    await initChartOfAccounts(ctx.tenantId)
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    return handleApiError(err, 'POST accounting init')
+  }
+}
