@@ -19,5 +19,6 @@
     "autoJobCancelation": true,
     "autoAlias": true,
     "silent": true
-  }
+  },
+  "buildCommand": "npm run vercel-build"
 }
