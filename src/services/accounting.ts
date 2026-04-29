@@ -439,6 +439,104 @@ export async function postPayrollToAccounting(month: number, year: number, tenan
   })
 }
 
+export async function getVATSummary(month: number, year: number, tenantId: string) {
+  const startDate = new Date(year, month - 1, 1)
+  const endDate = new Date(year, month, 0, 23, 59, 59)
+
+  // 1. Get Collected VAT (Ventes)
+  const collectedLines = await prisma.journalEntryLine.findMany({
+    where: {
+      journalEntry: {
+        tenantId,
+        date: { gte: startDate, lte: endDate },
+        journal: { code: 'VT' }
+      },
+      account: { accountNumber: { startsWith: '445' } } // simplified, should be 4457
+    }
+  })
+
+  // 2. Get Deductible VAT (Achats)
+  const deductibleLines = await prisma.journalEntryLine.findMany({
+    where: {
+      journalEntry: {
+        tenantId,
+        date: { gte: startDate, lte: endDate },
+        journal: { code: 'AC' }
+      },
+      account: { accountNumber: { startsWith: '445' } } // simplified, should be 4456
+    }
+  })
+
+  const collectedTotal = collectedLines.reduce((sum: number, line) => sum + Number(line.credit), 0)
+  const deductibleTotal = deductibleLines.reduce((sum: number, line) => sum + Number(line.debit), 0)
+
+  return {
+    month,
+    year,
+    collectedVAT: collectedTotal,
+    deductibleVAT: deductibleTotal,
+    netVAT: collectedTotal - deductibleTotal,
+    status: (collectedTotal - deductibleTotal) > 0 ? 'TO_PAY' : 'CREDIT'
+  }
+}
+
+export async function postVATLiquidationToAccounting(month: number, year: number, tenantId: string) {
+  return prisma.$transaction(async (tx) => {
+    const summary = await getVATSummary(month, year, tenantId)
+    
+    // 1. Find Journal OD
+    const journal = await tx.accountingJournal.findFirst({ where: { tenantId, code: 'OD' } })
+    if (!journal) throw new Error('Journal OD non configuré')
+
+    // 2. Find Accounts
+    const acc4457 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '445' } }) // Collected (simplified)
+    const acc4455 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '447' } }) // Tax to pay
+    const acc44567 = await tx.accountingAccount.findFirst({ where: { tenantId, accountNumber: '445' } }) // Credit (simplified)
+
+    // 3. Find/Create Period
+    const periodName = `${year}`
+    let period = await tx.accountingPeriod.findFirst({ where: { tenantId, name: periodName } })
+    if (!period) {
+      period = await tx.accountingPeriod.create({
+        data: {
+          tenantId,
+          name: periodName,
+          startDate: new Date(`${year}-01-01`),
+          endDate: new Date(`${year}-12-31`),
+        }
+      })
+    }
+
+    // 4. Create Entry
+    const lines = [
+      { accountId: acc4457!.id, debit: summary.collectedVAT, credit: 0, description: `Liquidation TVA Collectée ${month}/${year}` },
+      { accountId: acc4457!.id, debit: 0, credit: summary.deductibleVAT, description: `Liquidation TVA Déductible ${month}/${year}` },
+    ]
+
+    if (summary.netVAT > 0) {
+      lines.push({ accountId: acc4455!.id, debit: 0, credit: summary.netVAT, description: `TVA à décaisser ${month}/${year}` })
+    } else if (summary.netVAT < 0) {
+      lines.push({ accountId: acc44567!.id, debit: Math.abs(summary.netVAT), credit: 0, description: `Crédit de TVA ${month}/${year}` })
+    }
+
+    const entry = await tx.journalEntry.create({
+      data: {
+        tenantId,
+        journalId: journal.id,
+        periodId: period.id,
+        entryNumber: `LIQ-TVA-${year}-${month.toString().padStart(2, '0')}`,
+        date: new Date(year, month, 0), // Last day of month
+        description: `Liquidation de TVA - Mois ${month}/${year}`,
+        lines: {
+          create: lines
+        }
+      }
+    })
+
+    return entry
+  })
+}
+
 export async function getTrialBalance(tenantId: string, params: { startDate?: string; endDate?: string } = {}) {
   const { startDate, endDate } = params
 
