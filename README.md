@@ -1,5 +1,7 @@
 # BelloSuite ERP
 
+Production deployment branch - v1.0.1
+
 BelloSuite est un système ERP modulaire SaaS conçu spécifiquement pour le marché tunisien (PMEs). 
 Il offre une gestion complète de l'entreprise via une architecture multi-tenant et des modules activables à la demande.
 
