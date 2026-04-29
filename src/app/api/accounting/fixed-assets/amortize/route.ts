@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { postAmortizationToAccounting } from '@/services/accounting'
 
-// Amortize fixed assets for a given month/year
+// Amortize fixed assets for a given month/year - updated
 
 export async function POST(req: Request) {
   try {
