@@ -580,6 +580,132 @@ export async function getTrialBalance(tenantId: string, params: { startDate?: st
   return Array.from(balanceMap.values()).sort((a, b) => a.accountNumber.localeCompare(b.accountNumber))
 }
 
+export async function postAmortizationToAccounting(month: number, year: number, tenantId: string) {
+  return prisma.$transaction(async (tx) => {
+    // 1. Get active assets that are not fully amortized
+    const assets = await tx.asset.findMany({
+      where: {
+        tenantId,
+        isActive: true,
+        // NOT fully amortized: accumulatedAmortization < (purchaseValue - salvageValue)
+        // We'll compute in JavaScript for simplicity, but could be done in Prisma with a filter
+        // We'll fetch all active assets and filter later
+      },
+    });
+
+    // Filter out assets that are fully amortized
+    const activeAssets = assets.filter(asset => {
+      const purchaseValueNum = Number(asset.purchaseValue ?? 0);
+      const salvageValueNum = Number(asset.salvageValue ?? 0);
+      const accumulatedAmortizationNum = Number(asset.accumulatedAmortization);
+      const depreciableBase = purchaseValueNum - salvageValueNum;
+      return accumulatedAmortizationNum < depreciableBase;
+    });
+
+    if (activeAssets.length === 0) {
+      throw new Error('No active assets found for amortization');
+    }
+
+     // 2. Calculate monthly amortization for each asset and prepare lines
+     const lines = [];
+     let totalAmortization = 0;
+
+     for (const asset of activeAssets) {
+       const purchaseValueNum = Number(asset.purchaseValue ?? 0);
+       const salvageValueNum = Number(asset.salvageValue ?? 0);
+       const usefulLifeNum = Number(asset.usefulLife ?? 1);
+       const depreciableBase = purchaseValueNum - salvageValueNum;
+       const annualAmortization = depreciableBase / usefulLifeNum;
+       const monthlyAmortization = annualAmortization / 12;
+
+       // We'll accumulate the total amortization to create a single journal entry line per account?
+       // But the plan says to generate an entry in the journal OD. It doesn't specify if it's one entry per asset or one entry for all.
+       // We'll follow the pattern of other functions: one journal entry for the batch.
+       // So we will create two lines: one for debit (681) and one for credit (28) for the total.
+
+       totalAmortization += monthlyAmortization;
+     }
+
+    // 3. Find target accounts: 681 (Dotations aux amortissements) and 28 (Amortissements cumulés)
+    const account681 = await tx.accountingAccount.findFirst({
+      where: { tenantId, accountNumber: '681' },
+    });
+    const account28 = await tx.accountingAccount.findFirst({
+      where: { tenantId, accountNumber: '28' },
+    });
+
+    if (!account681 || !account28) {
+      throw new Error('Comptes comptables d\'amortissement (681, 28) non configurés');
+    }
+
+    // 4. Find Journal OD
+    const journal = await tx.accountingJournal.findFirst({
+      where: { tenantId, code: 'OD' },
+    });
+    if (!journal) throw new Error('Journal OD non configuré');
+
+    // 5. Find/Create Period
+    const periodName = `${year}`;
+    let period = await tx.accountingPeriod.findFirst({
+      where: { tenantId, name: periodName },
+    });
+    if (!period) {
+      period = await tx.accountingPeriod.create({
+        data: {
+          tenantId,
+          name: periodName,
+          startDate: new Date(`${year}-01-01`),
+          endDate: new Date(`${year}-12-31`),
+        }
+      });
+    }
+
+    // 6. Create Journal Entry
+    const entryNumber = `AMO-${year}-${month.toString().padStart(2, '0')}`;
+    const entry = await tx.journalEntry.create({
+      data: {
+        tenantId,
+        journalId: journal.id,
+        periodId: period.id,
+        entryNumber,
+        date: new Date(year, month - 1, 1), // First day of month? Or last? We'll use first day for simplicity.
+        description: `Dotation aux amortissements ${month}/${year}`,
+        lines: {
+          create: [
+            { accountId: account681.id, debit: totalAmortization, credit: 0, description: `Dotation aux amortissements ${month}/${year}` },
+            { accountId: account28.id, debit: 0, credit: totalAmortization, description: `Amortissements cumulés ${month}/${year}` },
+          ]
+        }
+      },
+      include: { lines: true }
+    });
+
+     // 7. Update accumulated amortization for each asset
+     for (const asset of activeAssets) {
+       const purchaseValueNum = Number(asset.purchaseValue ?? 0);
+       const salvageValueNum = Number(asset.salvageValue ?? 0);
+       const usefulLifeNum = Number(asset.usefulLife ?? 1);
+       const depreciableBase = purchaseValueNum - salvageValueNum;
+       const annualAmortization = depreciableBase / usefulLifeNum;
+       const monthlyAmortization = annualAmortization / 12;
+
+       await tx.asset.update({
+         where: { id: asset.id },
+         data: {
+           accumulatedAmortization: {
+             increment: monthlyAmortization
+           }
+         }
+       });
+     }
+
+    return entry;
+  });
+}
+
+/**
+ * Initialize a standard Tunisian Chart of Accounts for a new tenant.
+ */
 export async function getGeneralLedger(tenantId: string, params: { startDate?: string; endDate?: string; accountId?: string } = {}) {
   const { startDate, endDate, accountId } = params
 

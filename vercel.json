@@ -1,6 +1,23 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "npm run vercel-build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install"
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "runtime": "@vercel/node"
+    }
+  },
+  "regions": ["fra1"],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "github": {
+    "autoJobCancelation": true,
+    "autoAlias": true,
+    "silent": true
+  }
 }

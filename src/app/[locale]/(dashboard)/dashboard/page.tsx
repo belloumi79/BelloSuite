@@ -20,7 +20,9 @@ import {
   Clock
 } from 'lucide-react'
 import { useDashboardKPIs } from '@/hooks/useDashboardKPIs'
+import { useTrendData } from '@/hooks/useTrendData'
 import { QuickActions } from '@/components/dashboard/QuickActions'
+import { LineChartWrapper, BarChartWrapper } from '@/components/ui/charts'
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('fr-TN', {
@@ -235,10 +237,49 @@ export default function DashboardSummary() {
         </div>
       </div>
 
-      {/* Top Products */}
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {trends?.monthlyData && trends.monthlyData.length > 0 && (
+          <div className="bg-white rounded-[2rem] p-6 border border-stone-200 shadow-sm">
+            <h3 className="font-black text-stone-900 mb-4">Évolution du CA (6 mois)</h3>
+            <div className="h-64">
+              <LineChartWrapper
+                data={trends.monthlyData.map(d => ({
+                  name: new Date(d.month + '-01').toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }),
+                  value: d.revenue
+                }))}
+                dataKey="value"
+                name="Chiffre d'affaires"
+                unit="TND"
+                height={250}
+              />
+            </div>
+          </div>
+        )}
+
+        {trends?.topProducts && trends.topProducts.length > 0 && (
+          <div className="bg-white rounded-[2rem] p-6 border border-stone-200 shadow-sm">
+            <h3 className="font-black text-stone-900 mb-4">Produits les plus vendus (6 mois)</h3>
+            <div className="h-64">
+              <BarChartWrapper
+                data={trends.topProducts.map(p => ({
+                  name: p.name.length > 15 ? p.name.slice(0, 15) + '...' : p.name,
+                  value: p.quantity
+                }))}
+                dataKey="value"
+                name="Quantité vendue"
+                unit="unités"
+                height={250}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Top Products (list view) */}
       {kpis && kpis.topProducts.length > 0 && (
         <div className="bg-white rounded-[2rem] p-6 border border-stone-200 shadow-sm">
-          <h3 className="font-black text-stone-900 mb-4">Produits les plus vendus</h3>
+          <h3 className="font-black text-stone-900 mb-4">Top produits actuels</h3>
           <div className="space-y-3">
             {kpis.topProducts.map((product, idx) => (
               <div key={product.productId} className="flex items-center gap-4 p-3 bg-stone-50 rounded-xl">

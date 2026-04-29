@@ -12,6 +12,11 @@ export const createAssetSchema = z.object({
   description: z.string().optional().nullable(),
   category: z.string().optional().nullable(),
   location: z.string().optional().nullable(),
+  purchaseDate: z.string().datetime().optional().nullable(),
+  purchaseValue: z.number().nonnegative().default(0),
+  salvageValue: z.number().nonnegative().default(0),
+  usefulLife: z.number().int().positive().default(5),
+  amortizationMethod: z.string().default("LINEAR"),
   status: z.nativeEnum(AssetStatus).default(AssetStatus.ACTIVE),
 })
 
