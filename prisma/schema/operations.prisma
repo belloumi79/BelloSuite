@@ -11,9 +11,13 @@ model Asset {
   description  String?
   category     String?
   location     String?
-  purchaseDate DateTime?
-  purchaseCost Decimal?
-  warrantyEnd  DateTime?
+  purchaseDate   DateTime?
+  purchaseValue   Decimal?     @default(0)
+  salvageValue   Decimal?     @default(0)
+  usefulLife     Int?         @default(5)
+  amortizationMethod String?  @default("LINEAR")
+  accumulatedAmortization Decimal @default(0)
+  warrantyEnd    DateTime?
   status       AssetStatus @default(ACTIVE)
   isActive     Boolean     @default(true)
   createdAt    DateTime    @default(now())

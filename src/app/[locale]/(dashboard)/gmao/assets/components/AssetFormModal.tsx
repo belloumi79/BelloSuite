@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Save, Settings, Tag, Calendar, DollarSign, Loader2 } from "lucide-react";
+import { X, Save, Settings, Tag, Calendar, DollarSign, Loader2, Calculator } from "lucide-react";
 
 interface AssetFormModalProps {
   onClose: () => void;
@@ -13,17 +13,20 @@ export function AssetFormModal({ onClose, onSave, tenantId }: AssetFormModalProp
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    description: "",
-    category: "",
-    location: "",
-    purchaseDate: new Date().toISOString().split("T")[0],
-    purchaseCost: "",
-    warrantyEnd: "",
-    status: "ACTIVE",
-  });
+   const [formData, setFormData] = useState({
+     code: "",
+     name: "",
+     description: "",
+     category: "",
+     location: "",
+     purchaseDate: new Date().toISOString().split("T")[0],
+     purchaseValue: "",
+     salvageValue: "",
+     usefulLife: "",
+     amortizationMethod: "LINEAR",
+     warrantyEnd: "",
+     status: "ACTIVE",
+   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -129,10 +132,25 @@ export function AssetFormModal({ onClose, onSave, tenantId }: AssetFormModalProp
                   <label className="text-sm font-semibold text-stone-700">Fin de Garantie</label>
                   <input type="date" name="warrantyEnd" value={formData.warrantyEnd} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Coût d'achat (TND)</label>
-                  <input type="number" step="0.001" name="purchaseCost" value={formData.purchaseCost} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
-                </div>
+                 <div className="space-y-2">
+                   <label className="text-sm font-semibold text-stone-700">Valeur d'acquisition (TND)</label>
+                   <input type="number" step="0.001" name="purchaseValue" value={formData.purchaseValue} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                 </div>
+                 <div className="space-y-2">
+                   <label className="text-sm font-semibold text-stone-700">Valeur résiduelle (TND)</label>
+                   <input type="number" step="0.001" name="salvageValue" value={formData.salvageValue} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                 </div>
+                 <div className="space-y-2">
+                   <label className="text-sm font-semibold text-stone-700">Durée de vie (années)</label>
+                   <input type="number" step="1" name="usefulLife" value={formData.usefulLife} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                 </div>
+                 <div className="space-y-2">
+                   <label className="text-sm font-semibold text-stone-700">Méthode d'amortissement</label>
+                   <select name="amortizationMethod" value={formData.amortizationMethod} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all">
+                     <option value="LINEAR">Linéaire</option>
+                     <option value="DEGRESSIVE">Dégressive</option>
+                   </select>
+                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-stone-700">Statut initial</label>
                   <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all">

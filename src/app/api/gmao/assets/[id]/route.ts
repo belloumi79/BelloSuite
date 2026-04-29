@@ -51,7 +51,7 @@ export async function PUT(
     }
 
     if (updateData.purchaseDate) updateData.purchaseDate = new Date(updateData.purchaseDate)
-    if (updateData.purchaseCost) updateData.purchaseCost = Number(updateData.purchaseCost)
+    if (updateData.purchaseValue) updateData.purchaseValue = Number(updateData.purchaseValue)
     if (updateData.warrantyEnd) updateData.warrantyEnd = new Date(updateData.warrantyEnd)
 
     const asset = await prisma.asset.update({
