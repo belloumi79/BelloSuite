@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { postAmortizationToAccounting } from '@/services/accounting'
 
+// Amortize fixed assets for a given month/year
+
 export async function POST(req: Request) {
   try {
     const { tenantId, month, year } = await req.json()
