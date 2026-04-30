@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "src/app/api/**/*.ts": {
-      "runtime": "@vercel/node"
+      "runtime": "nodejs24.x"
     }
   },
   "regions": ["fra1"],
