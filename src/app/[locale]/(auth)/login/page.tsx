@@ -1,16 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useRouter, Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import { Eye, EyeOff } from 'lucide-react'
 export default function LoginPage() {
   const t = useTranslations('Auth')
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const errorParam = searchParams.get('error')
+  const detailsParam = searchParams.get('details')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (errorParam) {
+      alert(`Authentication Error: ${errorParam}\nDetails: ${detailsParam || 'N/A'}`)
+    }
+  }, [errorParam, detailsParam])
 
   const handleLogin = async () => {
     setLoading(true)

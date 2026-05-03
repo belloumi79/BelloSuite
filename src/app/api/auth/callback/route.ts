@@ -13,6 +13,11 @@ export async function GET(request: Request) {
   if (code) {
     const supabase = await supabaseServer()
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (error) {
+      console.error('Supabase exchangeCodeForSession error:', error)
+      return NextResponse.redirect(`${origin}/login?error=exchange_failed&details=${encodeURIComponent(error.message)}`)
+    }
 
     if (!error && data.user) {
       let role = 'USER', tenantId: string | null = null, firstName = ''
@@ -47,5 +52,11 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}${target}`)
     }
   }
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+  // Check if Supabase sent an error in the URL
+  const errorParam = searchParams.get('error')
+  const errorDesc = searchParams.get('error_description')
+  if (errorParam) {
+    return NextResponse.redirect(`${origin}/login?error=${errorParam}&details=${encodeURIComponent(errorDesc || '')}`)
+  }
+  return NextResponse.redirect(`${origin}/login?error=auth_failed_no_code`)
 }
