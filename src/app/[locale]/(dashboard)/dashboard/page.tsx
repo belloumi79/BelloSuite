@@ -77,6 +77,7 @@ export default function DashboardSummary() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const { kpis, loading } = useDashboardKPIs(user?.tenantId)
+  const { data: trends } = useTrendData(user?.tenantId)
 
   useEffect(() => {
     const sessionData = localStorage.getItem('bello_session')

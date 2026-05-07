@@ -9,14 +9,15 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/dashboard'
+  const locale = searchParams.get('locale') ?? 'fr'
 
   if (code) {
     const supabase = await supabaseServer()
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-    
+
     if (error) {
       console.error('Supabase exchangeCodeForSession error:', error)
-      return NextResponse.redirect(`${origin}/login?error=exchange_failed&details=${encodeURIComponent(error.message)}`)
+      return NextResponse.redirect(`${origin}/${locale}/login?error=exchange_failed&details=${encodeURIComponent(error.message)}`)
     }
 
     if (!error && data.user) {
@@ -48,15 +49,16 @@ export async function GET(request: Request) {
       const session = { id: data.user.id, email: data.user.email!, role, tenantId, firstName }
       await createSessionCookie(session)
 
-      const target = (!tenantId) ? '/onboarding' : next
+      // Use absolute path with locale prefix so proxy doesn't redirect to /fr/
+      const target = (!tenantId) ? `/${locale}/onboarding` : `/${locale}${next.startsWith('/') ? next : '/dashboard'}`
       return NextResponse.redirect(`${origin}${target}`)
     }
   }
-  // Check if Supabase sent an error in the URL
+
   const errorParam = searchParams.get('error')
   const errorDesc = searchParams.get('error_description')
   if (errorParam) {
-    return NextResponse.redirect(`${origin}/login?error=${errorParam}&details=${encodeURIComponent(errorDesc || '')}`)
+    return NextResponse.redirect(`${origin}/${locale}/login?error=${errorParam}&details=${encodeURIComponent(errorDesc || '')}`)
   }
-  return NextResponse.redirect(`${origin}/login?error=auth_failed_no_code`)
+  return NextResponse.redirect(`${origin}/${locale}/login?error=auth_failed_no_code`)
 }

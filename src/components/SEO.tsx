@@ -1,50 +1,24 @@
-import { NextSeo } from 'next-seo'
-
 export default function SEO() {
   return (
-    <NextSeo
-      title="BelloSuite ERP - Logiciel de Gestion d'Entreprise Tunisien"
-      description="BelloSuite est le logiciel de facturation et de gestion commerciale (ERP) modulaire conçu pour les TPE et PME en Tunisie. Solution complète pour gérer stock, facturation, comptabilité."
-      canonical="https://bellosuite.vercel.app"
-      openGraph={{
-        type: 'website',
-        locale: 'fr_TN',
-        url: 'https://bellosuite.vercel.app',
-        siteName: 'BelloSuite ERP',
-        title: 'BelloSuite ERP - Gestion d\'Entreprise Tunisienne',
-        description: 'ERP modulaire pour PME tunisiennes : stock, facturation, comptabilité, GRH',
-        images: [
-          {
-            url: 'https://bellosuite.vercel.app/og-image.jpg',
-            width: 1200,
-            height: 630,
-            alt: 'BelloSuite ERP',
-          },
-        ],
-      }}
-      twitter={{
-        handle: '@bellosuite',
-        site: '@bellosuite',
-        cardType: 'summary_large_image',
-      }}
-      additionalMetaTags={[
-        {
-          name: 'keywords',
-          content: 'ERP, logiciel gestion, facturation tunisie, stock management, comptabilité PME, logiciel tunisien'
-        },
-        {
-          name: 'author',
-          content: 'BelloSuite'
-        },
-        {
-          name: 'robots',
-          content: 'index, follow'
-        },
-        {
-          name: 'language',
-          content: 'French'
-        }
-      ]}
-    />
+    <>
+      <title>BelloSuite ERP - Logiciel de Gestion d'Entreprise Tunisien</title>
+      <meta name="description" content="BelloSuite est le logiciel de facturation et de gestion commerciale (ERP) modulaire conçu pour les TPE et PME en Tunisie. Solution complète pour gérer stock, facturation, comptabilité." />
+      <link rel="canonical" href="https://bellosuite.vercel.app" />
+      <meta property="og:type" content="website" />
+      <meta property="og:locale" content="fr_TN" />
+      <meta property="og:url" content="https://bellosuite.vercel.app" />
+      <meta property="og:site_name" content="BelloSuite ERP" />
+      <meta property="og:title" content="BelloSuite ERP - Gestion d'Entreprise Tunisienne" />
+      <meta property="og:description" content="ERP modulaire pour PME tunisiennes : stock, facturation, comptabilité, GRH" />
+      <meta property="og:image" content="https://bellosuite.vercel.app/og-image.jpg" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@bellosuite" />
+      <meta name="twitter:creator" content="@bellosuite" />
+      <meta name="robots" content="index, follow" />
+      <meta name="keywords" content="ERP, logiciel gestion, facturation tunisie, stock management, comptabilité PME, logiciel tunisien" />
+      <meta name="author" content="BelloSuite" />
+    </>
   )
 }

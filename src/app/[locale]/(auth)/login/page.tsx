@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { useRouter, Link } from '@/i18n/routing'
+import { useRouter, Link, useLocale } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import { Eye, EyeOff } from 'lucide-react'
+
 export default function LoginPage() {
   const t = useTranslations('Auth')
+  const locale = useLocale()
   const router = useRouter()
   const searchParams = useSearchParams()
   const errorParam = searchParams.get('error')
@@ -18,7 +20,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (errorParam) {
-      alert(`Authentication Error: ${errorParam}\nDetails: ${detailsParam || 'N/A'}`)
+      alert(`Erreur: ${errorParam}\n${detailsParam ? `Details: ${detailsParam}` : ''}`)
     }
   }, [errorParam, detailsParam])
 
@@ -32,7 +34,7 @@ export default function LoginPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        router.push(data.role === 'SUPER_ADMIN' ? '/super-admin' : '/dashboard')
+        router.push(data.role === 'SUPER_ADMIN' ? `/${locale}/super-admin` : `/${locale}/dashboard`)
       } else {
         alert(data.error || t('invalid_credentials'))
       }
@@ -48,7 +50,7 @@ export default function LoginPage() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback?next=/dashboard`,
+        redirectTo: `${window.location.origin}/${locale}/api/auth/callback?next=/dashboard&locale=${locale}`,
       },
     })
   }
@@ -63,7 +65,6 @@ export default function LoginPage() {
           <h1 className="text-3xl font-black text-white">BelloSuite</h1>
           <p className="text-zinc-500 mt-1 font-medium">{t('login_title')}</p>
         </div>
-
         <div className="space-y-4 text-start">
           <button onClick={handleGoogleLogin} className="w-full py-3.5 bg-white hover:bg-zinc-100 text-zinc-950 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg">
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -96,7 +97,7 @@ export default function LoginPage() {
             {loading ? t('logging_in') : t('login_button')}
           </button>
         </div>
-        <p className="text-center text-zinc-500 text-sm mt-8">{t('no_account')}{' '}<Link href="/register" className="text-teal-400 hover:text-teal-300 font-bold transition-colors">{t('register_link')}</Link></p>
+        <p className="text-center text-zinc-500 text-sm mt-8">{t('no_account')}{' '}<Link href={`/${locale}/register`} className="text-teal-400 hover:text-teal-300 font-bold transition-colors">{t('register_link')}</Link></p>
       </div>
     </div>
   )
