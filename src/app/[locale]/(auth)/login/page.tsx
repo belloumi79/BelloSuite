@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { useRouter, Link, useLocale } from '@/i18n/routing'
-import { useTranslations } from 'next-intl'
+import { useRouter, Link } from '@/i18n/routing'
+import { useTranslations, useLocale } from 'next-intl'
 import { Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (errorParam) {
-      alert(`Erreur: ${errorParam}\n${detailsParam ? `Details: ${detailsParam}` : ''}`)
+      alert(`Erreur: ${errorParam}${detailsParam ? `\nDetails: ${detailsParam}` : ''}`)
     }
   }, [errorParam, detailsParam])
 
