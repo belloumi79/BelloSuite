@@ -9,51 +9,56 @@ function getSecretKey(): Uint8Array {
   return new TextEncoder().encode(secret.slice(0, 32).padEnd(32, '!'))
 }
 
-function getLocale(pathname: string): string {
-  return routing.locales.find(l => pathname.startsWith(`/${l}`)) || 'fr'
+function stripLocale(pathname: string): string {
+  const locale = routing.locales.find(
+    l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`
+  )
+  return locale ? pathname.replace(`/${locale}`, '') || '/' : pathname
 }
+
+const PUBLIC_AUTH = ['/login', '/register', '/forgot-password', '/reset-password', '/onboarding']
+const PUBLIC_API_PATTERNS = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/callback',
+  '/api/auth/session',
+  '/api/health',
+]
+const STRICT_RATE_LIMIT_ROUTES = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/forgot-password',
+]
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const locale = getLocale(pathname)
+  const cleanPath = stripLocale(pathname)
 
-  // Redirect root to locale-prefixed path
-  if (pathname === '/') {
-    return NextResponse.redirect(new URL(`/${locale}/login`, request.url))
-  }
+  const locale = routing.locales.find(
+    l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`
+  ) || 'fr'
 
-  // Allow /login without locale prefix (Vercel often strips it)
-  if (pathname === '/login') {
-    return NextResponse.redirect(new URL(`/${locale}/login`, request.url))
-  }
-
-  // Let next-intl handle locale-prefixed routes freely
-  const sessionCookie = request.cookies.get('bello_session')?.value
-
-  // Public paths
-  const cleanPath = pathname.replace(`/${locale}`, '') || '/'
-  const PUBLIC_AUTH = ['/login', '/register', '/forgot-password', '/reset-password', '/onboarding']
-  const PUBLIC_API = ['/api/auth/login', '/api/auth/register', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/auth/callback', '/api/auth/session', '/api/health']
-
-  const isPublicPage = PUBLIC_AUTH.some(p => cleanPath === p || cleanPath.startsWith(`${p}/`))
-  const isPublicApi = PUBLIC_API.some(p => cleanPath.startsWith(p))
-
-  // Rate limiting for sensitive API routes
   if (cleanPath.startsWith('/api/')) {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    const isStrict = ['/api/auth/login', '/api/auth/register', '/api/auth/forgot-password'].some(r => cleanPath.startsWith(r))
-    const result = rateLimit(`auth:${ip}`, isStrict ? 10 : 100, 60)
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      'unknown'
+    const isStrict = STRICT_RATE_LIMIT_ROUTES.some(r => cleanPath.startsWith(r))
+    const maxRequests = isStrict ? 10 : 100
+    const result = rateLimit(`${ip}:${cleanPath}`, maxRequests, 60)
     if (!result.success) {
-      return NextResponse.json({ error: 'Trop de requêtes. Réessayez plus tard.' }, {
-        status: 429,
-        headers: {
-          'X-RateLimit-Limit': String(result.limit),
-          'X-RateLimit-Remaining': String(result.remaining),
-          'Retry-After': String(Math.ceil((result.reset - Date.now()) / 1000)),
-        },
-      })
+      return NextResponse.json(
+        { error: 'Trop de requêtes. Veuillez réessayer.' },
+        { status: 429 }
+      )
     }
   }
+
+  const isPublicPage = PUBLIC_AUTH.some(p => cleanPath === p || cleanPath.startsWith(`${p}/`))
+  const isPublicApi = PUBLIC_API_PATTERNS.some(p => cleanPath.startsWith(p))
+  const sessionCookie = request.cookies.get('bello_session')?.value
 
   if (!sessionCookie && !isPublicPage && !isPublicApi) {
     if (cleanPath.startsWith('/api/')) {
@@ -75,13 +80,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Security headers
-  const resp = NextResponse.next()
-  resp.headers.set('X-Frame-Options', 'DENY')
-  resp.headers.set('X-Content-Type-Options', 'nosniff')
-  resp.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  resp.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-  return resp
+  return NextResponse.next()
 }
 
 export const config = {

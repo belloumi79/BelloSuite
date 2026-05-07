@@ -1,5 +1,4 @@
-import { redirect } from 'next/navigation'
+'use client'
 
-export default function LoginPage() {
-  redirect('/fr/login')
-}
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'ne
