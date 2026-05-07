@@ -1,21 +1,33 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { useRouter, Link, useLocale } from '@/i18n/routing'
+import { useRouter, Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import { Eye, EyeOff } from 'lucide-react'
+
+function getLocaleFromPath(): string {
+  if (typeof window === 'undefined') return 'fr'
+  const match = window.location.pathname.match(/^\/(fr|en|ar)\//)
+  return match ? match[1] : 'fr'
+}
+
 export default function LoginPage() {
   const t = useTranslations('Auth')
-  const locale = useLocale()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const errorParam = searchParams.get('error')
-  const detailsParam = searchParams.get('details')
+  const [locale, setLocale] = useState('fr')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setLocale(getLocaleFromPath())
+  }, [])
+
+  const errorParam = searchParams.get('error')
+  const detailsParam = searchParams.get('details')
 
   useEffect(() => {
     if (errorParam) {
@@ -23,7 +35,7 @@ export default function LoginPage() {
     }
   }, [errorParam, detailsParam])
 
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch('/api/auth/login', {
@@ -46,17 +58,17 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [email, password, locale, router, t])
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = useCallback(async () => {
     const { supabase } = await import('@/lib/supabase/client')
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/${locale}/api/auth/callback?next=/dashboard`,
+        redirectTo: `${window.location.origin}/${locale}/api/auth/callback?next=/dashboard&locale=${locale}`,
       },
     })
-  }
+  }, [locale])
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 font-sans">
