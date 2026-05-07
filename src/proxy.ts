@@ -6,6 +6,7 @@ import { rateLimit } from './lib/rate-limit'
 
 function getSecretKey(): Uint8Array {
   const secret = process.env.SESSION_SECRET || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  if (!secret) throw new Error('SESSION_SECRET is required')
   return new TextEncoder().encode(secret.slice(0, 32).padEnd(32, '!'))
 }
 
@@ -17,101 +18,112 @@ function stripLocale(pathname: string): string {
   return locale ? pathname.replace(`/${locale}`, '') || '/' : pathname
 }
 
-// Auth public paths (no session required)
-const PUBLIC_AUTH = ['/login', '/register', '/forgot-password', '/reset-password', '/onboarding']
+// Get locale from pathname
+function getLocale(pathname: string): string {
+  return routing.locales.find(
+    l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`
+  ) || routing.defaultLocale
+}
+
+// Public page paths (no session required)
+const PUBLIC_PAGES = [
+  '/', '/login', '/register', '/forgot-password', '/reset-password', '/onboarding',
+]
 
 // Public API routes (no session required)
-const PUBLIC_API_PATTERNS = [
-  '/api/auth/login',
-  '/api/auth/register',
-  '/api/auth/forgot-password',
-  '/api/auth/reset-password',
-  '/api/auth/callback',
-  '/api/auth/session',
+const PUBLIC_API = [
+  '/api/auth/login', '/api/auth/register', '/api/auth/forgot-password',
+  '/api/auth/reset-password', '/api/auth/callback', '/api/auth/session',
   '/api/health',
 ]
 
-// Sensitive routes with strict rate limiting (10 req/min)
-const STRICT_RATE_LIMIT_ROUTES = [
-  '/api/auth/login',
-  '/api/auth/register',
-  '/api/auth/forgot-password',
+// Strict rate-limit routes (10 req/min)
+const STRICT_ROUTES = [
+  '/api/auth/login', '/api/auth/register', '/api/auth/forgot-password',
 ]
+
+// Security headers applied to all responses
+const SECURITY_HEADERS = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const cleanPath = stripLocale(pathname)
 
-  // Detect locale for redirects
-  const locale = routing.locales.find(
-    l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`
-  ) || 'fr'
-
-  // ─── Rate Limiting (API routes only) ────────────────────────
-  if (cleanPath.startsWith('/api/')) {
+  // ─── Rate Limiting ───────────────────────────────────────────
+  if (pathname.startsWith('/api/')) {
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       request.headers.get('x-real-ip') ||
       'unknown'
-
-    const isStrict = STRICT_RATE_LIMIT_ROUTES.some(r => cleanPath.startsWith(r))
-    const maxRequests = isStrict ? 10 : 100
-    const windowSeconds = 60
-    const rateLimitKey = `${ip}:${cleanPath.split('/').slice(0, 3).join('/')}`
-
-    const result = rateLimit(rateLimitKey, maxRequests, windowSeconds)
+    const cleanPath = stripLocale(pathname)
+    const isStrict = STRICT_ROUTES.some(r => cleanPath.startsWith(r))
+    const result = rateLimit(`${ip}:${cleanPath}`, isStrict ? 10 : 100, 60)
     if (!result.success) {
       return NextResponse.json(
-        { error: 'Trop de requêtes. Veuillez réessayer dans quelques instants.' },
+        { error: 'Trop de requêtes. Veuillez réessayer plus tard.' },
         {
           status: 429,
           headers: {
-            'X-RateLimit-Limit': String(result.limit),
-            'X-RateLimit-Remaining': String(result.remaining),
-            'X-RateLimit-Reset': String(result.reset),
             'Retry-After': String(Math.ceil((result.reset - Date.now()) / 1000)),
+            'X-RateLimit-Remaining': '0',
+            ...SECURITY_HEADERS,
           },
         }
       )
     }
   }
 
-  // ─── Authentication ──────────────────────────────────────────
-  const isPublicPage = PUBLIC_AUTH.some(p => cleanPath === p || cleanPath.startsWith(`${p}/`))
-  const isPublicApi = PUBLIC_API_PATTERNS.some(p => cleanPath.startsWith(p))
+  // ─── Auth Check ─────────────────────────────────────────────
+  const cleanPath = stripLocale(pathname)
+  const locale = getLocale(pathname)
 
+  const isPublicPage = PUBLIC_PAGES.some(p => cleanPath === p || cleanPath.startsWith(`${p}/`))
+  const isPublicApi = PUBLIC_API.some(p => cleanPath.startsWith(p))
   const sessionCookie = request.cookies.get('bello_session')?.value
 
+  // No session + not public → redirect or 401
   if (!sessionCookie && !isPublicPage && !isPublicApi) {
-    if (cleanPath.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
-    return NextResponse.redirect(new URL(`/${locale}/login`, request.url))
+    const response = cleanPath.startsWith('/api/')
+      ? NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+      : NextResponse.redirect(new URL(`/${locale}/login`, request.url))
+    // Apply security headers
+    Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v))
+    return response
   }
 
+  // Session present → verify JWT
   if (sessionCookie) {
     try {
       const { payload } = await jwtVerify(sessionCookie, getSecretKey(), { clockTolerance: 60 })
 
-      // Inject user context into request headers for downstream API routes
       const requestHeaders = new Headers(request.headers)
       requestHeaders.set('x-user-id', payload.sub as string)
       requestHeaders.set('x-user-email', (payload.email as string) || '')
       requestHeaders.set('x-user-role', (payload.role as string) || '')
       requestHeaders.set('x-tenant-id', (payload.tenantId as string) || '')
 
-      return NextResponse.next({ request: { headers: requestHeaders } })
+      const response = NextResponse.next({ request: { headers: requestHeaders } })
+      Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v))
+      return response
     } catch {
-      if (cleanPath.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 })
-      }
-      const resp = NextResponse.redirect(new URL(`/${locale}/login`, request.url))
-      resp.cookies.delete('bello_session')
-      return resp
+      // Expired/invalid session
+      const response = cleanPath.startsWith('/api/')
+        ? NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 })
+        : NextResponse.redirect(new URL(`/${locale}/login`, request.url))
+      response.cookies.delete('bello_session')
+      Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v))
+      return response
     }
   }
 
-  return NextResponse.next()
+  // Public routes without session
+  const response = NextResponse.next()
+  Object.entries(SECURITY_HEADERS).forEach(([k, v]) => response.headers.set(k, v))
+  return response
 }
 
 export const config = {
