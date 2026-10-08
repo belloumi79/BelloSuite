@@ -20,6 +20,7 @@ const PUBLIC_API_PATTERNS = [
   '/api/auth/forgot-password',
   '/api/auth/callback',
   '/api/auth/session',
+  '/api/auth/demo',
   '/api/health',
   // /api/cron/* n'a pas de cookie : protégé dans la route par CRON_SECRET (checkCronSecret)
   '/api/cron/',
@@ -28,6 +29,7 @@ const STRICT_RATE_LIMIT_ROUTES = [
   '/api/auth/login',
   '/api/auth/register',
   '/api/auth/forgot-password',
+  '/api/auth/demo',
 ]
 
 export async function proxy(request: NextRequest) {

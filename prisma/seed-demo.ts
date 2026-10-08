@@ -126,6 +126,12 @@ async function main() {
 
   // 6. Historique de Factures & Ventes (6 derniers mois)
   const now = new Date()
+  // Relançable : si l'historique existe déjà, ne pas recréer de factures (numéros uniques).
+  const existingInvoices = await prisma.invoice.count({ where: { tenantId: demoTenant.id } })
+  if (existingInvoices > 0) {
+    console.log(`Historique déjà présent (${existingInvoices} factures) : étape ignorée.`)
+    return
+  }
   let invoiceCount = 0
 
   for (let m = 5; m >= 0; m--) {
