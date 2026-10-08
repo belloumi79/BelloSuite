@@ -93,3 +93,17 @@ describe('checkCronSecret', () => {
     expect(checkCronSecret(req({ 'x-cron-secret': 'c'.repeat(32) }))).toBeNull()
   })
 })
+
+import { stripIdentityHeaders } from '@/lib/identity-headers'
+
+describe('stripIdentityHeaders (proxy)', () => {
+  it('supprime les en-têtes d’identité envoyés par le client et garde les autres', () => {
+    const h = stripIdentityHeaders(
+      new Headers({ 'x-user-role': 'SUPER_ADMIN', 'x-tenant-id': 'victim', 'x-user-id': 'evil', accept: 'application/json' })
+    )
+    expect(h.get('x-user-role')).toBeNull()
+    expect(h.get('x-tenant-id')).toBeNull()
+    expect(h.get('x-user-id')).toBeNull()
+    expect(h.get('accept')).toBe('application/json')
+  })
+})

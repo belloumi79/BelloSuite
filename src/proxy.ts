@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose'
 import { routing } from '@/i18n/routing'
 import { rateLimit } from './lib/rate-limit'
 import { getSessionSecretKey, MissingSessionSecretError } from './lib/session-secret'
+import { stripIdentityHeaders } from './lib/identity-headers'
 
 function stripLocale(pathname: string): string {
   const locale = routing.locales.find(
@@ -24,24 +25,6 @@ const PUBLIC_API_PATTERNS = [
   // /api/cron/* n'a pas de cookie : protégé dans la route par CRON_SECRET (checkCronSecret)
   '/api/cron/',
 ]
-/**
- * En-têtes d'identité internes. Ils ne doivent JAMAIS venir du client :
- * le proxy les supprime systématiquement puis les ré-injecte à partir du JWT vérifié.
- */
-export const IDENTITY_HEADERS = [
-  'x-user-id',
-  'x-user-email',
-  'x-user-role',
-  'x-tenant-id',
-  'x-user-firstname',
-] as const
-
-export function stripIdentityHeaders(source: Headers): Headers {
-  const headers = new Headers(source)
-  for (const h of IDENTITY_HEADERS) headers.delete(h)
-  return headers
-}
-
 const STRICT_RATE_LIMIT_ROUTES = [
   '/api/auth/login',
   '/api/auth/register',
