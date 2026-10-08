@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { enforceRateLimits, clientIp } from '@/lib/rate-limit-persistent'
 
 function getUrl() { return process.env.NEXT_PUBLIC_SUPABASE_URL || '' }
 function getKey() { return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '' }
 
 export async function POST(req: NextRequest) {
   try {
+    const limited = await enforceRateLimits([{ key: `register:ip:${clientIp(req)}`, max: 5, windowSeconds: 60 * 60 }])
+    if (limited) return limited
+
     const body = await req.json()
     const { email, password } = body
 

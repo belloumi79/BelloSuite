@@ -15,6 +15,7 @@ import { requireSession } from '@/lib/api-auth'
 import { createSessionCookie } from '@/lib/session'
 import { parseBody, handleApiError } from '@/lib/api'
 import { slugifySubdomain } from '@/lib/onboarding'
+import { enforceRateLimits } from '@/lib/rate-limit-persistent'
 
 export const runtime = 'nodejs'
 
@@ -54,6 +55,9 @@ export async function POST(req: Request) {
     if (session.role === 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Le Super Admin ne crée pas d’entreprise par l’onboarding' }, { status: 403 })
     }
+
+    const limited = await enforceRateLimits([{ key: `onboard:user:${session.id}`, max: 10, windowSeconds: 60 * 60 }])
+    if (limited) return limited
 
     let body: unknown
     try {
