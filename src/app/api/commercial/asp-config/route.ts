@@ -1,3 +1,4 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
@@ -5,7 +6,9 @@ import { prisma } from '@/lib/db'
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
-    const tenantId = searchParams.get('tenantId')
+    const ctx = await requireTenant(req, searchParams.get('tenantId'))
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
     if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
 
     const config = await prisma.aSPConfiguration.findUnique({ where: { tenantId } })
@@ -27,7 +30,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { tenantId, provider, apiKey, apiSecret, sftpUsername, sftpPassword, sftpEndpoint, webhookSecret, isActive } = body
+    const { tenantId: requestedTenantId, provider, apiKey, apiSecret, sftpUsername, sftpPassword, sftpEndpoint, webhookSecret, isActive } = body
+    const ctx = await requireTenant(req, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId || !provider) {
       return NextResponse.json({ error: 'tenantId and provider required' }, { status: 400 })

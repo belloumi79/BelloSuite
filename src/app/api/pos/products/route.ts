@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const tenantId = searchParams.get('tenantId')
     const query = searchParams.get('q')
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const products = await prisma.product.findMany({

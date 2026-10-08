@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const tenantId = searchParams.get('tenantId')
     const status = searchParams.get('status') ?? undefined
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const orders = await getPurchaseOrders(ctx.tenantId, status)
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    const ctx = getApiContext(req, body?.tenantId)
+    const ctx = await getApiContext(req, body?.tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const data = parseBody(createPurchaseOrderSchema, { ...body, tenantId: ctx.tenantId })

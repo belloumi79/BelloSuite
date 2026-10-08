@@ -1,11 +1,14 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await requireTenant(request)
+  if (ctx instanceof NextResponse) return ctx
   try {
     const { id } = await params
-    const project = await prisma.project.findUnique({
-      where: { id },
+    const project = await prisma.project.findFirst({
+      where: { id, tenantId: ctx.tenantId },
       include: {
         columns: { orderBy: { position: 'asc' }, include: { tasks: { orderBy: { position: 'asc' }, include: { tags: true, comments: true, checklists: true, attachments: true } } } },
         members: true,
@@ -19,11 +22,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await requireTenant(request)
+  if (ctx instanceof NextResponse) return ctx
   try {
     const { id } = await params
     const body = await request.json()
     const { name, description, color, endDate, status } = body
-    const project = await prisma.project.update({ where: { id }, data: { name, description, color, endDate: endDate ? new Date(endDate) : null, status } })
+    const project = await prisma.project.update({ where: { id, tenantId: ctx.tenantId }, data: { name, description, color, endDate: endDate ? new Date(endDate) : null, status } })
     return NextResponse.json(project)
   } catch (error) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
@@ -31,9 +36,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await requireTenant(request)
+  if (ctx instanceof NextResponse) return ctx
   try {
     const { id } = await params
-    await prisma.project.delete({ where: { id } })
+    await prisma.project.delete({ where: { id, tenantId: ctx.tenantId } })
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })

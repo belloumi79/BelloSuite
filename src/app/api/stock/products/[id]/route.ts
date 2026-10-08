@@ -1,3 +1,4 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
@@ -5,7 +6,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params
     const { searchParams } = new URL(req.url)
-    const tenantId = searchParams.get('tenantId')
+    const ctx = await requireTenant(req, searchParams.get('tenantId'))
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
 
@@ -29,10 +32,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params
     const body = await req.json()
     const {
-      tenantId, code, barcode, name, description, category,
+      tenantId: requestedTenantId, code, barcode, name, description, category,
       unit, purchasePrice, salePrice, vatRate, fodec,
       minStock, images, variants, isActive,
     } = body
+    const ctx = await requireTenant(req, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
 
@@ -45,7 +51,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const product = await prisma.product.update({
-      where: { id },
+      where: { id, tenantId: ctx.tenantId },
       data: {
         code, barcode, name, description, category,
         unit, purchasePrice, salePrice, vatRate, fodec,
@@ -63,7 +69,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const { id } = await params
     const { searchParams } = new URL(req.url)
-    const tenantId = searchParams.get('tenantId')
+    const ctx = await requireTenant(req, searchParams.get('tenantId'))
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
 

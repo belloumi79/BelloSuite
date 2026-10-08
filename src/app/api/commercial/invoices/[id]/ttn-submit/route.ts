@@ -1,3 +1,4 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { submitToTTN, testASPConnection } from '@/lib/ttn-asp'
@@ -7,7 +8,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const { id } = await params;
   try {
     const body = await req.json().catch(() => ({}))
-    const tenantId = body.tenantId
+    const ctx = await requireTenant(req, body.tenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     // Fetch invoice with relations
     const invoice = await prisma.invoice.findFirst({
@@ -48,7 +51,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     if (result.success) {
       const updated = await prisma.invoice.update({
-        where: { id: invoice.id },
+        where: { id: invoice.id, tenantId: ctx.tenantId },
         data: {
           ttnStatus: 'ACCEPTED',
           ttnReference: result.ttnReference,
@@ -64,7 +67,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     } else {
       // Mark as rejected
       await prisma.invoice.update({
-        where: { id: invoice.id },
+        where: { id: invoice.id, tenantId: ctx.tenantId },
         data: {
           ttnStatus: 'REJECTED',
           ttnErrorCode: result.errorCode,

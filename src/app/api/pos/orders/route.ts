@@ -7,7 +7,7 @@ import { createPOSOrder, posOrderSchema } from '@/services/pos'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const ctx = getApiContext(req, body?.tenantId)
+    const ctx = await getApiContext(req, body?.tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const data = parseBody(posOrderSchema, { ...body, tenantId: ctx.tenantId })

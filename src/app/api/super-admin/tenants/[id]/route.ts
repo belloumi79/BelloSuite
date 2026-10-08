@@ -1,7 +1,10 @@
+import { requireSuperAdmin } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireSuperAdmin(req)
+  if (auth instanceof NextResponse) return auth
   try {
     const { id } = await params
     const tenant = await prisma.tenant.findUnique({
@@ -19,6 +22,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireSuperAdmin(req)
+  if (auth instanceof NextResponse) return auth
   try {
     const { id } = await params
     const body = await req.json()

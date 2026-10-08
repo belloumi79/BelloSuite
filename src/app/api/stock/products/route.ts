@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getProducts, createProduct } from '@/services/products'
 import { handleApiError } from '@/lib/errors'
-import { getCurrentUser, requirePermission, Permission } from '@/lib/auth'
+import { requirePermission, Permission } from '@/lib/auth'
+import { requireTenant } from '@/lib/api-auth'
 import { z } from 'zod'
 
 export const createProductSchema = z.object({
@@ -23,24 +24,11 @@ export const createProductSchema = z.object({
 // GET /api/stock/products?tenantId=
 export async function GET(req: NextRequest) {
   try {
-    const user = await getCurrentUser(req)
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
-    requirePermission(user.role, Permission.READ_PRODUCT)
-
     const { searchParams } = new URL(req.url)
-    let tenantId = searchParams.get('tenantId')
-
-    // Defensive: reject null/undefined/empty tenantId
-    if (!tenantId || tenantId === 'null' || tenantId === 'undefined') {
-      return NextResponse.json({ error: 'tenantId requis' }, { status: 400 })
-    }
-
-    // Ensure user can only access their tenant
-    if (user.tenantId && user.tenantId !== tenantId) {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
-    }
+    const ctx = await requireTenant(req, searchParams.get('tenantId'))
+    if (ctx instanceof NextResponse) return ctx
+    requirePermission(ctx.userRole, Permission.READ_PRODUCT)
+    const tenantId = ctx.tenantId
 
     const products = await getProducts(tenantId)
     return NextResponse.json(products)
@@ -52,13 +40,10 @@ export async function GET(req: NextRequest) {
 // POST /api/stock/products
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser(req)
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
-    requirePermission(user.role, Permission.CREATE_PRODUCT)
-
     const body = await req.json()
+    const ctx = await requireTenant(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
+    requirePermission(ctx.userRole, Permission.CREATE_PRODUCT)
 
     let validatedData
     try {
@@ -70,10 +55,8 @@ export async function POST(req: NextRequest) {
       throw validationError
     }
 
-    // Ensure user can only create for their tenant
-    if (user.tenantId && user.tenantId !== validatedData.tenantId) {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
-    }
+    // Le tenant vient toujours de la session
+    validatedData = { ...validatedData, tenantId: ctx.tenantId }
 
     const product = await createProduct(validatedData)
     return NextResponse.json(product, { status: 201 })

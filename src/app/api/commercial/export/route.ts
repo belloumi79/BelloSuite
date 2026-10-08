@@ -1,3 +1,4 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
@@ -5,7 +6,9 @@ import { prisma } from '@/lib/db'
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
-    const tenantId = searchParams.get('tenantId')
+    const ctx = await requireTenant(req, searchParams.get('tenantId'))
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
     if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
 
     const exports = await prisma.exportInvoice.findMany({
@@ -23,7 +26,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { tenantId, invoiceId, countryDest, incoterm, hsCode, netWeightKg, countryOrigin, exportRegime, customsPort, transportMode } = body
+    const { tenantId: requestedTenantId, invoiceId, countryDest, incoterm, hsCode, netWeightKg, countryOrigin, exportRegime, customsPort, transportMode } = body
+    const ctx = await requireTenant(req, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
     if (!tenantId || !invoiceId || !countryDest || !incoterm) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }

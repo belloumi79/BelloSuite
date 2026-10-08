@@ -1,3 +1,4 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { postAmortizationToAccounting } from '@/services/accounting'
 
@@ -5,7 +6,10 @@ import { postAmortizationToAccounting } from '@/services/accounting'
 
 export async function POST(req: Request) {
   try {
-    const { tenantId, month, year } = await req.json()
+    const { tenantId: requestedTenantId, month, year } = await req.json()
+    const ctx = await requireTenant(req, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId || month === undefined || year === undefined) {
       return NextResponse.json(

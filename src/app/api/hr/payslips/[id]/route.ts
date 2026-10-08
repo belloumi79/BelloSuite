@@ -1,14 +1,16 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
 
-const prisma = new PrismaClient();
 
 // GET /api/hr/payslips/[id] - Get single payslip
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await requireTenant(req)
+  if (ctx instanceof NextResponse) return ctx
   try {
     const { id } = await params;
-    const payslip = await prisma.paySlip.findUnique({
-      where: { id },
+    const payslip = await prisma.paySlip.findFirst({
+      where: { id, tenantId: ctx.tenantId },
       include: {
         employee: {
           select: {
@@ -38,12 +40,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // PUT /api/hr/payslips/[id] - Update payslip
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await requireTenant(req)
+  if (ctx instanceof NextResponse) return ctx
   try {
     const { id } = await params;
     const body = await req.json();
 
     const payslip = await prisma.paySlip.update({
-      where: { id },
+      where: { id, tenantId: ctx.tenantId },
       data: body,
     });
 
@@ -56,9 +60,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE /api/hr/payslips/[id] - Delete payslip
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await requireTenant(req)
+  if (ctx instanceof NextResponse) return ctx
   try {
     const { id } = await params;
-    await prisma.paySlip.delete({ where: { id } });
+    await prisma.paySlip.delete({ where: { id, tenantId: ctx.tenantId } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting payslip:", error);

@@ -1,12 +1,15 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/db";
 import { TUNISIAN_CHART_OF_ACCOUNTS } from '@/lib/tunisian-chart-of-accounts'
 
-const prisma = new PrismaClient()
 
 export async function POST(request: Request) {
   try {
-    const { tenantId } = await request.json()
+    const { tenantId: requestedTenantId } = await request.json()
+    const ctx = await requireTenant(request, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId) {
       return NextResponse.json({ error: 'Tenant ID is required' }, { status: 400 })

@@ -1,12 +1,14 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/db";
 
-const prisma = new PrismaClient()
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const tenantId = searchParams.get('tenantId')
+    const ctx = await requireTenant(request, searchParams.get('tenantId'))
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId) {
       return NextResponse.json({ error: 'Tenant ID is required' }, { status: 400 })

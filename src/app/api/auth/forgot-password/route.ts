@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/db'
+import { getResetSecret } from '@/lib/reset-secret'
 
 export async function POST(request: Request) {
   try {
@@ -9,15 +10,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email requis' }, { status: 400 })
     }
 
-    const supabase = await createClient()
-    
-    // Check if user exists
-    const { data: users } = await supabase
-      .from('User')
-      .select('id, email')
-      .eq('email', email)
-      .eq('isActive', true)
-      .limit(1)
+    // Lecture côté serveur via Prisma (plus de lecture de la table User avec la clé anon)
+    const users = await prisma.user.findMany({
+      where: { email: String(email), isActive: true },
+      select: { id: true, email: true },
+      take: 1,
+    })
 
     // Always return success for security (don't reveal if email exists)
     
@@ -38,12 +36,9 @@ export async function POST(request: Request) {
       type: 'password_reset'
     }
 
-    const resetSecret = process.env.RESET_SECRET || process.env.SUPABASE_JWT_SECRET || 'fallback-secret-change-me'
+    const resetSecret = getResetSecret()
     const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
     const body = Buffer.from(JSON.stringify(payload)).toString('base64url')
-    const signature = Buffer.from(
-      `${header}.${body}`
-    ).toString('base64url')
     
     // Use HMAC SHA256 - simple implementation
     const crypto = require('crypto')
@@ -92,8 +87,9 @@ export async function POST(request: Request) {
     } else {
       // No Resend configured - log token for development
       console.log(`\n========== DEV: Reset token for ${email} ==========`)
-      console.log(`Token: ${token}`)
-      console.log(`Reset URL: ${resetUrl}`)
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Reset URL: ${resetUrl}`)
+      }
       console.log(`===============================================\n`)
     }
 

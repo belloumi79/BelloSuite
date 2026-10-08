@@ -1,3 +1,4 @@
+import { requireTenant, requireSession, resolveTenantContext } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import * as XLSX from 'xlsx'
@@ -11,10 +12,14 @@ function toNum(val: any, fallback = 0): number {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await requireSession(req)
+  if (session instanceof NextResponse) return session
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
-    const tenantId = formData.get('tenantId') as string | null
+    const tenantCtx = resolveTenantContext(session, formData.get('tenantId') as string | null)
+    if ('error' in tenantCtx) return NextResponse.json({ error: tenantCtx.error }, { status: tenantCtx.status })
+    const tenantId = tenantCtx.tenantId
 
     if (!file || !tenantId) {
       return NextResponse.json({ error: 'Fichier et tenantId requis' }, { status: 400 })

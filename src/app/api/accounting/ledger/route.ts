@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const startDate = searchParams.get('startDate') || undefined
     const endDate = searchParams.get('endDate') || undefined
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const ledger = await getGeneralLedger(ctx.tenantId, { startDate, endDate, accountId })

@@ -1,3 +1,4 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from "@/lib/db"
 
@@ -7,10 +8,12 @@ import { prisma } from "@/lib/db"
  * pour l'exportation tunisienne.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await requireTenant(req)
+  if (ctx instanceof NextResponse) return ctx
     const { id } = await params;
   try {
-    const exp = await prisma.exportInvoice.findUnique({
-      where: { id: id },
+    const exp = await prisma.exportInvoice.findFirst({
+      where: { id: id, tenantId: ctx.tenantId },
       include: {
         invoice: { include: { client: true, tenant: true, items: true } },
       },

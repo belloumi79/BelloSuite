@@ -10,7 +10,7 @@ export async function POST(
 ) {
   try {
     const body = await req.json()
-    const ctx = getApiContext(req, body?.tenantId)
+    const ctx = await getApiContext(req, body?.tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const { id } = await params

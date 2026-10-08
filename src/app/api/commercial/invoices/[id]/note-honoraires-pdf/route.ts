@@ -1,3 +1,4 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { generateNoteHonorairesPDF } from '@/lib/note-honoraires';
@@ -15,11 +16,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   try {
     const { id } = await params;
     const body = await req.json();
-    const { tenantId } = body;
+    const { tenantId: requestedTenantId } = body;
+    const ctx = await requireTenant(req, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
     if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 });
 
-    const invoice = await prisma.invoice.findUnique({
-      where: { id },
+    const invoice = await prisma.invoice.findFirst({
+      where: { id, tenantId: ctx.tenantId },
       include: { client: true, tenant: true, items: true },
     });
     if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });

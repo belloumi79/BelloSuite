@@ -1,6 +1,8 @@
 {
   "version": 2,
-  "regions": ["fra1"],
+  "regions": [
+    "fra1"
+  ],
   "env": {
     "NODE_ENV": "production"
   },
@@ -9,5 +11,11 @@
     "autoAlias": true,
     "silent": true
   },
-  "buildCommand": "npm run vercel-build"
+  "buildCommand": "npm run vercel-build",
+  "crons": [
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "0 7 * * *"
+    }
+  ]
 }

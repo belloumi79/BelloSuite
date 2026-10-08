@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const month = parseInt(searchParams.get('month') || '')
     const year = parseInt(searchParams.get('year') || '')
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     if (isNaN(month) || isNaN(year)) {

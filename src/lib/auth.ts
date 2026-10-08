@@ -1,42 +1,16 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { NextRequest } from 'next/server'
-import { SessionPayload } from './session'
+import { SessionPayload, getSession } from './session'
 
-export async function getCurrentUser(req?: NextRequest) {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
-
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return null
-
-  // Get role and tenantId from metadata or fallback to User table
-  let role: string = user.user_metadata?.role || 'USER'
-  let tenantId: string | null = user.user_metadata?.tenant_id || null
-
-  if (!tenantId || !role) {
-    const { data: userRow } = await supabase
-      .from('User')
-      .select('tenantId, role')
-      .eq('email', user.email)
-      .maybeSingle()
-    if (userRow) {
-      tenantId = userRow.tenantId || tenantId
-      role = userRow.role || role
-    }
-  }
-
-  return { id: user.id, email: user.email!, role, tenantId }
+/**
+ * Utilisateur courant, lu depuis la session signée `bello_session`.
+ * Le rôle et le tenant de la session proviennent de la table `User` (Prisma) au moment du login :
+ * on ne lit plus JAMAIS `user_metadata` (modifiable par l'utilisateur) ni la table User via la clé anon.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function getCurrentUser(_req?: NextRequest) {
+  const session = await getSession()
+  if (!session) return null
+  return { id: session.id, email: session.email, role: session.role, tenantId: session.tenantId }
 }
 
 export enum Permission {
@@ -61,23 +35,6 @@ export function requirePermission(role: string, permission: Permission) {
   if (!hasPermission(role, permission)) {
     throw new Error(`Permission denied: ${permission}`)
   }
-}
-
-/**
- * Fast path: read user context from headers injected by the middleware (proxy.ts).
- * Avoids a Supabase round-trip on every authenticated API call.
- * Falls back to null if headers are missing (e.g. during tests or direct calls).
- */
-export function getCurrentUserFromHeaders(req: NextRequest): SessionPayload | null {
-  const id = req.headers.get('x-user-id')
-  const email = req.headers.get('x-user-email')
-  const role = req.headers.get('x-user-role')
-  const tenantId = req.headers.get('x-tenant-id')
-  const firstName = req.headers.get('x-user-firstname') || ''
-
-  if (!id || !email || !role) return null
-
-  return { id, email, role, tenantId: tenantId || null, firstName }
 }
 
 /**

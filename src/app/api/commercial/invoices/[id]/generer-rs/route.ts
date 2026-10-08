@@ -1,3 +1,4 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { calculerRS, type RSInput } from '@/lib/retenue-source';
@@ -15,6 +16,8 @@ import { calculerRS, type RSInput } from '@/lib/retenue-source';
  *   notes           (optional)
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await requireTenant(req)
+  if (ctx instanceof NextResponse) return ctx
   try {
     const { id } = await params;
     const body = await req.json();
@@ -25,8 +28,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       notes,
     } = body;
 
-    const invoice = await prisma.invoice.findUnique({
-      where: { id },
+    const invoice = await prisma.invoice.findFirst({
+      where: { id, tenantId: ctx.tenantId },
       include: { client: true, withholdingTaxes: true },
     });
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server'
-import { prisma } from '@/lib/db'
+import { resolveIdentityFromDb } from '@/lib/user-identity'
 import { createSessionCookie } from '@/lib/session'
 
 export const runtime = 'nodejs'
@@ -9,7 +9,8 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/dashboard'
-  const locale = searchParams.get('locale') ?? 'fr'
+  const rawLocale = searchParams.get('locale') ?? 'fr'
+  const locale = ['fr', 'ar', 'en'].includes(rawLocale) ? rawLocale : 'fr'
 
   if (code) {
     const supabase = await supabaseServer()
@@ -21,36 +22,28 @@ export async function GET(request: Request) {
     }
 
     if (!error && data.user) {
-      let role = 'USER', tenantId: string | null = null, firstName = ''
+      // Rôle et tenant : uniquement depuis la table User (Prisma). user_metadata ne sert qu'au prénom/nom
+      // d'un compte nouvellement créé (rôle USER, sans tenant), jamais à l'autorisation.
+      let identity
       try {
-        const dbUser = await prisma.user.findUnique({ where: { email: data.user.email! } })
-        if (dbUser) {
-          role = dbUser.role
-          tenantId = dbUser.tenantId
-          firstName = dbUser.firstName || ''
-        } else {
-          const newUser = await prisma.user.create({
-            data: {
-              email: data.user.email!,
-              firstName: data.user.user_metadata?.full_name?.split(' ')[0] || data.user.user_metadata?.given_name || '',
-              lastName: data.user.user_metadata?.family_name || '',
-              password: 'OAUTH_USER',
-              role: 'USER',
-              isActive: true,
-            },
-          })
-          role = newUser.role
-          firstName = newUser.firstName || ''
-        }
+        identity = await resolveIdentityFromDb(data.user.email!, {
+          firstName: data.user.user_metadata?.full_name?.split(' ')[0] || data.user.user_metadata?.given_name || '',
+          lastName: data.user.user_metadata?.family_name || '',
+        })
       } catch (e) {
-        console.error(e)
+        console.error('OAuth callback: lecture User impossible', e)
+        return NextResponse.redirect(`${origin}/${locale}/login?error=auth_failed`)
       }
+      if (!identity.isActive) {
+        return NextResponse.redirect(`${origin}/${locale}/login?error=account_disabled`)
+      }
+      const { role, tenantId, firstName } = identity
 
       const session = { id: data.user.id, email: data.user.email!, role, tenantId, firstName }
       await createSessionCookie(session)
 
       // Use absolute path with locale prefix so proxy doesn't redirect to /fr/
-      const target = (!tenantId) ? `/${locale}/onboarding` : `/${locale}${next.startsWith('/') ? next : '/dashboard'}`
+      const target = (!tenantId) ? `/${locale}/onboarding` : `/${locale}${next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'}`
       return NextResponse.redirect(`${origin}${target}`)
     }
   }

@@ -1,8 +1,11 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { testASPConnection } from '@/lib/ttn-asp'
 
 // POST /api/commercial/asp-config/test
 export async function POST(req: Request) {
+  const ctx = await requireTenant(req)
+  if (ctx instanceof NextResponse) return ctx
   try {
     const body = await req.json()
     const result = await testASPConnection({

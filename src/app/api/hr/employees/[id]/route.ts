@@ -1,3 +1,4 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
@@ -5,7 +6,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params
     const { searchParams } = new URL(request.url)
-    const tenantId = searchParams.get('tenantId')
+    const ctx = await requireTenant(request, searchParams.get('tenantId'))
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     const employee = await prisma.employee.findFirst({
       where: { id, ...(tenantId ? { tenantId } : {}) },
@@ -33,7 +36,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params
     const body = await request.json()
-    const { tenantId, ...data } = body
+    const { tenantId: requestedTenantId, ...data } = body
+    const ctx = await requireTenant(request, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId) {
       return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
@@ -66,7 +72,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { id } = await params
     const { searchParams } = new URL(request.url)
-    const tenantId = searchParams.get('tenantId')
+    const ctx = await requireTenant(request, searchParams.get('tenantId'))
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId) {
       return NextResponse.json({ error: 'tenantId required' }, { status: 400 })

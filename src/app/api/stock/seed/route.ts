@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { denyInProduction, requireTenant } from '@/lib/api-auth'
 
+// Données de démonstration : désactivé en production, et uniquement pour le tenant de la session.
 export async function POST(req: NextRequest) {
+  const denied = denyInProduction()
+  if (denied) return denied
   try {
-    const body = await req.json()
-    const { tenantId } = body
-    if (!tenantId) return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
+    const body = await req.json().catch(() => ({}))
+    const ctx = await requireTenant(req, body?.tenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     const products = [
       { code: 'ELEC-001', barcode: '6291041500101', name: 'Clavier Mécanique RGB', description: 'Clavier gaming mecanique avec retroeclairage RGB, switches blue', category: 'Informatique', unit: 'piece', purchasePrice: 45.000, salePrice: 89.900, minStock: 10, currentStock: 50 },
@@ -38,6 +43,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, created: created.length, codes: created })
   } catch (error) {
     console.error('Seed error:', error)
-    return NextResponse.json({ error: String(error) }, { status: 500 })
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
   }
 }
