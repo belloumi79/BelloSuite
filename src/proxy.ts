@@ -3,11 +3,7 @@ import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 import { routing } from '@/i18n/routing'
 import { rateLimit } from './lib/rate-limit'
-
-function getSecretKey(): Uint8Array {
-  const secret = process.env.SESSION_SECRET || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  return new TextEncoder().encode(secret.slice(0, 32).padEnd(32, '!'))
-}
+import { getSessionSecretKey, MissingSessionSecretError } from './lib/session-secret'
 
 function stripLocale(pathname: string): string {
   const locale = routing.locales.find(
@@ -68,8 +64,22 @@ export async function proxy(request: NextRequest) {
   }
 
   if (sessionCookie) {
+    // Fail closed : sans SESSION_SECRET valide, aucune session n'est acceptée.
+    let secretKey: Uint8Array
     try {
-      await jwtVerify(sessionCookie, getSecretKey(), { clockTolerance: 60 })
+      secretKey = getSessionSecretKey()
+    } catch (err) {
+      if (err instanceof MissingSessionSecretError) {
+        console.error('[proxy] ' + err.message)
+        return NextResponse.json(
+          { error: 'Configuration serveur invalide : SESSION_SECRET manquant' },
+          { status: 500 }
+        )
+      }
+      throw err
+    }
+    try {
+      await jwtVerify(sessionCookie, secretKey, { algorithms: ['HS256'], clockTolerance: 60 })
     } catch {
       if (cleanPath.startsWith('/api/')) {
         return NextResponse.json({ error: 'Session expirée' }, { status: 401 })

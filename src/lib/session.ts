@@ -1,13 +1,16 @@
 import { cookies } from 'next/headers'
 import { SignJWT, jwtVerify } from 'jose'
 import { cache } from 'react'
+import { getSessionSecretKey } from './session-secret'
 
 const SESSION_COOKIE_NAME = 'bello_session'
 const SESSION_DURATION = 60 * 60 * 24 * 7 // 7 days
 
+export const SESSION_COOKIE = SESSION_COOKIE_NAME
+
+// Pas de repli : lève MissingSessionSecretError si SESSION_SECRET est absent.
 function getSecretKey(): Uint8Array {
-  const secret = process.env.SESSION_SECRET || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'fallback-secret-change-in-production'
-  return new TextEncoder().encode(secret.slice(0, 32).padEnd(32, '!'))
+  return getSessionSecretKey()
 }
 
 export interface SessionPayload {
@@ -28,8 +31,10 @@ export async function signSession(payload: SessionPayload): Promise<string> {
 }
 
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
+  // Hors du try : un secret manquant doit produire une erreur claire, pas un simple "non connecté".
+  const key = getSecretKey()
   try {
-    const { payload } = await jwtVerify(token, getSecretKey(), { clockTolerance: 60 })
+    const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'], clockTolerance: 60 })
     return {
       id: payload.sub as string,
       email: payload.email as string,
