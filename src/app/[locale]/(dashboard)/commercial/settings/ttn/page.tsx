@@ -42,9 +42,8 @@ export default function TTNSettingsPage() {
   })
 
   useEffect(() => {
-    const tid = tenantId
-    fetchConfig(tid)
-  }, [])
+    fetchConfig(tenantId)
+  }, [tenantId])
 
   const fetchConfig = async (tid: string) => {
     try {
@@ -55,12 +54,13 @@ export default function TTNSettingsPage() {
         if (data) {
           setForm({
             provider: data.provider || 'ttnhub',
-            apiKey: data.apiKey || '',
-            apiSecret: data.apiSecret || '',
+            apiKey: '',
+            apiSecret: '',
             sftpUsername: data.sftpUsername || '',
-            sftpPassword: data.sftpPassword || '',
+            sftpPassword: '',
             sftpEndpoint: data.sftpEndpoint || '',
-            webhookSecret: data.webhookSecret || '',
+            // Les secrets ne sont jamais renvoyés par l'API : champ vide = conserver la valeur enregistrée
+            webhookSecret: '',
             isActive: data.isActive || false,
           })
         }
@@ -175,7 +175,7 @@ export default function TTNSettingsPage() {
                 <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                 <input value={form.apiKey} onChange={e => setForm(f => ({ ...f, apiKey: e.target.value }))}
                   className="w-full pl-10 pr-4 py-3 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500/10 focus:border-teal-500 outline-none font-mono"
-                  placeholder="tk_live_xxxxx" />
+                  placeholder={config?.hasApiKey ? "•••••• (enregistrée — laisser vide pour conserver)" : "tk_live_xxxxx"} />
               </div>
             </div>
             <div>
@@ -184,7 +184,7 @@ export default function TTNSettingsPage() {
                 <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                 <input value={form.apiSecret} onChange={e => setForm(f => ({ ...f, apiSecret: e.target.value }))}
                   type="password" className="w-full pl-10 pr-4 py-3 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500/10 focus:border-teal-500 outline-none font-mono"
-                  placeholder="sk_live_xxxxx" />
+                  placeholder={config?.hasApiSecret ? "•••••• (enregistré — laisser vide pour conserver)" : "sk_live_xxxxx"} />
               </div>
             </div>
           </div>
@@ -249,7 +249,7 @@ export default function TTNSettingsPage() {
             {testing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
             Tester la Connexion
           </button>
-          <button onClick={handleSave} disabled={saving || !form.apiKey}
+          <button onClick={handleSave} disabled={saving || (!form.apiKey && !config?.hasApiKey)}
             className="flex items-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-black text-sm shadow-lg shadow-teal-600/20 disabled:opacity-40 transition-all">
             <Save className="w-4 h-4" />
             {saving ? 'Sauvegarde...' : 'Sauvegarder'}

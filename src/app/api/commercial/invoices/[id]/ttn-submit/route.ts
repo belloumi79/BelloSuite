@@ -2,6 +2,7 @@ import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { submitToTTN, testASPConnection } from '@/lib/ttn-asp'
+import { decryptAspConfig } from '@/lib/secret-crypto'
 
 // POST /api/commercial/invoices/:id/ttn-submit
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -24,9 +25,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     // Load ASP config for this tenant
-    const aspConfig = await prisma.aSPConfiguration.findUnique({
+    const storedConfig = await prisma.aSPConfiguration.findUnique({
       where: { tenantId: invoice.tenantId },
     })
+    // Secrets chiffrés au repos (enc:v1:…) ; les lignes historiques en clair restent lisibles.
+    const aspConfig = storedConfig ? decryptAspConfig(storedConfig) : null
 
     if (!aspConfig?.isActive) {
       return NextResponse.json(
