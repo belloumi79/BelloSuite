@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createSessionCookie } from '@/lib/session'
 import { rateLimit } from '@/lib/rate-limit'
+import { resolveIdentityFromDb } from '@/lib/user-identity'
 
 export const runtime = 'nodejs'
 
@@ -36,32 +37,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Identifiants incorrects' }, { status: 401 })
     }
 
-    let tenantId: string | null = data.user.user_metadata?.tenant_id || null
-    let role: string = data.user.user_metadata?.role || 'USER'
-    let firstName: string = data.user.user_metadata?.first_name || ''
-
-    if (!tenantId) {
-      const { data: userRow } = await supabase
-        .from('User')
-        .select('tenantId, role, firstName')
-        .eq('email', email)
-        .maybeSingle()
-      if (userRow) {
-        tenantId = userRow.tenantId || tenantId
-        role = userRow.role || role
-        firstName = userRow.firstName || firstName
-      }
+    // Rôle et tenant : uniquement depuis la table User (Prisma), jamais depuis user_metadata.
+    const identity = await resolveIdentityFromDb(data.user.email!)
+    if (!identity.isActive) {
+      return NextResponse.json({ error: 'Compte désactivé' }, { status: 403 })
     }
-
-    if (!tenantId) {
-      const { data: tenants } = await supabase
-        .from('Tenant')
-        .select('id')
-        .eq('isActive', true)
-        .limit(1)
-        .maybeSingle()
-      tenantId = tenants?.id ?? null
-    }
+    const { role, tenantId, firstName } = identity
 
     const session = {
       id: data.user.id,
