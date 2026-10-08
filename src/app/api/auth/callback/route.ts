@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server'
 import { resolveIdentityFromDb } from '@/lib/user-identity'
 import { createSessionCookie } from '@/lib/session'
+import { postLoginPath } from '@/lib/onboarding'
 
 export const runtime = 'nodejs'
 
@@ -42,8 +43,9 @@ export async function GET(request: Request) {
       const session = { id: data.user.id, email: data.user.email!, role, tenantId, firstName }
       await createSessionCookie(session)
 
-      // Use absolute path with locale prefix so proxy doesn't redirect to /fr/
-      const target = (!tenantId) ? `/${locale}/onboarding` : `/${locale}${next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'}`
+      // Chemin absolu avec préfixe de langue (sinon le proxy redirige vers /fr/...).
+      // SUPER_ADMIN → /super-admin (jamais l'onboarding) ; sans tenant → /onboarding ; sinon `next`.
+      const target = postLoginPath(locale, role, tenantId, next)
       return NextResponse.redirect(`${origin}${target}`)
     }
   }
