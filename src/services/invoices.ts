@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { BusinessError } from '@/lib/errors'
 import { InvoiceStatus } from '@prisma/client'
+import { assertBelongsToTenant, assertAllBelongToTenant } from '@/lib/tenant-scope'
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -92,6 +93,10 @@ export async function createInvoice(data: CreateInvoiceData) {
   if (existing) {
     throw new BusinessError(`Numéro de facture "${number}" déjà utilisé`, 409)
   }
+
+  // Les références liées doivent appartenir au tenant (anti-IDOR)
+  await assertBelongsToTenant('client', clientId, tenantId)
+  await assertAllBelongToTenant('product', items.map((i) => i.productId), tenantId)
 
   // Atomic transaction: invoice + all items created together
   return prisma.$transaction(async (tx) => {

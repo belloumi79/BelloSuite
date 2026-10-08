@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { BusinessError } from '@/lib/errors'
 import { AssetStatus, WorkOrderStatus, ProductionStatus, Priority, WorkOrderType } from '@prisma/client'
+import { assertBelongsToTenant } from '@/lib/tenant-scope'
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ export async function createAsset(data: CreateAssetData) {
 
 export async function createWorkOrder(data: CreateWorkOrderData) {
   const { assetId, tenantId } = data
+  await assertBelongsToTenant('asset', assetId, tenantId)
 
   return prisma.$transaction(async (tx) => {
     // 1. Create work order
@@ -96,6 +98,8 @@ export async function getProductionOrders(tenantId: string) {
 
 export async function createProductionOrder(data: CreateProductionOrderData) {
   const { plannedStartDate, plannedEndDate, ...rest } = data
+  await assertBelongsToTenant('product', rest.productId, rest.tenantId)
+  await assertBelongsToTenant('workStation', rest.workStationId, rest.tenantId)
 
   return prisma.productionOrder.create({
     data: {

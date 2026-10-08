@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { BusinessError } from '@/lib/errors'
 import { calculerRS, generateTEJId } from '@/lib/retenue-source'
 import { BeneficiaryType, ServiceType, TEJStatus, PaymentMethodType } from '@prisma/client'
+import { assertBelongsToTenant, stripUnsafeUpdateFields } from '@/lib/tenant-scope'
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ export async function getWithholdingTaxes(tenantId: string, filters: {
 
 export async function createWithholdingTax(data: CreateWithholdingTaxData) {
   const { tenantId, grossAmount, serviceType, beneficiaryType, periodYear, periodMonth } = data
+  await assertBelongsToTenant('invoice', data.invoiceId, tenantId)
 
   // 1. Calculate RS based on Tunisian rules
   const calc = calculerRS({
@@ -140,8 +142,11 @@ export async function getWithholdingTaxById(id: string, tenantId: string) {
   return record
 }
 
-export async function updateWithholdingTax(id: string, tenantId: string, data: any) {
+export async function updateWithholdingTax(id: string, tenantId: string, rawData: any) {
   const existing = await getWithholdingTaxById(id, tenantId)
+  // Pas de changement de tenant/id ni d'écriture imbriquée ; facture liée = facture du tenant
+  const data: any = stripUnsafeUpdateFields(rawData ?? {})
+  await assertBelongsToTenant('invoice', data.invoiceId, tenantId)
 
   // Recalculate if critical fields change
   let calc = {

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { AccountType, JournalType } from '@prisma/client'
+import { assertBelongsToTenant, assertAllBelongToTenant } from '@/lib/tenant-scope'
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -107,6 +108,11 @@ export async function createJournalEntry(data: JournalEntryData) {
   if (Math.abs(totalDebit - totalCredit) > 0.001) {
     throw new Error('L\'écriture n\'est pas équilibrée (Débit != Crédit)')
   }
+
+  // Journal, période et comptes : uniquement ceux du tenant (anti-IDOR)
+  await assertBelongsToTenant('accountingJournal', data.journalId, data.tenantId)
+  await assertBelongsToTenant('accountingPeriod', data.periodId, data.tenantId)
+  await assertAllBelongToTenant('accountingAccount', data.lines.map((l) => l.accountId), data.tenantId)
 
   return prisma.$transaction(async (tx) => {
     const entry = await tx.journalEntry.create({
@@ -540,9 +546,11 @@ export async function postVATLiquidationToAccounting(month: number, year: number
 export async function getTrialBalance(tenantId: string, params: { startDate?: string; endDate?: string } = {}) {
   const { startDate, endDate } = params
 
-  const where: any = { tenantId }
+  // JournalEntryLine n'a pas de colonne tenantId : le filtre passe par l'écriture parente.
+  const where: any = { journalEntry: { tenantId } }
   if (startDate || endDate) {
     where.journalEntry = {
+      tenantId,
       date: {
         ...(startDate && { gte: new Date(startDate) }),
         ...(endDate && { lte: new Date(endDate) }),
@@ -709,10 +717,12 @@ export async function postAmortizationToAccounting(month: number, year: number, 
 export async function getGeneralLedger(tenantId: string, params: { startDate?: string; endDate?: string; accountId?: string } = {}) {
   const { startDate, endDate, accountId } = params
 
-  const where: any = { tenantId }
+  // JournalEntryLine n'a pas de colonne tenantId : le filtre passe par l'écriture parente.
+  const where: any = { journalEntry: { tenantId } }
   if (accountId) where.accountId = accountId
   if (startDate || endDate) {
     where.journalEntry = {
+      tenantId,
       date: {
         ...(startDate && { gte: new Date(startDate) }),
         ...(endDate && { lte: new Date(endDate) }),

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { BusinessError } from '@/lib/errors'
 import { POSSessionStatus, POSOrderStatus, PaymentMethod, POSType } from '@prisma/client'
+import { assertBelongsToTenant, assertAllBelongToTenant } from '@/lib/tenant-scope'
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -71,6 +72,11 @@ export async function openSession(data: OpenSessionData) {
 }
 
 export async function createPOSOrder(data: POSOrderData) {
+  // Session de caisse, client et produits : uniquement ceux du tenant (anti-IDOR, y compris décrément de stock)
+  await assertBelongsToTenant('pOSSession', data.sessionId, data.tenantId)
+  await assertBelongsToTenant('client', data.clientId, data.tenantId)
+  await assertAllBelongToTenant('product', data.items.map((i) => i.productId), data.tenantId)
+
   return prisma.$transaction(async (tx) => {
     // 1. Calculate totals
     let subtotalHT = 0
