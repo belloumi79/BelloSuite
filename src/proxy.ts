@@ -39,6 +39,15 @@ export async function proxy(request: NextRequest) {
     l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`
   ) || 'fr'
 
+  // Pages sans préfixe de langue (/super-admin, /dashboard, /onboarding…) : rediriger vers /fr/...
+  // Sinon Next interprète le 1er segment comme [locale] et les redirections serveur bouclent.
+  const hasLocale = routing.locales.some(l => pathname === `/${l}` || pathname.startsWith(`/${l}/`))
+  if (!hasLocale && !pathname.startsWith('/api/') && !pathname.startsWith('/auth/') && pathname !== '/' && pathname !== '/login' && !/\.[a-z0-9]+$/i.test(pathname)) {
+    const url = request.nextUrl.clone()
+    url.pathname = `/${routing.defaultLocale}${pathname}`
+    return NextResponse.redirect(url)
+  }
+
   if (cleanPath.startsWith('/api/')) {
     const ip =
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||

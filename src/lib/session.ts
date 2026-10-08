@@ -52,7 +52,7 @@ export async function createSessionCookie(payload: SessionPayload): Promise<void
   const token = await signSession(payload)
   const isProd = process.env.NODE_ENV === 'production'
   cookieStore.set(SESSION_COOKIE_NAME, token, {
-    httpOnly: true, secure: isProd, sameSite: 'strict',
+    httpOnly: true, secure: isProd, sameSite: 'lax',
     maxAge: SESSION_DURATION, path: '/',
   })
 }
