@@ -1,10 +1,19 @@
+import { requireSuperAdmin } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireSuperAdmin(req)
+  if (auth instanceof NextResponse) return auth
   try {
     const { id } = await params
     const { isActive, role } = await req.json()
+    if (role !== undefined && !['SUPER_ADMIN', 'ADMIN', 'USER'].includes(role)) {
+      return NextResponse.json({ error: 'Rôle invalide' }, { status: 400 })
+    }
+    if (isActive !== undefined && typeof isActive !== 'boolean') {
+      return NextResponse.json({ error: 'isActive invalide' }, { status: 400 })
+    }
     const user = await prisma.user.update({
       where: { id },
       data: { ...(isActive !== undefined ? { isActive } : {}), ...(role ? { role } : {}) }
@@ -17,6 +26,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireSuperAdmin(req)
+  if (auth instanceof NextResponse) return auth
   try {
     const { id } = await params
     await prisma.user.update({ where: { id }, data: { isActive: false } })

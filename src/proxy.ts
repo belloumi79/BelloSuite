@@ -21,6 +21,8 @@ const PUBLIC_API_PATTERNS = [
   '/api/auth/callback',
   '/api/auth/session',
   '/api/health',
+  // /api/cron/* n'a pas de cookie : protégé dans la route par CRON_SECRET (checkCronSecret)
+  '/api/cron/',
 ]
 /**
  * En-têtes d'identité internes. Ils ne doivent JAMAIS venir du client :

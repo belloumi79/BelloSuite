@@ -2,19 +2,25 @@
  * POST /api/cron/reminders
  * Called by n8n (or any cron) every day at 8h AM.
  * Body: { tenantId, overdueDaysThreshold?, methods? }
- * Or: GET /api/cron/reminders?tenantId=&cronSecret=
+ * Or: GET /api/cron/reminders?tenantId=   (sans tenantId : tous les tenants actifs)
+ *
+ * SÉCURITÉ : en-tête obligatoire `Authorization: Bearer <CRON_SECRET>` (format Vercel Cron)
+ * ou `x-cron-secret: <CRON_SECRET>`. Plus de secret dans l'URL.
  *
  * Setup in n8n:
  *   - Trigger: Schedule (cron) → Every day at 8:00 AM
  *   - Action: HTTP Request → POST this endpoint
- *   - Auth: pass cronSecret header
+ *   - Auth: header Authorization: Bearer <CRON_SECRET>
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { sendAutoReminders } from '@/lib/reminder-service'
+import { checkCronSecret } from '@/lib/api-auth'
 
 export async function POST(req: NextRequest) {
+  const denied = checkCronSecret(req)
+  if (denied) return denied
   try {
     const body = await req.json().catch(() => ({}))
     const { tenantId, overdueDaysThreshold = 1, methods = ['EMAIL', 'WHATSAPP'] } = body
@@ -24,19 +30,16 @@ export async function POST(req: NextRequest) {
     const result = await sendAutoReminders(tenantId, { overdueDaysThreshold, methods })
     return NextResponse.json({ success: true, ...result, at: new Date().toISOString() })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    console.error('cron reminders error:', e)
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
   }
 }
 
 export async function GET(req: Request) {
+  const denied = checkCronSecret(req)
+  if (denied) return denied
   const { searchParams } = new URL(req.url)
   const tenantId = searchParams.get('tenantId')
-  const cronSecret = searchParams.get('cronSecret')
-
-  // Basic secret check (use real secret in production)
-  if (process.env.CRON_SECRET && cronSecret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
 
   if (!tenantId) {
     // Run for ALL tenants with active follow-ups
