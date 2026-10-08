@@ -7,7 +7,7 @@ import { UserRole } from '@prisma/client'
 // GET /api/super-admin/users
 export async function GET(req: NextRequest) {
   try {
-    const ctx = getSuperAdminContext(req)
+    const ctx = await getSuperAdminContext(req)
     if (ctx instanceof NextResponse) return ctx
 
     const users = await getAllUsers(ctx.userRole as UserRole)

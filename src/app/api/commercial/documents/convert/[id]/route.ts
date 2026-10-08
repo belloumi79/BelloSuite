@@ -22,7 +22,7 @@ export async function POST(
       return NextResponse.json({ error: 'Données invalides', details: validated.error.issues }, { status: 400 })
     }
 
-    const ctx = getApiContext(req, validated.data.tenantId)
+    const ctx = await getApiContext(req, validated.data.tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const { id } = await params

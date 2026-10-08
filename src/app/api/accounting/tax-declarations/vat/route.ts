@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const year = searchParams.get('year')
     const tenantId = searchParams.get('tenantId')
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     if (!month || !year) {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { month, year, tenantId: bodyTenantId } = body
 
-    const ctx = getApiContext(req, bodyTenantId)
+    const ctx = await getApiContext(req, bodyTenantId)
     if (ctx instanceof NextResponse) return ctx
 
     if (!month || !year) {

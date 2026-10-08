@@ -13,7 +13,7 @@ export async function POST(
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const entry = await postInvoiceToAccounting(id, ctx.tenantId)

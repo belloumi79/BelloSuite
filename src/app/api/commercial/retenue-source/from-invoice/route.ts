@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { tenantId, invoiceId } = body
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     if (!invoiceId) {

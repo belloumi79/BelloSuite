@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { month, year, tenantId: bodyTenantId } = body
 
-    const ctx = getApiContext(req, bodyTenantId)
+    const ctx = await getApiContext(req, bodyTenantId)
     if (ctx instanceof NextResponse) return ctx
 
     if (!month || !year) {

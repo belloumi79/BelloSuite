@@ -1,18 +1,14 @@
 /**
  * Centralized API request context helper.
- * Reads user/tenant info injected by the middleware (proxy.ts) into request headers.
- * Use this in all API routes instead of calling getCurrentUser() to avoid Supabase round-trips.
+ * SÉCURITÉ : l'identité est lue dans le cookie de session signé (voir lib/api-auth.ts),
+ * plus jamais dans des en-têtes x-user-* / x-tenant-id envoyables par le client.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUserFromHeaders, assertTenantAccess } from './auth'
 import { handleApiError, BusinessError } from './errors'
+import { requireTenant, requireSuperAdmin, type TenantContext } from './api-auth'
 import type { SessionPayload } from './session'
 
-export type ApiContext = {
-  user: SessionPayload
-  tenantId: string
-  userRole: string
-}
+export type ApiContext = TenantContext
 
 export type SuperAdminContext = {
   user: SessionPayload
@@ -20,61 +16,24 @@ export type SuperAdminContext = {
 }
 
 /**
- * Extracts and validates user + tenantId from a request.
- * Returns `{ user, tenantId }` or a NextResponse error to return immediately.
- *
- * Usage:
+ * Session + tenant. Le tenantId passé (query/body) est seulement comparé à celui de la session.
  * ```ts
- * const ctx = getApiContext(req, searchParams.get('tenantId'))
+ * const ctx = await getApiContext(req, searchParams.get('tenantId'))
  * if (ctx instanceof NextResponse) return ctx
- * const { user, tenantId } = ctx
  * ```
  */
-export function getApiContext(
+export async function getApiContext(
   req: NextRequest,
-  tenantId: string | null
-): ApiContext | NextResponse {
-  const user = getCurrentUserFromHeaders(req)
-
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
-
-  if (!tenantId || tenantId === 'null' || tenantId === 'undefined') {
-    return NextResponse.json({ error: 'tenantId requis' }, { status: 400 })
-  }
-
-  try {
-    assertTenantAccess(user, tenantId)
-  } catch {
-    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
-  }
-
-  return { 
-    user, 
-    tenantId,
-    userRole: user.role
-  }
+  tenantId?: string | null
+): Promise<ApiContext | NextResponse> {
+  return requireTenant(req, tenantId)
 }
 
-/**
- * Specialized context for Super Admin routes that don't require a tenantId.
- */
-export function getSuperAdminContext(req: NextRequest): SuperAdminContext | NextResponse {
-  const user = getCurrentUserFromHeaders(req)
-
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
-
-  if (user.role !== 'SUPER_ADMIN') {
-    return NextResponse.json({ error: 'Accès réservé au Super Admin' }, { status: 403 })
-  }
-
-  return { 
-    user, 
-    userRole: user.role
-  }
+/** Routes réservées au SUPER_ADMIN (rôle vérifié depuis la session signée). */
+export async function getSuperAdminContext(req: NextRequest): Promise<SuperAdminContext | NextResponse> {
+  const session = await requireSuperAdmin(req)
+  if (session instanceof NextResponse) return session
+  return { user: session, userRole: session.role }
 }
 
 /**

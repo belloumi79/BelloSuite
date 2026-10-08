@@ -12,7 +12,7 @@ export async function GET(
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const { id } = await params
@@ -30,7 +30,7 @@ export async function PUT(
 ) {
   try {
     const body = await req.json()
-    const ctx = getApiContext(req, body?.tenantId)
+    const ctx = await getApiContext(req, body?.tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const data = parseBody(updateSupplierSchema, body)
@@ -53,7 +53,7 @@ export async function DELETE(
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const { id } = await params

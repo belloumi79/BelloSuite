@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     // Parse & validate filters
@@ -40,12 +40,9 @@ export async function GET(req: NextRequest) {
 // POST /api/commercial/invoices
 export async function POST(req: NextRequest) {
   try {
-    const tenantId = (await req.json().then(b => b?.tenantId)) as string | null
+    const body = await req.json()
 
-    // Re-parse body for validation
-    const body = await req.clone().json()
-
-    const ctx = getApiContext(req, tenantId ?? body?.tenantId)
+    const ctx = await getApiContext(req, body?.tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const data = parseBody(createInvoiceSchema, { ...body, tenantId: ctx.tenantId })

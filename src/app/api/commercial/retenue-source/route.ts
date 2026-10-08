@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const periodYear = searchParams.get('periodYear') ? Number(searchParams.get('periodYear')) : undefined
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    const ctx = getApiContext(req, body?.tenantId)
+    const ctx = await getApiContext(req, body?.tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const data = parseBody(createWithholdingTaxSchema, { ...body, tenantId: ctx.tenantId })

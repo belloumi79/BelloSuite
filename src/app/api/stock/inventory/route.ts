@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const tenantId = searchParams.get('tenantId')
 
-    const ctx = getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const inventories = await prisma.inventory.findMany({
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const ctx = getApiContext(req, body?.tenantId)
+    const ctx = await getApiContext(req, body?.tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const { warehouseId, reference, date, items, notes } = body
@@ -76,7 +76,7 @@ export async function PATCH(req: NextRequest) {
     if (!id) return NextResponse.json({ error: 'id requis' }, { status: 400 })
 
     const body = await req.json()
-    const ctx = getApiContext(req, body?.tenantId)
+    const ctx = await getApiContext(req, body?.tenantId)
     if (ctx instanceof NextResponse) return ctx
 
     const { status, warehouseId } = body

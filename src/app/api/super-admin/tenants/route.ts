@@ -7,7 +7,7 @@ import { UserRole } from '@prisma/client'
 // GET /api/super-admin/tenants
 export async function GET(req: NextRequest) {
   try {
-    const ctx = getSuperAdminContext(req)
+    const ctx = await getSuperAdminContext(req)
     if (ctx instanceof NextResponse) return ctx
 
     const tenants = await getTenants(ctx.userRole as UserRole)
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const ctx = getSuperAdminContext(req)
+    const ctx = await getSuperAdminContext(req)
     if (ctx instanceof NextResponse) return ctx
 
     const data = parseBody(createTenantSchema, body)
