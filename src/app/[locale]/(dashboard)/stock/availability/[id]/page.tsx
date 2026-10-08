@@ -12,13 +12,9 @@ export default function WarehouseAvailabilityPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const s = localStorage.getItem('bello_session')
-    if (s) {
-      const { tenantId } = JSON.parse(s)
-      fetch(`/api/stock/availability?tenantId=${tenantId}&warehouseId=${params.id}`)
-        .then(r => r.json())
-        .then(d => { setProducts(d.data || []); setLoading(false) })
-    }
+    fetch(`/api/stock/availability?warehouseId=${params.id}`)
+      .then(r => r.json())
+      .then(d => { setProducts(d.data || []); setLoading(false) })
   }, [params.id])
 
   const filtered = products.filter((p: any) => p.name.toLowerCase().includes(search.toLowerCase()))

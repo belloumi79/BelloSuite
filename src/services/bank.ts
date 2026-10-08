@@ -102,6 +102,12 @@ export async function reconcile(data: ReconcileData) {
     throw new BusinessError('Cette ligne est déjà rapprochée', 400)
   }
 
+  // La ligne d'écriture (table sans tenantId) doit appartenir à une écriture du tenant
+  if (journalEntryLineId) {
+    const ok = await prisma.journalEntryLine.count({ where: { id: journalEntryLineId, journalEntry: { tenantId } } })
+    if (!ok) throw new BusinessError('Ligne d\'écriture introuvable', 404)
+  }
+
   const bankAccountId = line.statement.bankAccount.id
 
   return prisma.$transaction(async (tx) => {

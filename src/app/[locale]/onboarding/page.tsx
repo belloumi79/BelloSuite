@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import { Building2, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 
+type ModuleOption = { name: string; displayName: string; description: string | null }
+
 export default function OnboardingPage() {
-  const t = useTranslations('Onboarding')
-  const router = useRouter()
+  const params = useParams<{ locale?: string }>()
+  const locale = params?.locale && ['fr', 'ar', 'en'].includes(params.locale) ? params.locale : 'fr'
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [success, setSuccess] = useState(false)
@@ -23,6 +24,27 @@ export default function OnboardingPage() {
     phone: '',
     email: '',
   })
+
+  const [moduleOptions, setModuleOptions] = useState<ModuleOption[]>([])
+  const [selectedModules, setSelectedModules] = useState<string[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/tenant/onboard')
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (cancelled || !data) return
+        setModuleOptions(data.modules || [])
+        const available = new Set((data.modules || []).map((m: ModuleOption) => m.name))
+        setSelectedModules((data.defaults || []).filter((n: string) => available.has(n)))
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  const toggleModule = (name: string) => {
+    setSelectedModules(prev => (prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]))
+  }
 
   // Auto-generate subdomain from company name
   const handleCompanyNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,35 +75,27 @@ export default function OnboardingPage() {
     setErrorMsg('')
     setLoading(true)
 
-    // Get user email from session
-    const session = JSON.parse(localStorage.getItem('bello_session') || '{}')
-    const userEmail = session?.email
-
     try {
-      const res = await fetch('/api/super-admin/tenants', {
+      // L'utilisateur est identifié côté serveur par son cookie de session (aucun email envoyé).
+      const res = await fetch('/api/tenant/onboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, userEmail }),
+        body: JSON.stringify({ ...formData, modules: selectedModules }),
       })
-      const data = await res.json()
-      
+      const data = await res.json().catch(() => ({}))
+
       if (res.ok && data.tenant) {
         setSuccess(true)
-        // Update session with new tenant
-        const session = JSON.parse(localStorage.getItem('bello_session') || '{}')
-        session.tenantId = data.tenant.id
-        session.role = 'ADMIN'
-        localStorage.setItem('bello_session', JSON.stringify(session))
-        
-        // Redirect after short delay
+        // Le serveur a ré-émis le cookie de session avec le nouveau tenantId :
+        // navigation complète pour que le layout serveur relise la session.
         setTimeout(() => {
-          router.push('/dashboard')
-        }, 1500)
+          window.location.assign(`/${locale}/dashboard`)
+        }, 1200)
       } else {
         setErrorMsg(data.error || 'Erreur lors de la création')
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Erreur de connexion')
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Erreur de connexion')
     } finally {
       setLoading(false)
     }
@@ -259,6 +273,30 @@ export default function OnboardingPage() {
               />
             </div>
           </div>
+
+          {moduleOptions.length > 0 && (
+            <div>
+              <label className="block text-zinc-400 text-xs font-black uppercase tracking-widest mb-1.5 px-1">
+                Modules à activer
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {moduleOptions.map(m => (
+                  <label
+                    key={m.name}
+                    className="flex items-center gap-2 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-white cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      className="accent-teal-500"
+                      checked={selectedModules.includes(m.name)}
+                      onChange={() => toggleModule(m.name)}
+                    />
+                    {m.displayName}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <button
             type="submit"

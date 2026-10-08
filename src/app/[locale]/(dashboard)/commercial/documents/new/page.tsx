@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { Plus, Trash2, Save, ArrowLeft, Search, User, Package, Calendar, Info, CreditCard, FileText } from 'lucide-react'
 import { calculateInvoiceTotals, VAT_RATES, FISCAL_STAMP } from '@/lib/fiscal'
 import { Link } from '@/i18n/routing'
+import { useSession } from '@/hooks/useSession'
 
 export default function NewInvoicePage() {
   const t = useTranslations('Commercial.DocumentEditor')
@@ -13,7 +14,7 @@ export default function NewInvoicePage() {
   const locale = useLocale()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [clients, setClients] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   
@@ -31,23 +32,18 @@ export default function NewInvoicePage() {
   })
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId } = JSON.parse(session)
-      setTenantId(tenantId)
-      fetchClients(tenantId)
-      fetchProducts(tenantId)
-    }
+    fetchClients(tenantId)
+    fetchProducts(tenantId)
   }, [])
 
   const fetchClients = async (tid: string) => {
-    const res = await fetch(`/api/commercial/clients?tenantId=${tid}`)
+    const res = await fetch(`/api/commercial/clients`)
     const data = await res.json()
     setClients(data)
   }
 
   const fetchProducts = async (tid: string) => {
-    const res = await fetch(`/api/stock/products?tenantId=${tid}`)
+    const res = await fetch(`/api/stock/products`)
     const data = await res.json()
     setProducts(data)
   }

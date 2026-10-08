@@ -1,0 +1,13 @@
+// ============================================
+// SÉCURITÉ — rate limit persistant (partagé entre les instances serverless Vercel)
+// Table créée par supabase/migrations/20261008120000_rate_limit.sql (à exécuter à la main).
+// ============================================
+
+model RateLimit {
+  /// sha256 de la clé logique (ex. "login:ip:1.2.3.4") — pas d'IP ni d'email en clair
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+
+  @@index([windowStart])
+}

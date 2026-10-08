@@ -4,6 +4,7 @@ import { handleApiError } from '@/lib/errors'
 import { validateTransfer } from '@/services/stock'
 import { prisma } from '@/lib/db'
 import { TransferStatus } from '@prisma/client'
+import { assertBelongsToTenant, assertAllBelongToTenant } from '@/lib/tenant-scope'
 
 // GET /api/stock/transfers?tenantId=
 export async function GET(req: NextRequest) {
@@ -41,6 +42,8 @@ export async function POST(req: NextRequest) {
     if (!fromWarehouseId || !toWarehouseId || !items?.length) {
       return NextResponse.json({ error: 'Champs requis manquants' }, { status: 400 })
     }
+    await assertAllBelongToTenant('warehouse', [fromWarehouseId, toWarehouseId], ctx.tenantId)
+    await assertAllBelongToTenant('product', items.map((i: { productId?: string }) => i.productId), ctx.tenantId)
 
     const ref = `TRF-${Date.now()}`
     const transfer = await prisma.stockTransfer.create({

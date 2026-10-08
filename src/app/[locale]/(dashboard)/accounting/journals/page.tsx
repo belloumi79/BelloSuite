@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Settings2, Plus, Save, BookOpen, AlertTriangle } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 interface Journal {
   id: string
@@ -12,7 +13,7 @@ interface Journal {
 }
 
 export default function JournalsPage() {
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [journals, setJournals] = useState<Journal[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -22,7 +23,7 @@ export default function JournalsPage() {
   const fetchJournals = useCallback(async (tid: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/accounting/journals?tenantId=${tid}`)
+      const res = await fetch(`/api/accounting/journals`)
       const data = await res.json()
       if (Array.isArray(data)) setJournals(data)
     } catch (err) {
@@ -33,12 +34,8 @@ export default function JournalsPage() {
   }, [])
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const tid = JSON.parse(session).tenantId
-      setTenantId(tid)
-      fetchJournals(tid)
-    }
+    const tid = tenantId
+    fetchJournals(tid)
   }, [fetchJournals])
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -1,15 +1,23 @@
 'use client'
 
 import { Suspense, useState, useEffect, useRef } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import gsap from 'gsap'
-import { supabase } from '@/lib/supabase/client'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { supabase as ssrBrowserClient } from '@/lib/supabase/client'
+import { parseRecoveryParams } from '@/lib/supabase/recovery'
+
+type LinkStatus = 'checking' | 'ready' | 'invalid'
 
 function ResetPasswordForm() {
-  const searchParams = useSearchParams()
   const router = useRouter()
-  const token = searchParams.get('token')
+  const params = useParams<{ locale?: string }>()
+  const locale = params?.locale && ['fr', 'ar', 'en'].includes(params.locale) ? params.locale : 'fr'
+
+  const [linkStatus, setLinkStatus] = useState<LinkStatus>('checking')
+  const [linkError, setLinkError] = useState('')
+  const clientRef = useRef<SupabaseClient | null>(null)
 
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -22,6 +30,46 @@ function ResetPasswordForm() {
     gsap.fromTo('.rp-glow', { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.2, ease: 'power3.out' })
     gsap.fromTo('.rp-brand', { y: -40, opacity: 0, scale: 0.9 }, { y: 0, opacity: 1, scale: 1, duration: 0.7, ease: 'back.out(1.7)', delay: 0.2 })
     gsap.fromTo('.rp-card', { y: 50, opacity: 0, scale: 0.9 }, { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: 'power3.out', delay: 0.4 })
+  }, [])
+
+  // Établit la session de récupération Supabase à partir du lien reçu par email.
+  useEffect(() => {
+    const recovery = parseRecoveryParams(window.location.hash, window.location.search)
+    // Ne pas laisser les jetons dans l'URL (historique, en-tête Referer)
+    if (window.location.hash || window.location.search) {
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+    const isolated = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      auth: { flowType: 'implicit', persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    })
+
+    const run = async () => {
+      try {
+        if (recovery.kind === 'tokens') {
+          const { error } = await isolated.auth.setSession({ access_token: recovery.accessToken, refresh_token: recovery.refreshToken })
+          if (error) throw error
+          clientRef.current = isolated
+        } else if (recovery.kind === 'token_hash') {
+          const { error } = await isolated.auth.verifyOtp({ type: 'recovery', token_hash: recovery.tokenHash })
+          if (error) throw error
+          clientRef.current = isolated
+        } else if (recovery.kind === 'code') {
+          // PKCE : le code_verifier est dans les cookies du client navigateur @supabase/ssr
+          const { error } = await ssrBrowserClient.auth.exchangeCodeForSession(recovery.code)
+          if (error) throw error
+          clientRef.current = ssrBrowserClient
+        } else {
+          if (recovery.kind === 'error') setLinkError(recovery.message)
+          setLinkStatus('invalid')
+          return
+        }
+        setLinkStatus('ready')
+      } catch (e) {
+        setLinkError(e instanceof Error ? e.message : '')
+        setLinkStatus('invalid')
+      }
+    }
+    run()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,18 +92,13 @@ function ResetPasswordForm() {
     gsap.to('.rp-submit-btn', { scale: 0.97, duration: 0.1, yoyo: true, repeat: 1 })
 
     try {
-      if (!token) {
-        throw new Error('Lien de réinitialisation invalide ou expiré')
-      }
+      const client = clientRef.current
+      if (!client) throw new Error('Lien de réinitialisation invalide ou expiré')
 
-      const res = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password })
-      })
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      // Mot de passe géré uniquement par Supabase Auth (plus aucune écriture de User.password)
+      const { error: updateError } = await client.auth.updateUser({ password })
+      if (updateError) throw new Error(updateError.message || 'Erreur')
+      await client.auth.signOut({ scope: 'local' }).catch(() => {})
 
       setSuccess(true)
       gsap.to('.rp-card', {
@@ -63,10 +106,10 @@ function ResetPasswordForm() {
         opacity: 0,
         y: -20,
         duration: 0.4,
-        onComplete: () => router.push('/login?reset=success')
+        onComplete: () => router.push(`/${locale}/login?reset=success`)
       })
-    } catch (err: any) {
-      setError(err.message || 'Erreur serveur')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur serveur')
       gsap.fromTo('.rp-error', { x: -15, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'back.out(1.7)' })
       setLoading(false)
     }
@@ -87,7 +130,9 @@ function ResetPasswordForm() {
         </div>
 
         <div className="rp-card bg-slate-800/80 backdrop-blur-xl rounded-3xl p-8 border border-slate-700/50 shadow-2xl shadow-emerald-500/5">
-          {!token ? (
+          {linkStatus === 'checking' ? (
+            <p className="text-center text-slate-400 py-8">Vérification du lien…</p>
+          ) : linkStatus === 'invalid' ? (
             <div className="text-center">
               <div className="relative w-20 h-20 mx-auto mb-6">
                 <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" />
@@ -100,8 +145,9 @@ function ResetPasswordForm() {
               <p className="text-slate-400 mb-8 leading-relaxed">
                 Ce lien de réinitialisation est invalide ou a expiré.
               </p>
+              {linkError && <p className="text-slate-500 text-xs -mt-6 mb-8">{linkError}</p>}
 
-              <Link href="/forgot-password" className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
+              <Link href={`/${locale}/forgot-password`} className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
                 <span>Demander un nouveau lien</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -183,7 +229,7 @@ function ResetPasswordForm() {
               </button>
 
               <div className="text-center mt-6">
-                <Link href="/login" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors inline-flex items-center gap-1 group">
+                <Link href={`/${locale}/login`} className="text-sm text-slate-400 hover:text-emerald-400 transition-colors inline-flex items-center gap-1 group">
                   <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                   </svg>

@@ -6,12 +6,12 @@ import PaymentModal from '@/components/pos/PaymentModal'
 import ReceiptModal from '@/components/pos/ReceiptModal'
 import SessionOpenModal from '@/components/pos/SessionOpenModal'
 import type { POSCartItem, POSProduct, POSSessionInfo } from '@/lib/pos-types'
+import { useSession } from '@/hooks/useSession'
 
 const TIMBRE = 1
 
 export default function POSPage() {
-  const [tenantId, setTenantId] = useState('')
-  const [user, setUser] = useState<any>(null)
+  const { tenantId, session: user } = useSession()
   const [session, setSession] = useState<any>(null)
   const [showSess, setShowSess] = useState<boolean>(false)
   const [products, setProducts] = useState<any[]>([])
@@ -24,14 +24,8 @@ export default function POSPage() {
   const [loading, setLoading] = useState<boolean>(false)
 
   useEffect(() => {
-    const s = localStorage.getItem('bello_session')
-    if (!s) return
-    const parsed = JSON.parse(s)
-    setTenantId(parsed.tenantId || '')
-    setUser(parsed)
-    const tid = parsed.tenantId || ''
-    if (!tid) return
-    fetch('/api/pos/sessions?tenantId=' + tid + '&status=OPEN')
+    const tid = tenantId
+    fetch('/api/pos/sessions?status=OPEN')
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -42,7 +36,7 @@ export default function POSPage() {
   }, [])
 
   const loadProducts = useCallback(async (tid: string) => {
-    const r = await fetch('/api/pos/products?tenantId=' + tid + '&limit=200')
+    const r = await fetch('/api/pos/products?limit=200')
     if (r.ok) { const d = await r.json(); setProducts(d.data || []) }
   }, [])
 

@@ -1,6 +1,7 @@
 import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { tenantRefsError } from '@/lib/tenant-scope'
 
 export async function GET(
   request: Request,
@@ -53,6 +54,10 @@ export async function PUT(
     if (!tenantId) {
       return NextResponse.json({ error: 'tenantId required' }, { status: 400 })
     }
+    const badRef = await tenantRefsError(tenantId, {
+      product: [updateData.productId, ...(Array.isArray(items) ? items.map((i: { productId?: string }) => i.productId) : [])],
+    })
+    if (badRef) return badRef
 
     // Update the BOM and recreate the items
     const bom = await prisma.billOfMaterials.update({

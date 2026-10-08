@@ -1,6 +1,7 @@
 import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { tenantRefsError } from '@/lib/tenant-scope'
 
 export async function GET(request: Request) {
   try {
@@ -44,6 +45,10 @@ export async function POST(request: Request) {
     if (!tenantId || !productId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+    const badRef = await tenantRefsError(tenantId, {
+      product: [productId, ...(Array.isArray(items) ? items.map((i: { productId?: string }) => i.productId) : [])],
+    })
+    if (badRef) return badRef
 
     // items should be an array of { productId, quantity }
     const bom = await prisma.billOfMaterials.create({

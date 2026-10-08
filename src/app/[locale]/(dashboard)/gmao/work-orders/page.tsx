@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Wrench, AlertCircle, Clock, CheckCircle2, Search, Loader2 } from "lucide-react";
 import { WorkOrderFormModal } from "./components/WorkOrderFormModal";
+import { useSession } from '@/hooks/useSession'
 
 interface WorkOrder {
   id: string;
@@ -37,30 +38,22 @@ const typeLabels = {
 };
 
 export default function WorkOrdersPage() {
-  const [tenantId, setTenantId] = useState("");
+  const { tenantId } = useSession()
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    try {
-      const session = localStorage.getItem("bello_session");
-      if (session) {
-        setTenantId(JSON.parse(session).tenantId || "");
-      }
-    } catch {}
-  }, []);
 
   useEffect(() => {
-    const currentTenant = tenantId || "demo-tenant";
+    const currentTenant = tenantId;
     fetchWorkOrders(currentTenant);
   }, [tenantId]);
 
   async function fetchWorkOrders(currentTenant: string) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/gmao/work-orders?tenantId=${currentTenant}`);
+      const res = await fetch(`/api/gmao/work-orders`);
       if (res.ok) {
         const data = await res.json();
         setWorkOrders(data);
@@ -161,11 +154,11 @@ export default function WorkOrdersPage() {
 
       {showModal && (
         <WorkOrderFormModal
-          tenantId={tenantId || "demo-tenant"}
+          tenantId={tenantId}
           onClose={() => setShowModal(false)}
           onSave={() => {
             setShowModal(false);
-            fetchWorkOrders(tenantId || "demo-tenant");
+            fetchWorkOrders(tenantId);
           }}
         />
       )}

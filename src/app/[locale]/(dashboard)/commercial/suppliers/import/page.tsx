@@ -28,15 +28,6 @@ export default function ImportSuppliersPage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [tenantId] = useState('')
 
-  useState(() => {
-    try {
-      const session = localStorage.getItem('bello_session')
-      if (session) {
-        const parsed = JSON.parse(session)
-        // tenantId will be set by the form
-      }
-    } catch {}
-  })
 
   const handleFile = (f: File) => {
     setFile(f)
@@ -68,14 +59,9 @@ export default function ImportSuppliersPage() {
   const handleSubmit = async () => {
     if (!file) return
     setLoading(true)
-    const sessionData = localStorage.getItem('bello_session')
-    if (!sessionData) { setLoading(false); return }
-    const { tenantId } = JSON.parse(sessionData)
-    if (!tenantId) { setLoading(false); return }
 
     const fd = new FormData()
     fd.append('file', file)
-    fd.append('tenantId', tenantId)
     try {
       const res = await fetch('/api/commercial/suppliers/import', { method: 'POST', body: fd })
       const data = await res.json()

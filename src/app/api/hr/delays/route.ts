@@ -1,6 +1,7 @@
 import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { tenantRefsError } from '@/lib/tenant-scope'
 
 export async function GET(request: Request) {
   try {
@@ -47,6 +48,8 @@ export async function POST(request: Request) {
     if (!tenantId || !employeeId || !date || !heureArrivee) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+    const badRef = await tenantRefsError(tenantId, { employee: employeeId })
+    if (badRef) return badRef
 
     const delay = await prisma.delay.create({
       data: {

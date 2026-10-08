@@ -1,6 +1,7 @@
 import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { tenantRefsError } from '@/lib/tenant-scope'
 
 // GET /api/commercial/export?tenantId=
 export async function GET(req: Request) {
@@ -33,6 +34,8 @@ export async function POST(req: Request) {
     if (!tenantId || !invoiceId || !countryDest || !incoterm) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+    const badRef = await tenantRefsError(tenantId, { invoice: invoiceId })
+    if (badRef) return badRef
 
     const exp = await prisma.exportInvoice.create({
       data: {

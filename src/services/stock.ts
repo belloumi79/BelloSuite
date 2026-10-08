@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { BusinessError } from '@/lib/errors'
 import { StockMovementType, InventoryStatus } from '@prisma/client'
+import { assertBelongsToTenant } from '@/lib/tenant-scope'
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -68,6 +69,10 @@ export async function createWarehouse(data: CreateWarehouseData) {
 export async function createStockMovement(data: CreateStockMovementData) {
   const { tenantId, productId, warehouseId, type, quantity } = data
 
+  // Produit et entrepôt : uniquement ceux du tenant (anti-IDOR)
+  await assertBelongsToTenant('product', productId, tenantId)
+  await assertBelongsToTenant('warehouse', warehouseId, tenantId)
+
   return prisma.$transaction(async (tx) => {
     // 1. Record the movement
     const movement = await tx.stockMovement.create({
@@ -116,6 +121,7 @@ export async function validateInventory(id: string, tenantId: string, warehouseI
   if (!warehouseId) {
     throw new BusinessError('Aucun entrepôt associé à cet inventaire', 400)
   }
+  await assertBelongsToTenant('warehouse', warehouseId, tenantId)
 
   return prisma.$transaction(async (tx) => {
     for (const item of inventory.items) {

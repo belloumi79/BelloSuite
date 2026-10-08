@@ -73,6 +73,10 @@ export async function moveTask(taskId: string, targetColumnId: string, newPositi
     throw new BusinessError('Tâche introuvable', 404)
   }
 
+  // La colonne cible doit appartenir à un projet du même tenant
+  const targetOk = await prisma.projectColumn.count({ where: { id: targetColumnId, project: { tenantId } } })
+  if (!targetOk) throw new BusinessError('Colonne introuvable', 404)
+
   return prisma.projectTask.update({
     where: { id: taskId },
     data: {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Plus, Search, BookOpen, AlertCircle, CheckCircle2, ChevronRight, ChevronDown, Download } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 type Account = {
   id: string
@@ -29,7 +30,7 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 export default function ChartOfAccountsPage() {
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
   const [initLoading, setInitLoading] = useState(false)
@@ -37,18 +38,13 @@ export default function ChartOfAccountsPage() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId } = JSON.parse(session)
-      setTenantId(tenantId)
-      fetchAccounts(tenantId)
-    }
+    fetchAccounts(tenantId)
   }, [])
 
   const fetchAccounts = async (tid: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/accounting/accounts?tenantId=${tid}`)
+      const res = await fetch(`/api/accounting/accounts`)
       const data = await res.json()
       if (Array.isArray(data)) {
         setAccounts(buildHierarchy(data))

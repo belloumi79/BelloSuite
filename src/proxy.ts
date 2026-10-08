@@ -18,7 +18,6 @@ const PUBLIC_API_PATTERNS = [
   '/api/auth/login',
   '/api/auth/register',
   '/api/auth/forgot-password',
-  '/api/auth/reset-password',
   '/api/auth/callback',
   '/api/auth/session',
   '/api/health',

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Plus, Search, User, Mail, Phone, MapPin, MoreVertical, Edit, Trash2, Building2 } from 'lucide-react'
 import ClientModal from '@/components/commercial/ClientModal'
+import { useSession } from '@/hooks/useSession'
 
 export default function ClientsPage() {
   const t = useTranslations('Commercial.Clients')
@@ -13,20 +14,15 @@ export default function ClientsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId } = JSON.parse(session)
-      setTenantId(tenantId)
-      fetchClients(tenantId)
-    }
+    fetchClients(tenantId)
   }, [])
 
   const fetchClients = async (tid: string) => {
     try {
-      const res = await fetch(`/api/commercial/clients?tenantId=${tid}`)
+      const res = await fetch(`/api/commercial/clients`)
       const data = await res.json()
       setClients(data)
     } catch (error) {

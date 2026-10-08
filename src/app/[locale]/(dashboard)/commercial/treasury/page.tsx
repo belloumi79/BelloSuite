@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { RefreshCw, TrendingUp, Clock, AlertTriangle, DollarSign, Users, BarChart2 } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 function StatCard({ label, value, sub, icon: Icon, color }: { label: string; value: string; sub: string; icon: any; color: string }) {
   const colorMap: Record<string, string> = {
@@ -33,23 +34,19 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 }
 
 export default function TreasuryPage() {
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId: tid } = JSON.parse(session)
-      setTenantId(tid)
-      fetchTreasury(tid)
-    }
+    const tid = tenantId
+    fetchTreasury(tid)
   }, [])
 
   const fetchTreasury = async (tid: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/commercial/treasury?tenantId=${tid}`)
+      const res = await fetch(`/api/commercial/treasury`)
       if (res.ok) setData(await res.json())
     } catch (e) { console.error(e) }
     finally { setLoading(false) }

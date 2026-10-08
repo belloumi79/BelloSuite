@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { BusinessError } from '@/lib/errors'
+import { assertBelongsToTenant, assertAllBelongToTenant } from '@/lib/tenant-scope'
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -57,6 +58,11 @@ export async function createPurchaseOrder(data: CreatePurchaseOrderData) {
   if (existing) {
     throw new BusinessError(`Bon de commande "${number}" déjà utilisé`, 409)
   }
+
+  // Les références liées doivent appartenir au tenant (anti-IDOR)
+  await assertBelongsToTenant('supplier', supplierId, tenantId)
+  await assertBelongsToTenant('client', clientId, tenantId)
+  await assertAllBelongToTenant('product', items.map((i) => i.productId), tenantId)
 
   return prisma.$transaction(async (tx) => {
     return tx.purchaseOrder.create({

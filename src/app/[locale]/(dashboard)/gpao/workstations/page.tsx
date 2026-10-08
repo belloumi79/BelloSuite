@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Factory, MapPin, Activity, Search, Loader2 } from "lucide-react";
 import { WorkstationFormModal } from "./components/WorkstationFormModal";
+import { useSession } from '@/hooks/useSession'
 
 interface Workstation {
   id: string;
@@ -19,30 +20,22 @@ interface Workstation {
 }
 
 export default function WorkstationsPage() {
-  const [tenantId, setTenantId] = useState("");
+  const { tenantId } = useSession()
   const [workstations, setWorkstations] = useState<Workstation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    try {
-      const session = localStorage.getItem("bello_session");
-      if (session) {
-        setTenantId(JSON.parse(session).tenantId || "");
-      }
-    } catch {}
-  }, []);
 
   useEffect(() => {
-    const currentTenant = tenantId || "demo-tenant";
+    const currentTenant = tenantId;
     fetchWorkstations(currentTenant);
   }, [tenantId]);
 
   async function fetchWorkstations(currentTenant: string) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/gpao/workstations?tenantId=${currentTenant}`);
+      const res = await fetch(`/api/gpao/workstations`);
       if (res.ok) {
         const data = await res.json();
         setWorkstations(data);
@@ -143,11 +136,11 @@ export default function WorkstationsPage() {
 
       {showModal && (
         <WorkstationFormModal
-          tenantId={tenantId || "demo-tenant"}
+          tenantId={tenantId}
           onClose={() => setShowModal(false)}
           onSave={() => {
             setShowModal(false);
-            fetchWorkstations(tenantId || "demo-tenant");
+            fetchWorkstations(tenantId);
           }}
         />
       )}

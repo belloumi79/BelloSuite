@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from '@/i18n/routing'
 import { useTranslations, useLocale } from 'next-intl'
 import { Package, Plus, Search, RefreshCw, Filter, Trash2, Edit2, Eye, AlertTriangle, X, ChevronDown, Upload, Tags, Download } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 type Product = {
   id: string
@@ -39,7 +40,7 @@ export default function ProductsListPage() {
   const locale = useLocale()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [stockFilter, setStockFilter] = useState('')
@@ -58,7 +59,7 @@ export default function ProductsListPage() {
     const formData = new FormData()
     formData.append('file', file)
     try {
-      const res = await fetch(`/api/stock/import?tenantId=${tenantId}`, { method: 'POST', body: formData })
+      const res = await fetch(`/api/stock/import`, { method: 'POST', body: formData })
       const data = await res.json()
       setImportResult(data)
       if (res.ok) { fetchProducts(tenantId); setTimeout(() => setShowImport(false), 1500) }
@@ -69,24 +70,20 @@ export default function ProductsListPage() {
   const fetchProducts = useCallback(async (tid: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/stock/products?tenantId=${tid}`)
+      const res = await fetch(`/api/stock/products`)
       if (res.ok) setProducts(await res.json())
     } catch (e) { console.error(e) }
     setLoading(false)
   }, [])
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId: tid } = JSON.parse(session)
-      setTenantId(tid)
-      fetchProducts(tid)
-    }
+    const tid = tenantId
+    fetchProducts(tid)
   }, [fetchProducts])
 
   const handleDelete = async (id: string) => {
     if (!confirm(t('Stock.delete_confirm_title'))) return
-    const res = await fetch(`/api/stock/products/${id}?tenantId=${tenantId}`, { method: 'DELETE' })
+    const res = await fetch(`/api/stock/products/${id}`, { method: 'DELETE' })
     if (res.ok) {
       setProducts(p => p.filter(x => x.id !== id))
       setDeleteId(null)

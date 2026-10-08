@@ -1,4 +1,5 @@
-// Simple in-memory rate limiter (upgrade to Redis for production multi-instance)
+// Limiteur en mémoire (par instance). Utilisé par le proxy et comme repli de lib/rate-limit-persistent.ts
+// (compteur Postgres partagé entre instances pour les routes d'authentification).
 
 interface RateLimitEntry { count: number; resetTime: number }
 const store = new Map<string, RateLimitEntry>()
@@ -25,9 +26,11 @@ export function rateLimit(key: string, maxRequests: number, windowSeconds: numbe
 }
 
 // Cleanup expired entries every 5 minutes
-setInterval(() => {
+const cleanup = setInterval(() => {
   const now = Date.now()
   for (const [key, entry] of store.entries()) {
     if (now > entry.resetTime) store.delete(key)
   }
 }, 300000)
+// Ne pas empêcher l'arrêt du processus (tests, scripts)
+;(cleanup as unknown as { unref?: () => void }).unref?.()

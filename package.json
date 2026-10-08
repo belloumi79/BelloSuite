@@ -8,7 +8,7 @@
     "build": "prisma generate --schema ./prisma/schema && next build",
     "vercel-build": "prisma generate --schema ./prisma/schema && next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

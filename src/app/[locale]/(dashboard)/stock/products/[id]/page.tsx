@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import { Package, ArrowLeft, Edit2, AlertTriangle, TrendingUp, TrendingDown, Archive, ImageIcon } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 type Movement = { id: string; type: string; quantity: string; unitPrice: string; reference: string; notes: string; createdAt: string; warehouse: { name: string } | null; product: { name: string } }
 type WarehouseStock = { warehouse: { id: string; name: string; code: string }; stock: string }
@@ -15,18 +16,14 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<any>(null)
   const [movements, setMovements] = useState<Movement[]>([])
   const [loading, setLoading] = useState(true)
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId: tid } = JSON.parse(session)
-      setTenantId(tid)
-      fetch(`/api/stock/products/${id}?tenantId=${tid}`)
-        .then(r => r.json())
-        .then(d => { setProduct(d); setMovements(d.movements || []) })
-        .finally(() => setLoading(false))
-    }
+    const tid = tenantId
+    fetch(`/api/stock/products/${id}`)
+      .then(r => r.json())
+      .then(d => { setProduct(d); setMovements(d.movements || []) })
+      .finally(() => setLoading(false))
   }, [id])
 
   if (loading) return <div className="p-8 text-zinc-500 font-bold text-start">{t('Stock.loading')}</div>

@@ -3,18 +3,16 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Plus, Folder, Users, Calendar, CheckSquare, ArrowRight } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([])
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (!session) return
-    const { tenantId: tid } = JSON.parse(session)
-    setTenantId(tid)
-    fetch(`/api/projects?tenantId=${tid}`)
+    const tid = tenantId
+    fetch(`/api/projects`)
       .then(r => r.json())
       .then(data => { setProjects(Array.isArray(data) ? data : []); setLoading(false) })
       .catch(() => setLoading(false))

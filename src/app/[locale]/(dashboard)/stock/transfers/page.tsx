@@ -3,26 +3,22 @@ import { useState, useEffect } from 'react'
 import { Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import { ArrowLeftRight, Package, MapPin, Calendar, RefreshCw } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 export default function TransfersPage() {
   const t = useTranslations()
   const [transfers, setTransfers] = useState<any[]>([])
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const s = localStorage.getItem('bello_session')
-    if (s) {
-      const { tenantId } = JSON.parse(s)
-      setTenantId(tenantId)
-      fetchTransfers(tenantId)
-    }
+    fetchTransfers(tenantId)
   }, [])
 
   const fetchTransfers = async (tid: string) => {
     setLoading(true)
     try {
-      const r = await fetch(`/api/stock/transfers?tenantId=${tid}`)
+      const r = await fetch(`/api/stock/transfers`)
       const d = await r.json()
       setTransfers(Array.isArray(d) ? d : [])
     } catch (e) {

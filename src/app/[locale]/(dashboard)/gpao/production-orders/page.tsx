@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, CheckCircle2, Clock, XCircle, Search, Settings, AlertCircle, PlayCircle, CalendarClock } from "lucide-react";
 import { ProductionOrderFormModal } from "./components/ProductionOrderFormModal";
+import { useSession } from '@/hooks/useSession'
 
 interface ProductionOrder {
   id: string;
@@ -15,7 +16,7 @@ interface ProductionOrder {
 }
 
 export default function ProductionOrdersPage() {
-  const [tenantId, setTenantId] = useState("");
+  const { tenantId } = useSession()
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [productsMap, setProductsMap] = useState<Record<string, {name: string, sku: string}>>({});
   const [loading, setLoading] = useState(true);
@@ -29,17 +30,9 @@ export default function ProductionOrdersPage() {
     CANCELLED: { label: "Annulé", color: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
   };
 
-  useEffect(() => {
-    try {
-      const session = localStorage.getItem("bello_session");
-      if (session) {
-        setTenantId(JSON.parse(session).tenantId || "");
-      }
-    } catch {}
-  }, []);
 
   useEffect(() => {
-    const currentTenant = tenantId || "demo-tenant";
+    const currentTenant = tenantId;
     fetchOrdersAndProducts(currentTenant);
   }, [tenantId]);
 
@@ -47,8 +40,8 @@ export default function ProductionOrdersPage() {
     setLoading(true);
     try {
       const [ordRes, curRes] = await Promise.all([
-        fetch(`/api/gpao/production-orders?tenantId=${currentTenant}`),
-        fetch(`/api/stock/products?tenantId=${currentTenant}`)
+        fetch(`/api/gpao/production-orders`),
+        fetch(`/api/stock/products`)
       ]);
 
       if (ordRes.ok && curRes.ok) {
@@ -72,12 +65,12 @@ export default function ProductionOrdersPage() {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      await fetch(`/api/gpao/production-orders/${id}?tenantId=${tenantId || "demo-tenant"}`, {
+      await fetch(`/api/gpao/production-orders/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenantId: tenantId || "demo-tenant", status })
+        body: JSON.stringify({ tenantId: tenantId, status })
       });
-      fetchOrdersAndProducts(tenantId || "demo-tenant");
+      fetchOrdersAndProducts(tenantId);
     } catch(err) {
       console.error(err);
     }
@@ -207,11 +200,11 @@ export default function ProductionOrdersPage() {
 
       {showModal && (
         <ProductionOrderFormModal
-          tenantId={tenantId || "demo-tenant"}
+          tenantId={tenantId}
           onClose={() => setShowModal(false)}
           onSave={() => {
             setShowModal(false);
-            fetchOrdersAndProducts(tenantId || "demo-tenant");
+            fetchOrdersAndProducts(tenantId);
           }}
         />
       )}
