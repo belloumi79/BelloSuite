@@ -5,6 +5,7 @@ import {
   Shield, Key, Globe, CheckCircle, XCircle,
   AlertTriangle, ExternalLink, RefreshCw, Zap, Save, Trash2
 } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 const ASP_PROVIDERS = [
   {
@@ -22,7 +23,7 @@ const ASP_PROVIDERS = [
 ]
 
 export default function TTNSettingsPage() {
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [config, setConfig] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -41,17 +42,13 @@ export default function TTNSettingsPage() {
   })
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId: tid } = JSON.parse(session)
-      setTenantId(tid)
-      fetchConfig(tid)
-    }
+    const tid = tenantId
+    fetchConfig(tid)
   }, [])
 
   const fetchConfig = async (tid: string) => {
     try {
-      const res = await fetch(`/api/commercial/asp-config?tenantId=${tid}`)
+      const res = await fetch(`/api/commercial/asp-config`)
       if (res.ok) {
         const data = await res.json()
         setConfig(data)

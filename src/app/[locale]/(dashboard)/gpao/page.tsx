@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Factory, Boxes, Settings, Activity, ArrowRight, Loader2, PlayCircle, CheckCircle2 } from "lucide-react";
+import { useSession } from '@/hooks/useSession'
 
 interface DashboardData {
   metrics: {
@@ -15,22 +16,14 @@ interface DashboardData {
 }
 
 export default function GPAODashboardPage() {
-  const [tenantId, setTenantId] = useState("");
+  const { tenantId } = useSession()
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      const session = localStorage.getItem("bello_session");
-      if (session) {
-        setTenantId(JSON.parse(session).tenantId || "");
-      }
-    } catch {}
-  }, []);
 
   useEffect(() => {
-    const currentTenant = tenantId || "demo-tenant";
-    fetch(`/api/gpao/dashboard?tenantId=${currentTenant}`)
+    const currentTenant = tenantId;
+    fetch(`/api/gpao/dashboard`)
       .then(res => res.json())
       .then(d => {
         setData(d);

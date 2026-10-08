@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Settings, AlertTriangle, Wrench, Search, Loader2 } from "lucide-react";
 import { AssetFormModal } from "./components/AssetFormModal";
+import { useSession } from '@/hooks/useSession'
 
 interface Asset {
   id: string;
@@ -32,31 +33,22 @@ const statusLabels = {
 };
 
 export default function AssetsPage() {
-  const [tenantId, setTenantId] = useState("");
+  const { tenantId } = useSession()
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    try {
-      const session = localStorage.getItem("bello_session");
-      if (session) {
-        const parsed = JSON.parse(session);
-        setTenantId(parsed.tenantId || "");
-      }
-    } catch {}
-  }, []);
 
   useEffect(() => {
-    const currentTenant = tenantId || "demo-tenant";
+    const currentTenant = tenantId;
     fetchAssets(currentTenant);
   }, [tenantId]);
 
   async function fetchAssets(currentTenant: string) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/gmao/assets?tenantId=${currentTenant}`);
+      const res = await fetch(`/api/gmao/assets`);
       if (res.ok) {
         const data = await res.json();
         setAssets(data);
@@ -172,11 +164,11 @@ export default function AssetsPage() {
 
       {showModal && (
         <AssetFormModal
-          tenantId={tenantId || "demo-tenant"}
+          tenantId={tenantId}
           onClose={() => setShowModal(false)}
           onSave={() => {
             setShowModal(false);
-            fetchAssets(tenantId || "demo-tenant");
+            fetchAssets(tenantId);
           }}
         />
       )}

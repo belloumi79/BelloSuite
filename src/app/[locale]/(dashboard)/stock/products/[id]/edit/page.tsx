@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, Package, Image, Hash, DollarSign, Layers, Trash2, Plus } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 type Variant = { id: string; name: string; sku: string; price: number; stock: number; attributes: Record<string, string> }
 
 export default function EditProductPage() {
   const { id } = useParams()
   const router = useRouter()
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [suppliers, setSuppliers] = useState<any[]>([])
@@ -28,35 +29,31 @@ export default function EditProductPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId: tid } = JSON.parse(session)
-      setTenantId(tid)
-      Promise.all([
-        fetch(`/api/stock/products/${id}?tenantId=${tid}`).then(r => r.json()),
-        fetch(`/api/commercial/suppliers?tenantId=${tid}`).then(r => r.ok ? r.json() : []),
-      ]).then(([product, sups]) => {
-        setSuppliers(sups)
-        setForm({
-          code: product.code || '',
-          barcode: product.barcode || '',
-          name: product.name || '',
-          description: product.description || '',
-          category: product.category || '',
-          unit: product.unit || 'unit',
-          purchasePrice: String(product.purchasePrice || ''),
-          salePrice: String(product.salePrice || ''),
-          vatRate: String(product.vatRate || '19'),
-          fodec: product.fodec || false,
-          minStock: String(product.minStock || ''),
-          supplierId: product.supplierId || '',
-          isActive: product.isActive !== false,
-        })
-        setImages(product.images || [])
-        setVariants(product.variants || [])
-        setLoading(false)
+    const tid = tenantId
+    Promise.all([
+      fetch(`/api/stock/products/${id}`).then(r => r.json()),
+      fetch(`/api/commercial/suppliers`).then(r => r.ok ? r.json() : []),
+    ]).then(([product, sups]) => {
+      setSuppliers(sups)
+      setForm({
+        code: product.code || '',
+        barcode: product.barcode || '',
+        name: product.name || '',
+        description: product.description || '',
+        category: product.category || '',
+        unit: product.unit || 'unit',
+        purchasePrice: String(product.purchasePrice || ''),
+        salePrice: String(product.salePrice || ''),
+        vatRate: String(product.vatRate || '19'),
+        fodec: product.fodec || false,
+        minStock: String(product.minStock || ''),
+        supplierId: product.supplierId || '',
+        isActive: product.isActive !== false,
       })
-    }
+      setImages(product.images || [])
+      setVariants(product.variants || [])
+      setLoading(false)
+    })
   }, [id])
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
@@ -77,7 +74,7 @@ export default function EditProductPage() {
     if (!form.code || !form.name) { setError('Code et Nom sont requis'); return }
     setSaving(true)
     setError('')
-    const res = await fetch(`/api/stock/products/${id}?tenantId=${tenantId}`, {
+    const res = await fetch(`/api/stock/products/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, images, variants }),

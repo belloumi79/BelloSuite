@@ -10,6 +10,7 @@ import {
   RefreshCw, QrCode, Zap, FileCode, Receipt, DollarSign
 } from 'lucide-react'
 import { generateTEIFXml } from '@/lib/teif-generator'
+import { useSession } from '@/hooks/useSession'
 
 const TTN_STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-stone-100 dark:bg-zinc-800 text-stone-500 dark:text-zinc-400',
@@ -30,13 +31,13 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [withholdingTax, setWithholdingTax] = useState<any>(null)
   const [generatingRS, setGeneratingRS] = useState(false)
 
   const fetchInvoice = async (id: string, tid: string) => {
     try {
-      const res = await fetch(`/api/commercial/invoices?id=${id}&tenantId=${tid}`)
+      const res = await fetch(`/api/commercial/invoices?id=${id}`)
       if (res.ok) {
         const data = await res.json()
         setInvoice(data)
@@ -50,7 +51,7 @@ export default function InvoiceDetailPage() {
 
   const fetchRS = async (tid: string, invId: string) => {
     try {
-      const res = await fetch(`/api/commercial/retenue-source?tenantId=${tid}&invoiceId=${invId}`)
+      const res = await fetch(`/api/commercial/retenue-source?invoiceId=${invId}`)
       if (res.ok) {
         const data = await res.json()
         setWithholdingTax(Array.isArray(data) ? data[0] : data)
@@ -59,12 +60,8 @@ export default function InvoiceDetailPage() {
   }
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId: tid } = JSON.parse(session)
-      setTenantId(tid)
-      if (params.id) { fetchInvoice(params.id as string, tid); fetchRS(tid, params.id as string) }
-    }
+    const tid = tenantId
+    if (params.id) { fetchInvoice(params.id as string, tid); fetchRS(tid, params.id as string) }
   }, [params.id])
 
   const handleNoteHonorairesPDF = async () => {

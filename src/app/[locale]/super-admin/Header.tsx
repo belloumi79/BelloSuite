@@ -18,8 +18,9 @@ export default function Header({ title, subtitle }: { title: string, subtitle: s
     )
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem('bello_session')
+  const handleLogout = async () => {
+    // Le cookie de session est httpOnly : seule l'API peut l'effacer.
+    await fetch('/api/auth/logout', { method: 'DELETE' }).catch(() => {})
     router.push('/login')
   }
 

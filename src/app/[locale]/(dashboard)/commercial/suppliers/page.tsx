@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Plus, Search, Truck, Mail, Phone, MapPin, Edit, Trash2, Building2 } from 'lucide-react'
 import SupplierModal from '@/components/commercial/SupplierModal'
+import { useSession } from '@/hooks/useSession'
 
 export default function SuppliersPage() {
   const t = useTranslations('Commercial.Suppliers')
@@ -13,20 +14,15 @@ export default function SuppliersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedSupplier, setSelectedSupplier] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId } = JSON.parse(session)
-      setTenantId(tenantId)
-      fetchSuppliers(tenantId)
-    }
+    fetchSuppliers(tenantId)
   }, [])
 
   const fetchSuppliers = async (tid: string) => {
     try {
-      const res = await fetch(`/api/commercial/suppliers?tenantId=${tid}`)
+      const res = await fetch(`/api/commercial/suppliers`)
       const data = await res.json()
       setSuppliers(data)
     } catch (error) {

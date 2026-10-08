@@ -5,6 +5,7 @@ import { PayrollSummary } from "./components/PayrollSummary";
 import { PaySlipTable } from "./components/PaySlipTable";
 import { PaySlipModal } from "./components/PaySlipModal";
 import { DollarSign, FileText, Users, Settings, Plus } from "lucide-react";
+import { useSession } from "@/hooks/useSession";
 
 const MONTHS = [
   { value: 1, label: "Janvier" },
@@ -24,7 +25,7 @@ const MONTHS = [
 export default function PaiePage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [tenantId] = useState("demo-tenant");
+  const { tenantId } = useSession();
   const [summary, setSummary] = useState<any>(null);
   const [payslips, setPayslips] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -39,8 +40,8 @@ export default function PaiePage() {
     setLoading(true);
     try {
       const [summaryRes, payslipsRes] = await Promise.all([
-        fetch(`/api/hr/payroll?tenantId=${tenantId}&month=${selectedMonth}&year=${selectedYear}`),
-        fetch(`/api/hr/payslips?tenantId=${tenantId}&month=${selectedMonth}&year=${selectedYear}`),
+        fetch(`/api/hr/payroll?month=${selectedMonth}&year=${selectedYear}`),
+        fetch(`/api/hr/payslips?month=${selectedMonth}&year=${selectedYear}`),
       ]);
       const summaryData = await summaryRes.json();
       const payslipsData = await payslipsRes.json();

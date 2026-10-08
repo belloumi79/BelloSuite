@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Link } from '@/i18n/routing'
 import { useTranslations, useLocale } from 'next-intl'
 import { Package, Warehouse as WarehouseIcon, ArrowRightLeft, FileText, Plus, RefreshCw, ExternalLink, Upload, Tags, X } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 export default function StockManagementPage() {
   const t = useTranslations()
@@ -11,27 +12,22 @@ export default function StockManagementPage() {
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [showImport, setShowImport] = useState(false)
   const [showCategory, setShowCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
   const [categories, setCategories] = useState<string[]>([])
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const parsed = JSON.parse(session)
-      setTenantId(parsed.tenantId)
-      fetchData(parsed.tenantId)
-    }
+    fetchData(tenantId)
   }, [])
 
   const fetchData = async (tid: string) => {
     setLoading(true)
     try {
       const [whRes, prodRes] = await Promise.all([
-        fetch(`/api/stock/warehouses?tenantId=${tid}`),
-        fetch(`/api/stock/products?tenantId=${tid}`),
+        fetch(`/api/stock/warehouses`),
+        fetch(`/api/stock/products`),
       ])
       if (whRes.ok) setWarehouses(await whRes.json())
       if (prodRes.ok) setProducts(await prodRes.json())
@@ -223,7 +219,6 @@ export default function StockManagementPage() {
                 if (!file) return
                 const fd = new FormData()
                 fd.append('file', file)
-                fd.append('tenantId', tenantId)
                 const r = await fetch('/api/stock/import', { method: 'POST', body: fd })
                 if (r.ok) { setShowImport(false); fetchData(tenantId) }
                 else { const d = await r.json(); alert(d.error || 'Erreur') }

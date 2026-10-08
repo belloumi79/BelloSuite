@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
+import { useSession } from '@/hooks/useSession';
 import { ChevronLeft, Save, X, Info, Calculator, DollarSign, Calendar, User, FileText, RefreshCw, XCircle } from 'lucide-react';
 
 export default function NewRetenueSourcePage() {
+  const { tenantId } = useSession();
   const t = useTranslations('Commercial.RetenueSourceEditor');
   const locale = useLocale();
   const router = useRouter();
@@ -43,12 +45,8 @@ export default function NewRetenueSourcePage() {
   });
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session');
-    if (session) {
-      const { tenantId: tid } = JSON.parse(session);
-      setForm(prev => ({ ...prev, tenantId: tid }));
-    }
-  }, []);
+    setForm(prev => ({ ...prev, tenantId }));
+  }, [tenantId]);
 
   const [preview, setPreview] = useState<any>(null);
   const [loading, setLoading] = useState(false);

@@ -5,6 +5,7 @@ import { Search, FileText, Calendar, User, Download, ExternalLink, Printer, File
 import { Link } from '@/i18n/routing'
 import { useTranslations, useLocale } from 'next-intl'
 import { generateTEIFXml as generateTEIF } from '@/lib/teif-generator'
+import { useSession } from '@/hooks/useSession'
 
 export default function InvoicesPage() {
   const t = useTranslations('Commercial.Invoices')
@@ -13,20 +14,15 @@ export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId } = JSON.parse(session)
-      setTenantId(tenantId)
-      fetchInvoices(tenantId)
-    }
+    fetchInvoices(tenantId)
   }, [])
 
   const fetchInvoices = async (tid: string) => {
     try {
-      const res = await fetch(`/api/commercial/invoices?tenantId=${tid}`)
+      const res = await fetch(`/api/commercial/invoices`)
       const data = await res.json()
       setInvoices(data)
     } catch (error) {

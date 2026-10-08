@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import { FileText, Plus, Search, RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 export default function InventoryListPage() {
   const t = useTranslations()
@@ -11,21 +12,16 @@ export default function InventoryListPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId } = JSON.parse(session)
-      setTenantId(tenantId)
-      fetchData(tenantId)
-    }
+    fetchData(tenantId)
   }, [])
 
   const fetchData = async (tid: string) => {
     setLoading(true)
     try {
-      const url = `/api/stock/inventory?tenantId=${tid}${statusFilter ? `&status=${statusFilter}` : ''}`
+      const url = `/api/stock/inventory${statusFilter ? `&status=${statusFilter}` : ''}`
       const res = await fetch(url)
       if (res.ok) setInventories(await res.json())
     } catch (e) { console.error(e) }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Calendar, Plus, Save, AlertTriangle, CheckCircle2, Lock } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 interface Period {
   id: string
@@ -12,7 +13,7 @@ interface Period {
 }
 
 export default function PeriodsPage() {
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [periods, setPeriods] = useState<Period[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -27,7 +28,7 @@ export default function PeriodsPage() {
   const fetchPeriods = useCallback(async (tid: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/accounting/periods?tenantId=${tid}`)
+      const res = await fetch(`/api/accounting/periods`)
       const data = await res.json()
       if (Array.isArray(data)) setPeriods(data)
     } catch (err) {
@@ -38,12 +39,8 @@ export default function PeriodsPage() {
   }, [])
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const tid = JSON.parse(session).tenantId
-      setTenantId(tid)
-      fetchPeriods(tid)
-    }
+    const tid = tenantId
+    fetchPeriods(tid)
   }, [fetchPeriods])
 
   const handleSubmit = async (e: React.FormEvent) => {

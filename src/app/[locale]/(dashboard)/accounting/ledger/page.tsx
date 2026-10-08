@@ -6,9 +6,10 @@ import {
   BookOpen, ChevronDown, ChevronRight, Download, FileText,
   Filter, ArrowLeft, Printer, Calendar
 } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 export default function LedgerPage() {
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [periodId, setPeriodId] = useState('')
   const [from, setFrom] = useState('2026-01-01')
   const [to, setTo] = useState('2026-12-31')
@@ -18,19 +19,13 @@ export default function LedgerPage() {
   const [periods, setPeriods] = useState<any[]>([])
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const parsed = JSON.parse(session)
-      setTenantId(parsed.tenantId || '')
-    }
-    fetch('/api/accounting/periods?tenantId=' + (JSON.parse(localStorage.getItem('bello_session') || '{}').tenantId || ''))
+    fetch('/api/accounting/periods')
       .then(r => r.json())
       .then(data => setPeriods(Array.isArray(data) ? data : []))
       .catch(() => setPeriods([]))
   }, [])
 
   const fetchLedger = async () => {
-    if (!tenantId) return
     setLoading(true)
     try {
       const params = new URLSearchParams({ tenantId, from, to })

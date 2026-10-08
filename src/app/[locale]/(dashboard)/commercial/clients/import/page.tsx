@@ -58,14 +58,9 @@ export default function ImportClientsPage() {
   const handleSubmit = async () => {
     if (!file) return
     setLoading(true)
-    const sessionData = localStorage.getItem('bello_session')
-    if (!sessionData) { setLoading(false); return }
-    const { tenantId } = JSON.parse(sessionData)
-    if (!tenantId) { setLoading(false); return }
 
     const fd = new FormData()
     fd.append('file', file)
-    fd.append('tenantId', tenantId)
     try {
       const res = await fetch('/api/commercial/clients/import', { method: 'POST', body: fd })
       const data = await res.json()

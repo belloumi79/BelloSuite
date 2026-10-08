@@ -9,6 +9,7 @@ import {
   ArrowRight, Plus, CreditCard, Receipt,
   ArrowUpRight, ArrowDownRight, RefreshCw
 } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 function StatCard({ 
   label, value, sub, icon: Icon, color, trend 
@@ -56,7 +57,7 @@ export default function CommercialDashboard() {
   const locale = useLocale()
   const isRTL = locale === 'ar'
   
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [stats, setStats] = useState({ totalHT: 0, totalTTC: 0, paidTTC: 0, unpaidTTC: 0, overdueTTC: 0, count: 0 })
   const [recentDocs, setRecentDocs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,20 +72,15 @@ export default function CommercialDashboard() {
   ]
 
   useEffect(() => {
-    const s = localStorage.getItem('bello_session')
-    if (s) {
-      const { tenantId } = JSON.parse(s)
-      setTenantId(tenantId)
-      fetchData(tenantId)
-    }
+    fetchData(tenantId)
   }, [])
 
   const fetchData = async (tid: string) => {
     setLoading(true)
     try {
       const [invRes, estRes] = await Promise.all([
-        fetch(`/api/commercial/invoices?tenantId=${tid}`),
-        fetch(`/api/commercial/documents?tenantId=${tid}&type=QUOTE`),
+        fetch(`/api/commercial/invoices`),
+        fetch(`/api/commercial/documents?type=QUOTE`),
       ])
       const invoices = invRes.ok ? await invRes.json() : []
       const estimates = estRes.ok ? await estRes.json() : []

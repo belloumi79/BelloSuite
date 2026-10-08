@@ -5,6 +5,7 @@ import { useRouter } from '@/i18n/routing'
 import { Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import { ArrowLeft, Plus, Trash2, Save, Package, Image as ImageIcon, Hash, DollarSign, Layers, X } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 type Variant = {
   id: string
@@ -18,7 +19,7 @@ type Variant = {
 export default function NewProductPage() {
   const t = useTranslations()
   const router = useRouter()
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [loading, setLoading] = useState(false)
   const [suppliers, setSuppliers] = useState<any[]>([])
 
@@ -34,12 +35,8 @@ export default function NewProductPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId: tid } = JSON.parse(session)
-      setTenantId(tid)
-      fetch(`/api/commercial/suppliers?tenantId=${tid}`).then(r => { if (r.ok) r.json().then(d => setSuppliers(d)) }).catch(() => {})
-    }
+    const tid = tenantId
+    fetch(`/api/commercial/suppliers`).then(r => { if (r.ok) r.json().then(d => setSuppliers(d)) }).catch(() => {})
   }, [])
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))

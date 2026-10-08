@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Wrench, Settings, AlertTriangle, TrendingUp, Cpu, CalendarClock, ChevronRight } from "lucide-react";
+import { useSession } from '@/hooks/useSession'
 
 interface DashboardStats {
   assets: {
@@ -22,25 +23,17 @@ interface DashboardStats {
 }
 
 export default function GMAODashboard() {
-  const [tenantId, setTenantId] = useState("");
+  const { tenantId } = useSession()
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      const session = localStorage.getItem("bello_session");
-      if (session) {
-        setTenantId(JSON.parse(session).tenantId || "");
-      }
-    } catch {}
-  }, []);
 
   useEffect(() => {
-    const currentTenant = tenantId || "demo-tenant";
+    const currentTenant = tenantId;
     async function fetchStats() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/gmao/dashboard?tenantId=${currentTenant}`);
+        const res = await fetch(`/api/gmao/dashboard`);
         if(res.ok) {
           const data = await res.json();
           setStats(data);

@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X, Download, Table } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useSession } from '@/hooks/useSession'
 
 const TEMPLATE_COLS = ['code', 'name', 'barcode', 'description', 'category', 'unit', 'purchasePrice', 'salePrice', 'vatRate', 'fodec', 'minStock', 'initialStock']
 
@@ -14,15 +15,9 @@ export default function ImportProductsPage() {
   const [loading, setLoading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
 
   // Load tenant from session
-  useState(() => {
-    try {
-      const session = localStorage.getItem('bello_session')
-      if (session) setTenantId(JSON.parse(session).tenantId || '')
-    } catch {}
-  })
 
   const handleFile = (f: File) => {
     setFile(f)
@@ -54,7 +49,6 @@ export default function ImportProductsPage() {
     setLoading(true)
     const fd = new FormData()
     fd.append('file', file)
-    fd.append('tenantId', tenantId)
     try {
       const res = await fetch('/api/stock/import', { method: 'POST', body: fd })
       const data = await res.json()

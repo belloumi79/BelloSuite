@@ -5,7 +5,7 @@ import { convertDocument } from '@/services/invoices'
 import { z } from 'zod'
 
 const convertSchema = z.object({
-  tenantId: z.string().min(1),
+  tenantId: z.string().min(1).optional(),
   targetType: z.string().min(1),
 })
 

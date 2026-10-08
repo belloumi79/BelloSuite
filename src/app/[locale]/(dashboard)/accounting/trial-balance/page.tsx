@@ -2,21 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { ArrowLeft, Download, FileText, Printer } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 export default function TrialBalancePage() {
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [from, setFrom] = useState('2026-01-01')
   const [to, setTo] = useState('2026-12-31')
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) setTenantId(JSON.parse(session).tenantId || '')
-  }, [])
 
   const fetchBalance = async () => {
-    if (!tenantId) return
     setLoading(true)
     try {
       const params = new URLSearchParams({ tenantId, from, to })
@@ -59,13 +55,13 @@ export default function TrialBalancePage() {
       {/* Report type selector */}
       {data && (
         <div className="flex items-center gap-3 overflow-x-auto pb-2">
-          <a href={`/api/accounting/reports/financial?tenantId=${tenantId}&from=${from}&to=${to}&type=bilan`} target="_blank" className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-xs whitespace-nowrap transition-all">
+          <a href={`/api/accounting/reports/financial?from=${from}&to=${to}&type=bilan`} target="_blank" className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-xs whitespace-nowrap transition-all">
             <Printer className="w-3 h-3" /> BILAN
           </a>
-          <a href={`/api/accounting/reports/financial?tenantId=${tenantId}&from=${from}&to=${to}&type=cr`} target="_blank" className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs whitespace-nowrap transition-all">
+          <a href={`/api/accounting/reports/financial?from=${from}&to=${to}&type=cr`} target="_blank" className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs whitespace-nowrap transition-all">
             <Printer className="w-3 h-3" /> COMPTE DE RÉSULTAT
           </a>
-          <a href={`/api/accounting/reports/financial?tenantId=${tenantId}&from=${from}&to=${to}&type=ebp`} target="_blank" className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-xs whitespace-nowrap transition-all">
+          <a href={`/api/accounting/reports/financial?from=${from}&to=${to}&type=ebp`} target="_blank" className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-xs whitespace-nowrap transition-all">
             <Printer className="w-3 h-3" /> EBP (Flux)
           </a>
         </div>

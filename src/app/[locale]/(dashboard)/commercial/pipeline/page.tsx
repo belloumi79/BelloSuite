@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { ArrowRight, TrendingUp, CheckCircle, Clock, AlertTriangle, FileText, RefreshCw, ExternalLink, X } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 const TYPE_COLORS: Record<string, string> = {
   QUOTE: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -72,23 +73,18 @@ function DocumentCard({ item }: { item: any }) {
 export default function PipelinePage() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [converting, setConverting] = useState<string | null>(null)
   const [filter, setFilter] = useState<'QUOTE' | 'ORDER' | 'ALL'>('ALL')
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId } = JSON.parse(session)
-      setTenantId(tenantId)
-      fetchPipeline(tenantId)
-    }
+    fetchPipeline(tenantId)
   }, [])
 
   const fetchPipeline = async (tid: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/commercial/pipeline?tenantId=${tid}`)
+      const res = await fetch(`/api/commercial/pipeline`)
       if (res.ok) setData(await res.json())
     } catch (e) { console.error(e) }
     finally { setLoading(false) }

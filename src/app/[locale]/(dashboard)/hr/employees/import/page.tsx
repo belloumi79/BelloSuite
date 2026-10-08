@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X, Download, Table } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 const TEMPLATE_FIELDS = [
   'employeeNumber', 'firstName', 'lastName', 'hireDate',
@@ -49,14 +50,8 @@ export default function ImportEmployeesPage() {
   const [loading, setLoading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
 
-  useState(() => {
-    try {
-      const session = localStorage.getItem('bello_session')
-      if (session) setTenantId(JSON.parse(session).tenantId || '')
-    } catch {}
-  })
 
   const handleFile = (f: File) => {
     setFile(f)
@@ -88,7 +83,6 @@ export default function ImportEmployeesPage() {
     setLoading(true)
     const fd = new FormData()
     fd.append('file', file)
-    fd.append('tenantId', tenantId)
     try {
       const res = await fetch('/api/hr/employees/import', { method: 'POST', body: fd })
       const data = await res.json()

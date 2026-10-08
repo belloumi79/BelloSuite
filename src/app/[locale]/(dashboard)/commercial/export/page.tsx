@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Globe, FileText, Download, Plus, Ship, Plane, Truck, Package } from 'lucide-react'
+import { useSession } from '@/hooks/useSession'
 
 const INCOTERMS = ['EXW', 'FOB', 'CIF', 'DDP', 'CFR', 'FAS', 'CPT', 'CIP']
 const TRANSPORT_MODES = [
@@ -11,7 +12,7 @@ const TRANSPORT_MODES = [
 ]
 
 export default function ExportPage() {
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [exports, setExports] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -29,17 +30,13 @@ export default function ExportPage() {
     transportMode: 'MARITIME',
   })
 
-  useEffect(() => {
-    const s = localStorage.getItem('bello_session')
-    if (s) { const { tenantId } = JSON.parse(s); setTenantId(tenantId); fetchData(tenantId) }
-  }, [])
 
   const fetchData = async (tid: string) => {
     setLoading(true)
     try {
       const [expRes, invRes] = await Promise.all([
-        fetch('/api/commercial/export?tenantId=' + tid),
-        fetch('/api/commercial/invoices?tenantId=' + tid),
+        fetch('/api/commercial/export'),
+        fetch('/api/commercial/invoices'),
       ])
       if (expRes.ok) setExports(await expRes.json())
       if (invRes.ok) setInvoices(await invRes.json())

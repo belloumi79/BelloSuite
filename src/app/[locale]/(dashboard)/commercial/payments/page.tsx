@@ -16,6 +16,7 @@ import {
   DollarSign 
 } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
+import { useSession } from '@/hooks/useSession'
 
 const STATUS_CONFIG: Record<string, { key: string; color: string; bg: string; icon: any }> = {
   DUE_FUTURE:    { key: 'due_future',    color: 'text-blue-600 dark:text-blue-400',   bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',   icon: Clock },
@@ -33,7 +34,7 @@ export default function PaymentsPage() {
   const locale = useLocale()
   const isRTL = locale === 'ar'
 
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [followUps, setFollowUps] = useState<any[]>([])
   const [stats, setStats] = useState<any>({})
   const [loading, setLoading] = useState(true)
@@ -43,18 +44,14 @@ export default function PaymentsPage() {
   const [sent, setSent] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (session) {
-      const { tenantId: tid } = JSON.parse(session)
-      setTenantId(tid)
-      fetchData(tid)
-    }
+    const tid = tenantId
+    fetchData(tid)
   }, [])
 
   const fetchData = async (tid: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/commercial/payments/follow-up?tenantId=${tid}`)
+      const res = await fetch(`/api/commercial/payments/follow-up`)
       if (res.ok) { 
         const data = await res.json()
         setFollowUps(data.followUps || [])
@@ -68,7 +65,6 @@ export default function PaymentsPage() {
   }
 
   const sendReminder = async (invoice: any, method: string) => {
-    if (!tenantId) return
     setSending(true)
     try {
       const res = await fetch(`/api/commercial/payments/${invoice.id}/remind`, {

@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     let validatedData
     try {
-      validatedData = createProductSchema.parse(body)
+      validatedData = createProductSchema.parse({ ...body, tenantId: ctx.tenantId })
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
         return NextResponse.json({ error: 'Données invalides', details: validationError.issues }, { status: 400 })

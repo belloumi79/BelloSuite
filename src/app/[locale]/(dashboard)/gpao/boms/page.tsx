@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Boxes, Search, Loader2, Layers } from "lucide-react";
 import { BOMFormModal } from "./components/BOMFormModal";
+import { useSession } from '@/hooks/useSession'
 
 interface Product {
   id: string;
@@ -29,25 +30,16 @@ interface BOM {
 }
 
 export default function BOMsPage() {
-  const [tenantId, setTenantId] = useState("");
+  const { tenantId } = useSession()
   const [boms, setBoms] = useState<BOM[]>([]);
   const [productsMap, setProductsMap] = useState<Record<string, Product>>({});
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    try {
-      const session = localStorage.getItem("bello_session");
-      if (session) {
-        const tId = JSON.parse(session).tenantId || "";
-        setTenantId(tId);
-      }
-    } catch {}
-  }, []);
 
   useEffect(() => {
-    const currentTenant = tenantId || "demo-tenant";
+    const currentTenant = tenantId;
     fetchBOMsAndProducts(currentTenant);
   }, [tenantId]);
 
@@ -56,8 +48,8 @@ export default function BOMsPage() {
     try {
       // Parallel requests
       const [bomRes, curRes] = await Promise.all([
-        fetch(`/api/gpao/boms?tenantId=${currentTenant}`),
-        fetch(`/api/stock/products?tenantId=${currentTenant}`)
+        fetch(`/api/gpao/boms`),
+        fetch(`/api/stock/products`)
       ]);
 
       if (bomRes.ok && curRes.ok) {
@@ -169,11 +161,11 @@ export default function BOMsPage() {
 
       {showModal && (
         <BOMFormModal
-          tenantId={tenantId || "demo-tenant"}
+          tenantId={tenantId}
           onClose={() => setShowModal(false)}
           onSave={() => {
             setShowModal(false);
-            fetchBOMsAndProducts(tenantId || "demo-tenant");
+            fetchBOMsAndProducts(tenantId);
           }}
         />
       )}

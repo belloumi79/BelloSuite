@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { useRouter, Link } from '@/i18n/routing'
+import React from 'react'
+import { Link } from '@/i18n/routing'
 import { useTranslations, useLocale } from 'next-intl'
 import { 
   Package, 
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { useDashboardKPIs } from '@/hooks/useDashboardKPIs'
 import { useTrendData } from '@/hooks/useTrendData'
+import { useSession } from '@/hooks/useSession'
 import { QuickActions } from '@/components/dashboard/QuickActions'
 import { LineChartWrapper, BarChartWrapper } from '@/components/ui/charts'
 
@@ -74,25 +75,10 @@ function KPICard({
 export default function DashboardSummary() {
   const t = useTranslations()
   const locale = useLocale()
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const { kpis, loading } = useDashboardKPIs(user?.tenantId)
-  const { data: trends } = useTrendData(user?.tenantId)
-
-  useEffect(() => {
-    const sessionData = localStorage.getItem('bello_session')
-    if (!sessionData) {
-      router.push('/login')
-      return
-    }
-    try {
-      const session = JSON.parse(sessionData)
-      setUser(session)
-    } catch {
-      localStorage.removeItem('bello_session')
-      router.push('/login')
-    }
-  }, [router])
+  // Session fournie par le layout serveur (cookie httpOnly) — plus de localStorage.
+  const { session: user, tenantId } = useSession()
+  const { kpis, loading } = useDashboardKPIs(tenantId || null)
+  const { data: trends } = useTrendData(tenantId || null)
 
   if (!user) return null
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useParams } from 'next/navigation'
 import { Plus, X, GripVertical, MessageSquare, Calendar, Clock, CheckCircle, ChevronLeft, Tag, Users } from 'lucide-react'
 
 const PRIORITY_META: Record<string, { label: string; cls: string }> = {
@@ -14,19 +15,13 @@ export default function ProjectKanbanPage() {
   const [columns, setColumns] = useState<any[]>([])
   const [tasks, setTasks] = useState<any[]>([])
   const [members, setMembers] = useState<any[]>([])
-  const [projectId, setProjectId] = useState('')
+  const params = useParams<{ id: string }>()
+  const projectId = params?.id ?? ''
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingTask, setEditingTask] = useState<any>(null)
   const [draggingTask, setDraggingTask] = useState<any>(null)
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
-
-  useEffect(() => {
-    const session = localStorage.getItem('bello_session')
-    if (!session) return
-    const { tenantId } = JSON.parse(session)
-    setProjectId(tenantId)
-  }, [])
 
   const fetchBoard = useCallback(async () => {
     if (!projectId) return

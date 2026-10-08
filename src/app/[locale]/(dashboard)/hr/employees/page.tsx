@@ -5,35 +5,27 @@ import Link from 'next/link'
 import { Upload, Plus } from 'lucide-react'
 import { EmployeesTable } from './components/EmployeesTable'
 import { EmployeeFormModal } from './components/EmployeeFormModal'
+import { useSession } from '@/hooks/useSession'
 
 export default function EmployeesPage() {
-  const [tenantId, setTenantId] = useState('')
+  const { tenantId } = useSession()
   const [employees, setEmployees] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
 
-  useEffect(() => {
-    try {
-      const session = localStorage.getItem('bello_session')
-      if (session) {
-        const parsed = JSON.parse(session)
-        setTenantId(parsed.tenantId || '')
-      }
-    } catch {}
-  }, [])
 
   useEffect(() => {
     // If we have a tenantId or none defaults
     // Since BelloSuite uses session logic, let's fetch unconditionally if tenantId is found or use a dummy tenant if not set
     // In many of these setups, tenantId may be mock initially if the user is testing
-    const currentTenant = tenantId || 'demo-tenant'
+    const currentTenant = tenantId
     fetchEmployees(currentTenant)
   }, [tenantId])
 
   async function fetchEmployees(currentTenant: string) {
     setLoading(true)
     try {
-      const res = await fetch(`/api/hr/employees?tenantId=${currentTenant}`)
+      const res = await fetch(`/api/hr/employees`)
       if (res.ok) {
         const data = await res.json()
         setEmployees(data)
@@ -76,11 +68,11 @@ export default function EmployeesPage() {
 
       {showModal && (
         <EmployeeFormModal
-          tenantId={tenantId || 'demo-tenant'}
+          tenantId={tenantId}
           onClose={() => setShowModal(false)}
           onSave={() => {
             setShowModal(false)
-            fetchEmployees(tenantId || 'demo-tenant')
+            fetchEmployees(tenantId)
           }}
         />
       )}

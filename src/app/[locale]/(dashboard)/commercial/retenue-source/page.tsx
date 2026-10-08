@@ -9,6 +9,7 @@ import {
   ChevronLeft, ChevronRight, CheckSquare, Square,
   AlertCircle, CheckCircle, Clock, XCircle, FileCode, Globe
 } from 'lucide-react';
+import { useSession } from '@/hooks/useSession'
 
 export default function RetenueSourcePage() {
   const t = useTranslations('Commercial.RetenueSource');
@@ -16,7 +17,7 @@ export default function RetenueSourcePage() {
   const router = useRouter();
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tenantId, setTenantId] = useState('');
+  const { tenantId } = useSession()
   const [periodYear, setPeriodYear] = useState(new Date().getFullYear());
   const [periodMonth, setPeriodMonth] = useState(new Date().getMonth() + 1);
   const [statusFilter, setStatusFilter] = useState('TOUT');
@@ -39,15 +40,10 @@ export default function RetenueSourcePage() {
   });
 
   useEffect(() => {
-    const session = localStorage.getItem('bello_session');
-    if (session) {
-      const { tenantId: tid } = JSON.parse(session);
-      setTenantId(tid);
-    }
+    const tid = tenantId;
   }, []);
 
   const fetchRecords = async () => {
-    if (!tenantId) return;
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -66,7 +62,6 @@ export default function RetenueSourcePage() {
   };
 
   const fetchResume = async () => {
-    if (!tenantId) return;
     try {
       const { getRSResume } = await import('@/lib/tej-generator');
       const r = await getRSResume(tenantId, periodYear, periodMonth);
@@ -83,7 +78,7 @@ export default function RetenueSourcePage() {
   }, [tenantId, periodYear, periodMonth, statusFilter]);
 
   const handleExport = async () => {
-    if (!tenantId || selectedIds.length === 0) return;
+    if (selectedIds.length === 0) return;
     setExportLoading(true);
     try {
       const res = await fetch(`/api/commercial/retenue-source/export-tej`, {
