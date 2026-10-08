@@ -1,6 +1,7 @@
 import { requireTenant, requireSession, resolveTenantContext } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { stripUnsafeUpdateFields } from '@/lib/tenant-scope'
 
 
 // Tunisia 2024 official IRPP tax brackets (revenus mensuels)
@@ -65,8 +66,8 @@ export async function PUT(req: NextRequest) {
 
     const params = await prisma.paieParameters.create({
       data: {
+        ...stripUnsafeUpdateFields(updateData),
         tenantId,
-        ...updateData,
       },
     });
 

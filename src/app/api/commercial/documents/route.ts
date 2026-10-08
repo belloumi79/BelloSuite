@@ -1,6 +1,7 @@
 import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { tenantRefsError } from '@/lib/tenant-scope'
 
 export async function GET(request: Request) {
   try {
@@ -56,6 +57,11 @@ export async function POST(request: Request) {
     if (!tenantId || !clientId || !number || !items || items.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+    const badRef = await tenantRefsError(tenantId, {
+      client: clientId,
+      product: items.map((i: { productId?: string }) => i.productId),
+    })
+    if (badRef) return badRef
 
     // Use a transaction to ensure all operations succeed or none do
     const result = await prisma.$transaction(async (tx) => {

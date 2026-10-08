@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const ctx = await getApiContext(req, body?.tenantId)
     if (ctx instanceof NextResponse) return ctx
 
-    const data = parseBody(openSessionSchema, { ...body, tenantId: ctx.tenantId })
+    const data = parseBody(openSessionSchema, { ...body, tenantId: ctx.tenantId, userId: ctx.user.id })
     if (data instanceof NextResponse) return data
 
     const session = await openSession(data)

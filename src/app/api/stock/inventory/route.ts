@@ -4,6 +4,7 @@ import { handleApiError } from '@/lib/errors'
 import { validateInventory } from '@/services/stock'
 import { prisma } from '@/lib/db'
 import { InventoryStatus } from '@prisma/client'
+import { assertBelongsToTenant, assertAllBelongToTenant } from '@/lib/tenant-scope'
 
 // GET /api/stock/inventory?tenantId=
 export async function GET(req: NextRequest) {
@@ -40,6 +41,8 @@ export async function POST(req: NextRequest) {
     if (!reference || !items?.length) {
       return NextResponse.json({ error: 'Référence et articles requis' }, { status: 400 })
     }
+    await assertBelongsToTenant('warehouse', warehouseId, ctx.tenantId)
+    await assertAllBelongToTenant('product', items.map((i: { productId?: string }) => i.productId), ctx.tenantId)
 
     const inventory = await prisma.inventory.create({
       data: {
@@ -86,6 +89,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json(updated)
     }
 
+    await assertBelongsToTenant('warehouse', warehouseId, ctx.tenantId)
     const updated = await prisma.inventory.update({
       where: { id, tenantId: ctx.tenantId },
       data: { status, warehouseId },
