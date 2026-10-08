@@ -13,7 +13,8 @@ import {
   Briefcase, 
   FileText, 
   Wrench, 
-  Factory 
+  Factory,
+  Play 
 } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
@@ -34,6 +35,10 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-4">
               <LanguageSwitcher />
+              <Link href="/demo" className="text-sm font-medium px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors shadow-sm flex items-center gap-2 group">
+                <Play className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                {t('nav.demo')}
+              </Link>
               <Link href="/login" className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">
                 {t('nav.login')}
               </Link>

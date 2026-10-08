@@ -3,7 +3,8 @@
     "title": "BelloSuite ERP",
     "nav": {
       "login": "Login",
-      "register": "Free Trial"
+      "register": "Free Trial",
+      "demo": "Demo"
     },
     "hero": {
       "title": "Control your business, optimize your finances, unlock your growth potential.",

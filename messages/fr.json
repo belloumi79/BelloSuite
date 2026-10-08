@@ -3,7 +3,8 @@
     "title": "BelloSuite ERP",
     "nav": {
       "login": "Connexion",
-      "register": "Essai gratuit"
+      "register": "Essai gratuit",
+      "demo": "Démo"
     },
     "hero": {
       "title": "Contrôlez votre entreprise, optimisez vos finances, libérez votre potentiel de croissance.",
