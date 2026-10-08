@@ -55,13 +55,19 @@ $$;
 --    tables les plus sensibles (même si une politique était ajoutée par erreur).
 --    La table User contient les e-mails et rôles ; Tenant les infos des sociétés ;
 --    ASPConfiguration les identifiants TTN/SFTP en clair ; PaySlip/Employee la paie.
-REVOKE ALL ON TABLE public."User"              FROM anon, authenticated;
-REVOKE ALL ON TABLE public."Tenant"            FROM anon, authenticated;
-REVOKE ALL ON TABLE public."TenantModule"      FROM anon, authenticated;
-REVOKE ALL ON TABLE public."ASPConfiguration"  FROM anon, authenticated;
-REVOKE ALL ON TABLE public."PaySlip"           FROM anon, authenticated;
-REVOKE ALL ON TABLE public."Employee"          FROM anon, authenticated;
-REVOKE ALL ON TABLE public."PaieParameters"    FROM anon, authenticated;
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['User','Tenant','TenantModule','ASPConfiguration','PaySlip','Employee','PaieParameters'] LOOP
+    -- Ignore les tables absentes de la base (ex. PaieParameters non créée en prod)
+    IF to_regclass(format('public.%I', t)) IS NOT NULL THEN
+      EXECUTE format('REVOKE ALL ON TABLE public.%I FROM anon, authenticated', t);
+    ELSE
+      RAISE NOTICE 'Table public.% absente, ignorée', t;
+    END IF;
+  END LOOP;
+END
+$$;
 
 -- 4) (Optionnel, recommandé) Retirer TOUS les privilèges de anon/authenticated sur
 --    le schéma public et pour les futures tables. L'application n'en a pas besoin.
