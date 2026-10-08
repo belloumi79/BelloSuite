@@ -1,3 +1,4 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { JOURNALIZATION_RULES, buildEntryDescription } from '@/lib/accounting-auto'
@@ -5,13 +6,16 @@ import { JOURNALIZATION_RULES, buildEntryDescription } from '@/lib/accounting-au
 // POST /api/commercial/accounting/generate-entries
 export async function POST(req: Request) {
   try {
-    const { invoiceId, tenantId } = await req.json()
+    const { invoiceId, tenantId: requestedTenantId } = await req.json()
+    const ctx = await requireTenant(req, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
     if (!invoiceId || !tenantId) {
       return NextResponse.json({ error: 'invoiceId and tenantId required' }, { status: 400 })
     }
 
-    const invoice = await prisma.invoice.findUnique({
-      where: { id: invoiceId },
+    const invoice = await prisma.invoice.findFirst({
+      where: { id: invoiceId, tenantId: ctx.tenantId },
       include: { client: true, items: true, tenant: true },
     })
     if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })

@@ -1,10 +1,13 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const tenantId = searchParams.get('tenantId')
+    const ctx = await requireTenant(request, searchParams.get('tenantId'))
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
     const employeeId = searchParams.get('employeeId')
     const year = searchParams.get('year')
 
@@ -38,9 +41,12 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const {
-      tenantId, employeeId, dateDebut, dateFin, type,
+      tenantId: requestedTenantId, employeeId, dateDebut, dateFin, type,
       joursCal, joursOuvres, justifie, pieceJointe, observations,
     } = body
+    const ctx = await requireTenant(request, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId || !employeeId || !dateDebut || !dateFin || !type) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -75,6 +81,8 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const ctx = await requireTenant(request)
+  if (ctx instanceof NextResponse) return ctx
   try {
     const body = await request.json()
     const { id, statut, montantRetenu, observations } = body
@@ -89,7 +97,7 @@ export async function PATCH(request: Request) {
         ...(montantRetenu !== undefined && { montantRetenu }),
         ...(observations && { observations }),
       },
-      where: { id },
+      where: { id, tenantId: ctx.tenantId },
     })
 
     return NextResponse.json(absence)

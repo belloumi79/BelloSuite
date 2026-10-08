@@ -1,10 +1,13 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const tenantId = searchParams.get('tenantId')
+    const ctx = await requireTenant(request, searchParams.get('tenantId'))
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId) {
       return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
@@ -31,7 +34,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const { 
-      tenantId, 
+      tenantId: requestedTenantId, 
       clientId, 
       number, 
       date, 
@@ -46,6 +49,9 @@ export async function POST(request: Request) {
       notes,
       type
     } = body
+    const ctx = await requireTenant(request, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId || !clientId || !number || !items || items.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -108,7 +114,7 @@ export async function POST(request: Request) {
           if (item.productId) {
             // 1. Update Product quantity
             await tx.product.update({
-              where: { id: item.productId },
+              where: { id: item.productId, tenantId: ctx.tenantId },
               data: {
                 currentStock: {
                   decrement: Number(item.quantity),

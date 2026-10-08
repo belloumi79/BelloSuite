@@ -1,9 +1,11 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
 
-const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
+  const ctx = await requireTenant(req)
+  if (ctx instanceof NextResponse) return ctx
   try {
     const body = await req.json();
     const { payslipId, hours, rate } = body;
@@ -12,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "payslipId and hours required" }, { status: 400 });
     }
 
-    const payslip = await prisma.paySlip.findUnique({ where: { id: payslipId } });
+    const payslip = await prisma.paySlip.findFirst({ where: { id: payslipId, tenantId: ctx.tenantId } });
     if (!payslip) {
       return NextResponse.json({ error: "Payslip not found" }, { status: 404 });
     }
@@ -24,7 +26,7 @@ export async function POST(req: NextRequest) {
     const amount = Number(hours) * HOURLY_RATE * OVERTIME_MULTIPLIER;
 
     const updated = await prisma.paySlip.update({
-      where: { id: payslipId },
+      where: { id: payslipId, tenantId: ctx.tenantId },
       data: {
         heuresSupQte: { increment: Number(hours) },
         heuresSupMontant: { increment: amount },

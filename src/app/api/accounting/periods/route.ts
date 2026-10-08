@@ -1,12 +1,14 @@
+import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/db";
 
-const prisma = new PrismaClient()
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
-    const tenantId = searchParams.get('tenantId')
+    const ctx = await requireTenant(req, searchParams.get('tenantId'))
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId) {
       return NextResponse.json({ error: 'Missing tenantId' }, { status: 400 })
@@ -26,7 +28,10 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { tenantId, name, startDate, endDate } = await req.json()
+    const { tenantId: requestedTenantId, name, startDate, endDate } = await req.json()
+    const ctx = await requireTenant(req, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId || !name || !startDate || !endDate) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })

@@ -1,7 +1,7 @@
+import { requireTenant, requireSession, resolveTenantContext } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
 
-const prisma = new PrismaClient();
 
 // Tunisia 2024 official IRPP tax brackets (revenus mensuels)
 // Source: جدول الضريبة على الدخل
@@ -16,9 +16,13 @@ const DEFAULT_TAX_BRACKETS = [
 
 // GET /api/hr/paie/parameters - Get or create parameters for tenant/year
 export async function GET(req: NextRequest) {
+  const session = await requireSession(req)
+  if (session instanceof NextResponse) return session
   try {
     const { searchParams } = new URL(req.url);
-    const tenantId = searchParams.get("tenantId");
+    const tenantCtx = resolveTenantContext(session, searchParams.get("tenantId") as string | null)
+    if ('error' in tenantCtx) return NextResponse.json({ error: tenantCtx.error }, { status: tenantCtx.status })
+    const tenantId = tenantCtx.tenantId
     const year = searchParams.get("year") || new Date().getFullYear().toString();
 
     if (!tenantId) {
@@ -50,7 +54,10 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { tenantId, ...updateData } = body;
+    const { tenantId: requestedTenantId, ...updateData } = body;
+    const ctx = await requireTenant(req, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     if (!tenantId) {
       return NextResponse.json({ error: "tenantId required" }, { status: 400 });

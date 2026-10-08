@@ -1,13 +1,17 @@
+import { requireTenant, requireSession, resolveTenantContext } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import { calculerImpotTunisie } from "@/lib/fiscal";
 
-const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
+  const session = await requireSession(req)
+  if (session instanceof NextResponse) return session
   try {
     const { searchParams } = new URL(req.url);
-    const tenantId = searchParams.get("tenantId");
+    const tenantCtx = resolveTenantContext(session, searchParams.get("tenantId") as string | null)
+    if ('error' in tenantCtx) return NextResponse.json({ error: tenantCtx.error }, { status: tenantCtx.status })
+    const tenantId = tenantCtx.tenantId
     const year = searchParams.get("year");
     const month = searchParams.get("month");
 
@@ -48,11 +52,14 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      tenantId,
+      tenantId: requestedTenantId,
       employeeIds = [],
       month,
       year,
     } = body;
+    const ctx = await requireTenant(req, requestedTenantId)
+    if (ctx instanceof NextResponse) return ctx
+    const tenantId = ctx.tenantId
 
     const mois = month !== undefined ? month : body.mois;
     const annee = year !== undefined ? year : body.annee;
@@ -72,7 +79,7 @@ export async function POST(req: NextRequest) {
     let generatedCount = 0;
 
     for (const employeeId of employeeIds) {
-      const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
+      const employee = await prisma.employee.findFirst({ where: { id: employeeId, tenantId: ctx.tenantId } });
       if (!employee || !employee.salary || Number(employee.salary) <= 0) continue;
 
       const salaryBase = Number(employee.salary);
