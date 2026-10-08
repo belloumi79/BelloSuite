@@ -5,16 +5,26 @@ const createJestConfig = nextJest({
   dir: './',
 })
 
-// Add any custom config to be passed to Jest
+/** @type {import('jest').Config} */
 const config = {
   coverageProvider: 'v8',
-  testEnvironment: 'jsdom',
-  // Add more setup options before each test is run
+  // Tests actuels = logique pure / serveur. Pour un composant React : docblock `@jest-environment jsdom`.
+  testEnvironment: 'node',
+  testMatch: ['**/__tests__/**/*.test.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  // e2e/ = Playwright (npm run e2e), pas Jest
+  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/', '<rootDir>/e2e/'],
+  modulePathIgnorePatterns: ['<rootDir>/.next/'],
 }
 
-// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-export default createJestConfig(config)
+// next/jest ignore node_modules à la transformation ; jose (ESM) doit être transformé.
+export default async function jestConfig() {
+  const resolved = await createJestConfig(config)()
+  return {
+    ...resolved,
+    transformIgnorePatterns: ['/node_modules/(?!(jose)/)', '^.+\\.module\\.(css|sass|scss)$'],
+  }
+}
