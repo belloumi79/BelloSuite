@@ -22,6 +22,24 @@ const PUBLIC_API_PATTERNS = [
   '/api/auth/session',
   '/api/health',
 ]
+/**
+ * En-têtes d'identité internes. Ils ne doivent JAMAIS venir du client :
+ * le proxy les supprime systématiquement puis les ré-injecte à partir du JWT vérifié.
+ */
+export const IDENTITY_HEADERS = [
+  'x-user-id',
+  'x-user-email',
+  'x-user-role',
+  'x-tenant-id',
+  'x-user-firstname',
+] as const
+
+export function stripIdentityHeaders(source: Headers): Headers {
+  const headers = new Headers(source)
+  for (const h of IDENTITY_HEADERS) headers.delete(h)
+  return headers
+}
+
 const STRICT_RATE_LIMIT_ROUTES = [
   '/api/auth/login',
   '/api/auth/register',
@@ -63,6 +81,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(`/${locale}/login`, request.url))
   }
 
+  // 1) Toujours supprimer les en-têtes d'identité envoyés par le client (anti-usurpation x-user-role, x-tenant-id…)
+  const requestHeaders = stripIdentityHeaders(request.headers)
+
   if (sessionCookie) {
     // Fail closed : sans SESSION_SECRET valide, aucune session n'est acceptée.
     let secretKey: Uint8Array
@@ -79,7 +100,17 @@ export async function proxy(request: NextRequest) {
       throw err
     }
     try {
-      await jwtVerify(sessionCookie, secretKey, { algorithms: ['HS256'], clockTolerance: 60 })
+      const { payload } = await jwtVerify(sessionCookie, secretKey, { algorithms: ['HS256'], clockTolerance: 60 })
+      if (typeof payload.sub === 'string' && payload.sub) {
+        requestHeaders.set('x-user-id', payload.sub)
+        if (typeof payload.email === 'string') requestHeaders.set('x-user-email', payload.email)
+        if (typeof payload.role === 'string') requestHeaders.set('x-user-role', payload.role)
+        if (typeof payload.tenantId === 'string' && payload.tenantId) requestHeaders.set('x-tenant-id', payload.tenantId)
+        // Valeur d'en-tête : ASCII uniquement
+        if (typeof payload.firstName === 'string') {
+          requestHeaders.set('x-user-firstname', encodeURIComponent(payload.firstName))
+        }
+      }
     } catch {
       if (cleanPath.startsWith('/api/')) {
         return NextResponse.json({ error: 'Session expirée' }, { status: 401 })
@@ -90,7 +121,8 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return NextResponse.next()
+  // 2) Les routes reçoivent uniquement les en-têtes dérivés de la session vérifiée.
+  return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
 export const config = {
