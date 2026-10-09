@@ -1811,5 +1811,37 @@
       "cancel": "Annuler",
       "create": "Créer"
     }
+  },
+  "Onboarding": {
+    "required": "Nom de l'entreprise et sous-domaine requis",
+    "redirecting": "Redirection vers le tableau de bord...",
+    "subtitle": "Configurez votre espace de travail",
+    "create_error": "Erreur lors de la création",
+    "title": "Créer votre entreprise",
+    "company_name": "Nom de l'entreprise *",
+    "subdomain": "Sous-domaine (URL) *",
+    "submit": "Créer mon entreprise",
+    "connection_error": "Erreur de connexion",
+    "module_names": {
+      "commercial": "Module Commercial",
+      "hr": "GRH & Paie",
+      "gmao": "GMAO",
+      "gpao": "GPAO",
+      "stock": "Gestion de Stock",
+      "projects": "Projets & Kanban",
+      "pos": "Point de vente",
+      "accounting": "Comptabilité"
+    },
+    "success_title": "Entreprise créée!",
+    "modules": "Modules à activer",
+    "tax_id": "Matricule Fiscal",
+    "company_placeholder": "Mon Entreprise",
+    "address_placeholder": "Rue, numéro",
+    "zip": "Code postal",
+    "vat_number": "Numéro TVA",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "city": "Ville",
+    "email": "Email"
   }
 }

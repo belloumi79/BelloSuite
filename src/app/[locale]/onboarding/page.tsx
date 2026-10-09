@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Building2, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 type ModuleOption = { name: string; displayName: string; description: string | null }
 
 export default function OnboardingPage() {
+  const t = useTranslations('Onboarding')
   const params = useParams<{ locale?: string }>()
   const locale = params?.locale && ['fr', 'ar', 'en'].includes(params.locale) ? params.locale : 'fr'
   const [loading, setLoading] = useState(false)
@@ -69,7 +71,7 @@ export default function OnboardingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.companyName || !formData.subdomain) {
-      setErrorMsg('Nom de l\'entreprise et sous-domaine requis')
+      setErrorMsg(t('required'))
       return
     }
     setErrorMsg('')
@@ -92,10 +94,10 @@ export default function OnboardingPage() {
           window.location.assign(`/${locale}/dashboard`)
         }, 1200)
       } else {
-        setErrorMsg(data.error || 'Erreur lors de la création')
+        setErrorMsg(data.error || t('create_error'))
       }
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Erreur de connexion')
+      setErrorMsg(err instanceof Error ? err.message : t('connection_error'))
     } finally {
       setLoading(false)
     }
@@ -111,9 +113,9 @@ export default function OnboardingPage() {
           <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-10 h-10 text-emerald-400" />
           </div>
-          <h1 className="text-2xl font-black text-white mb-2">Entreprise créée!</h1>
+          <h1 className="text-2xl font-black text-white mb-2">{t('success_title')}</h1>
           <p className="text-zinc-400 text-sm mb-6">
-            Redirection vers le tableau de bord...
+            {t('redirecting')}
           </p>
         </div>
       </div>
@@ -127,8 +129,8 @@ export default function OnboardingPage() {
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-500/20">
             <span className="text-white font-black text-2xl">B</span>
           </div>
-          <h1 className="text-2xl font-black text-white">Créer votre entreprise</h1>
-          <p className="text-zinc-500 mt-1 text-sm">Configurez votre espace de travail</p>
+          <h1 className="text-2xl font-black text-white">{t('title')}</h1>
+          <p className="text-zinc-500 mt-1 text-sm">{t('subtitle')}</p>
         </div>
 
         {errorMsg && (
@@ -141,13 +143,13 @@ export default function OnboardingPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-zinc-400 text-xs font-black uppercase tracking-widest mb-1.5 px-1">
-              Nom de l'entreprise *
+              {t('company_name')}
             </label>
             <input
               type="text"
               name="companyName"
               required
-              placeholder="Mon Entreprise"
+              placeholder={t('company_placeholder')}
               className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white outline-none focus:border-teal-500 transition-colors"
               value={formData.companyName}
               onChange={handleCompanyNameChange}
@@ -156,7 +158,7 @@ export default function OnboardingPage() {
 
           <div>
             <label className="block text-zinc-400 text-xs font-black uppercase tracking-widest mb-1.5 px-1">
-              Sous-domaine (URL) *
+              {t('subdomain')}
             </label>
             <div className="flex items-center bg-zinc-800 border border-zinc-700 rounded-xl overflow-hidden">
               <span className="px-3 text-zinc-500 text-sm">monentreprise.</span>
@@ -176,7 +178,7 @@ export default function OnboardingPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-zinc-400 text-xs font-black uppercase tracking-widest mb-1.5 px-1">
-                Matricule Fiscal
+                {t('tax_id')}
               </label>
               <input
                 type="text"
@@ -189,7 +191,7 @@ export default function OnboardingPage() {
             </div>
             <div>
               <label className="block text-zinc-400 text-xs font-black uppercase tracking-widest mb-1.5 px-1">
-                Numéro TVA
+                {t('vat_number')}
               </label>
               <input
                 type="text"
@@ -204,12 +206,12 @@ export default function OnboardingPage() {
 
           <div>
             <label className="block text-zinc-400 text-xs font-black uppercase tracking-widest mb-1.5 px-1">
-              Adresse
+              {t('address')}
             </label>
             <input
               type="text"
               name="address"
-              placeholder="Rue, numéro"
+              placeholder={t('address_placeholder')}
               className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white outline-none focus:border-teal-500 transition-colors"
               value={formData.address}
               onChange={handleChange}
@@ -219,7 +221,7 @@ export default function OnboardingPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-zinc-400 text-xs font-black uppercase tracking-widest mb-1.5 px-1">
-                Ville
+                {t('city')}
               </label>
               <input
                 type="text"
@@ -232,7 +234,7 @@ export default function OnboardingPage() {
             </div>
             <div>
               <label className="block text-zinc-400 text-xs font-black uppercase tracking-widest mb-1.5 px-1">
-                Code postal
+                {t('zip')}
               </label>
               <input
                 type="text"
@@ -248,7 +250,7 @@ export default function OnboardingPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-zinc-400 text-xs font-black uppercase tracking-widest mb-1.5 px-1">
-                Téléphone
+                {t('phone')}
               </label>
               <input
                 type="tel"
@@ -261,7 +263,7 @@ export default function OnboardingPage() {
             </div>
             <div>
               <label className="block text-zinc-400 text-xs font-black uppercase tracking-widest mb-1.5 px-1">
-                Email
+                {t('email')}
               </label>
               <input
                 type="email"
@@ -277,7 +279,7 @@ export default function OnboardingPage() {
           {moduleOptions.length > 0 && (
             <div>
               <label className="block text-zinc-400 text-xs font-black uppercase tracking-widest mb-1.5 px-1">
-                Modules à activer
+                {t('modules')}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {moduleOptions.map(m => (
@@ -291,7 +293,7 @@ export default function OnboardingPage() {
                       checked={selectedModules.includes(m.name)}
                       onChange={() => toggleModule(m.name)}
                     />
-                    {m.displayName}
+                    {t.has(`module_names.${m.name}`) ? t(`module_names.${m.name}`) : m.displayName}
                   </label>
                 ))}
               </div>
@@ -308,7 +310,7 @@ export default function OnboardingPage() {
             ) : (
               <Building2 className="w-4 h-4" />
             )}
-            Créer mon entreprise
+            {t('submit')}
           </button>
         </form>
       </div>

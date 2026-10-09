@@ -1811,5 +1811,37 @@
       "cancel": "Cancel",
       "create": "Create"
     }
+  },
+  "Onboarding": {
+    "required": "Company name and subdomain are required",
+    "redirecting": "Redirecting to the dashboard...",
+    "subtitle": "Set up your workspace",
+    "create_error": "Error while creating",
+    "title": "Create your company",
+    "company_name": "Company name *",
+    "subdomain": "Subdomain (URL) *",
+    "submit": "Create my company",
+    "connection_error": "Connection error",
+    "module_names": {
+      "commercial": "Sales & invoicing",
+      "hr": "Human resources",
+      "gmao": "Maintenance (CMMS)",
+      "gpao": "Production (MRP)",
+      "stock": "Inventory management",
+      "projects": "Projects & Kanban",
+      "pos": "Point of sale",
+      "accounting": "Accounting"
+    },
+    "success_title": "Company created!",
+    "modules": "Modules to enable",
+    "tax_id": "Tax ID",
+    "company_placeholder": "My Company",
+    "address_placeholder": "Street, number",
+    "zip": "Postcode",
+    "vat_number": "VAT number",
+    "phone": "Phone",
+    "address": "Address",
+    "city": "City",
+    "email": "Email"
   }
 }
