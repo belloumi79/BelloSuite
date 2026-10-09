@@ -769,10 +769,10 @@
       "trial": "Try it free"
     },
     "hero": {
-      "kicker": "ERP for Tunisian SMEs",
-      "title1": "Your business.",
-      "title2": "Finally in one place.",
-      "subtitle": "Stock, sales, customers and invoicing in a single solution built for Tunisian SMEs.",
+      "kicker": "For Tunisian SMEs",
+      "title1": "Manage your stock, sales and invoices",
+      "title2": "from one single app.",
+      "subtitle": "Less Excel. Fewer mistakes. More time to sell.",
       "trial": "Try it free",
       "demo": "See the demo",
       "meeting": "Request a presentation",
@@ -789,24 +789,35 @@
       "punch": "It's not an organisation problem. It's a tool problem."
     },
     "solution": {
-      "title": "One app. Your whole business.",
-      "subtitle": "Every sale updates stock, invoice, customer and cash. Automatically.",
-      "stock": {
-        "title": "Real-time stock",
-        "text": "Receipts, issues, low-stock alerts and inventories without waiting for month end."
-      },
-      "sales": {
-        "title": "Sales & invoicing",
-        "text": "Quotes, orders, delivery notes and invoices in a few clicks, with VAT and stamp duty."
-      },
-      "clients": {
-        "title": "Customers & reminders",
-        "text": "Full history for each customer and unpaid invoice tracking to get paid faster."
-      },
-      "dashboard": {
-        "title": "Dashboard",
-        "text": "Revenue, receivables and stock on one screen, always up to date."
-      }
+      "title": "What you gain from week one",
+      "subtitle": "No jargon. Clear answers to the questions you ask yourself every day.",
+      "punch": "The result: hours saved every week.",
+      "items": [
+        {
+          "title": "Less Excel",
+          "text": "Products, customers, sales and invoices in one place, from any browser."
+        },
+        {
+          "title": "Fewer mistakes",
+          "text": "Prices, VAT, stamp duty and totals calculated automatically."
+        },
+        {
+          "title": "Know what's in stock",
+          "text": "Every sale updates stock. You're alerted before you run out."
+        },
+        {
+          "title": "Know who owes you money",
+          "text": "Unpaid invoices and due dates at a glance, reminders included."
+        },
+        {
+          "title": "Quotes and invoices in a few clicks",
+          "text": "From quote to invoice without retyping anything."
+        },
+        {
+          "title": "Find a customer in a second",
+          "text": "Contact details, purchase history and invoices on one record."
+        }
+      ]
     },
     "local": {
       "title": "Built for Tunisia. Not translated for it.",
@@ -820,8 +831,8 @@
       ]
     },
     "modules": {
-      "title": "And as you grow, BelloSuite follows.",
-      "text": "Add payroll, accounting, production, maintenance or project management without changing software."
+      "title": "Start simple. Add the rest later.",
+      "text": "You can add accounting, payroll, HR, production or maintenance when you need them, without changing software."
     },
     "demo": {
       "title": "Don't take our word for it. Click.",

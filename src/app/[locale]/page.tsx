@@ -6,10 +6,12 @@ import {
   CalendarCheck,
   Check,
   FileText,
-  LayoutDashboard,
+  FileSpreadsheet,
   Layers,
   Play,
+  ShieldCheck,
   Users,
+  Wallet,
   X,
 } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
@@ -23,12 +25,7 @@ export default function Home() {
   const mailto = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent(t('mail.subject'))}&body=${encodeURIComponent(t('mail.body'))}`
   const painItems = [0, 1, 2, 3].map(i => t(`pain.items.${i}`))
   const localItems = [0, 1, 2, 3, 4, 5].map(i => t(`local.items.${i}`))
-  const features = [
-    { key: 'stock', icon: Boxes },
-    { key: 'sales', icon: FileText },
-    { key: 'clients', icon: Users },
-    { key: 'dashboard', icon: LayoutDashboard },
-  ] as const
+  const benefits = [FileSpreadsheet, ShieldCheck, Boxes, Wallet, FileText, Users]
 
   const btnPrimary =
     'inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-amber-500 text-zinc-950 font-bold text-lg shadow-lg shadow-amber-500/30 hover:bg-amber-400 transition-colors group'
@@ -119,17 +116,18 @@ export default function Home() {
             <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">{t('solution.title')}</h2>
             <p className="text-xl text-zinc-600 max-w-2xl mx-auto">{t('solution.subtitle')}</p>
           </div>
-          <div className="grid sm:grid-cols-2 gap-6">
-            {features.map(({ key, icon: Icon }) => (
-              <div key={key} className="p-8 rounded-2xl border-2 border-zinc-100 hover:border-amber-400 transition-colors">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {benefits.map((Icon, i) => (
+              <div key={i} className="p-8 rounded-2xl border-2 border-zinc-100 hover:border-amber-400 transition-colors">
                 <div className="w-12 h-12 rounded-xl bg-zinc-950 text-amber-400 flex items-center justify-center mb-5">
                   <Icon className="w-6 h-6" />
                 </div>
-                <h3 className="text-2xl font-bold mb-2">{t(`solution.${key}.title`)}</h3>
-                <p className="text-zinc-600 text-lg">{t(`solution.${key}.text`)}</p>
+                <h3 className="text-2xl font-bold mb-2">{t(`solution.items.${i}.title`)}</h3>
+                <p className="text-zinc-600 text-lg">{t(`solution.items.${i}.text`)}</p>
               </div>
             ))}
           </div>
+          <p className="mt-14 text-center text-2xl md:text-3xl font-extrabold">{t('solution.punch')}</p>
         </div>
       </section>
 
