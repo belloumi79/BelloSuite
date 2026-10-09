@@ -1771,5 +1771,45 @@
         "cancel": "إلغاء"
       }
     }
+  },
+  "Projects": {
+    "empty_desc": "أنشئ مشروعك الأول للبدء",
+    "subtitle": "أدِر مشاريعك بطريقة كانبان",
+    "no_description": "لا يوجد وصف",
+    "create": "إنشاء مشروع",
+    "new": "مشروع جديد",
+    "tasks_count": "{count} مهام",
+    "empty_title": "لا توجد مشاريع",
+    "title": "المشاريع",
+    "kanban": {
+      "summary": "{tasks} مهام · {columns} أعمدة",
+      "column_name": "اسم العمود...",
+      "task_title": "عنوان المهمة...",
+      "edit_task": "تعديل المهمة",
+      "new_column": "عمود جديد",
+      "title": "لوحة كانبان",
+      "new_task": "مهمة جديدة",
+      "unassigned": "غير مُسند",
+      "description": "الوصف",
+      "save": "حفظ",
+      "priority_critical": "🟣 حرجة",
+      "details": "التفاصيل...",
+      "priority_medium": "🟡 متوسطة",
+      "priorities": {
+        "critical": "حرجة",
+        "medium": "متوسطة",
+        "low": "منخفضة",
+        "high": "مرتفعة"
+      },
+      "priority": "الأولوية",
+      "due": "تاريخ الاستحقاق",
+      "add": "إضافة",
+      "column": "العمود",
+      "priority_low": "🟢 منخفضة",
+      "priority_high": "🔴 مرتفعة",
+      "assignee": "المكلَّف",
+      "cancel": "إلغاء",
+      "create": "إنشاء"
+    }
   }
 }

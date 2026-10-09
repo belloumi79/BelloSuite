@@ -1771,5 +1771,45 @@
         "cancel": "Annuler"
       }
     }
+  },
+  "Projects": {
+    "empty_desc": "Créez votre premier projet pour commencer",
+    "subtitle": "Gérez vos projets en méthode Kanban",
+    "no_description": "Aucune description",
+    "create": "Créer un projet",
+    "new": "Nouveau projet",
+    "tasks_count": "{count} tâches",
+    "empty_title": "Aucun projet",
+    "title": "Projets",
+    "kanban": {
+      "summary": "{tasks} tâches · {columns} colonnes",
+      "column_name": "Nom de la colonne...",
+      "task_title": "Titre de la tâche...",
+      "edit_task": "Modifier la tâche",
+      "new_column": "Nouvelle colonne",
+      "title": "Tableau Kanban",
+      "new_task": "Nouvelle tâche",
+      "unassigned": "Non assigné",
+      "description": "Description",
+      "save": "Enregistrer",
+      "priority_critical": "🟣 Critique",
+      "details": "Détails...",
+      "priority_medium": "🟡 Moyenne",
+      "priorities": {
+        "critical": "Critique",
+        "medium": "Moyenne",
+        "low": "Basse",
+        "high": "Haute"
+      },
+      "priority": "Priorité",
+      "due": "Échéance",
+      "add": "Ajouter",
+      "column": "Colonne",
+      "priority_low": "🟢 Basse",
+      "priority_high": "🔴 Haute",
+      "assignee": "Assigné",
+      "cancel": "Annuler",
+      "create": "Créer"
+    }
   }
 }

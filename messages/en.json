@@ -1771,5 +1771,45 @@
         "cancel": "Cancel"
       }
     }
+  },
+  "Projects": {
+    "empty_desc": "Create your first project to get started",
+    "subtitle": "Manage your projects with Kanban boards",
+    "no_description": "No description",
+    "create": "Create a project",
+    "new": "New project",
+    "tasks_count": "{count} tasks",
+    "empty_title": "No projects",
+    "title": "Projects",
+    "kanban": {
+      "summary": "{tasks} tasks · {columns} columns",
+      "column_name": "Column name...",
+      "task_title": "Task title...",
+      "edit_task": "Edit task",
+      "new_column": "New column",
+      "title": "Kanban board",
+      "new_task": "New task",
+      "unassigned": "Unassigned",
+      "description": "Description",
+      "save": "Save",
+      "priority_critical": "🟣 Critical",
+      "details": "Details...",
+      "priority_medium": "🟡 Medium",
+      "priorities": {
+        "critical": "Critical",
+        "medium": "Medium",
+        "low": "Low",
+        "high": "High"
+      },
+      "priority": "Priority",
+      "due": "Due date",
+      "add": "Add",
+      "column": "Column",
+      "priority_low": "🟢 Low",
+      "priority_high": "🔴 High",
+      "assignee": "Assignee",
+      "cancel": "Cancel",
+      "create": "Create"
+    }
   }
 }
