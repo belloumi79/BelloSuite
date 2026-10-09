@@ -10,3 +10,16 @@
 body {
   @apply bg-zinc-950 text-zinc-100;
 }
+
+/* ─── Impression (feuilles de comptage, transferts, rapports stock) ─── */
+.print-only { display: none; }
+@media print {
+  .no-print, aside { display: none !important; }
+  .print-only { display: block !important; }
+  .print-hide { display: none !important; }
+  main { border-radius: 0 !important; box-shadow: none !important; border: 0 !important; overflow: visible !important; }
+  body, .bg-zinc-950 { background: #fff !important; }
+  .p-8 { padding: 0 !important; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+}

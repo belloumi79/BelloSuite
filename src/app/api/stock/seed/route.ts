@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { denyInProduction, requireTenant } from '@/lib/api-auth'
+import { createProduct } from '@/services/products'
 
 // Données de démonstration : désactivé en production, et uniquement pour le tenant de la session.
 export async function POST(req: NextRequest) {
@@ -30,12 +31,9 @@ export async function POST(req: NextRequest) {
       try {
         const existing = await prisma.product.findUnique({ where: { tenantId_code: { tenantId, code: p.code } } })
         if (existing) continue
-        const product = await prisma.product.create({
-          data: { tenantId, ...p, vatRate: 19, fodec: false },
-        })
-        await prisma.stockMovement.create({
-          data: { tenantId, productId: product.id, type: 'ENTRY', quantity: p.currentStock, unitPrice: p.purchasePrice, notes: 'Stock initial seed' },
-        })
+        const { currentStock, ...rest } = p
+        const product = await createProduct({ tenantId, ...rest, vatRate: 19, fodec: false, reorderPoint: 0, reorderQty: 0, initialStock: currentStock, warehouseId: null }, ctx.user.id)
+        if (!product) continue
         created.push(product.code)
       } catch (e) { console.error('Error creating', p.code, (e as Error).message) }
     }

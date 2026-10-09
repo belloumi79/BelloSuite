@@ -1,115 +1,131 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Link } from '@/i18n/routing'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { FileText, Plus, Search, RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react'
-import { useSession } from '@/hooks/useSession'
+import { Link, useRouter } from '@/i18n/routing'
+import { Plus } from 'lucide-react'
+import { StockPage, StockNav, PageHeader, Card, Loading, EmptyState, StatusBadge, Alert, Modal, Field, cls, useStockFormat, api } from '@/components/stock/ui'
+import type { WarehouseOption } from '@/components/stock/MovementFormModal'
+
+type Summary = { lines: number; counted: number; withGap: number; gapValue: number; gapValueAbs: number }
+type Inventory = { id: string; reference: string; date: string; status: string; scope: string; category: string | null; warehouse: { id: string; code: string; name: string } | null; summary: Summary }
+const STATUSES = ['', 'DRAFT', 'IN_PROGRESS', 'VALIDATED', 'CANCELLED']
 
 export default function InventoryListPage() {
-  const t = useTranslations()
-  const [inventories, setInventories] = useState<any[]>([])
+  const t = useTranslations('StockMod')
+  const f = useStockFormat()
+  const router = useRouter()
+  const [rows, setRows] = useState<Inventory[]>([])
+  const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const { tenantId } = useSession()
+  const [error, setError] = useState('')
+  const [open, setOpen] = useState(false)
+  const [warehouses, setWarehouses] = useState<WarehouseOption[]>([])
+  const [categories, setCategories] = useState<Array<{ name: string; productCount: number }>>([])
+  const [form, setForm] = useState({ warehouseId: '', scope: 'FULL', category: '', date: new Date().toISOString().slice(0, 10), notes: '' })
+  const [saving, setSaving] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const r = await api<Inventory[]>(`/api/stock/inventory${status ? `?status=${status}` : ''}`)
+    if (r.ok) setRows(r.data); else setError(r.error || t('error_generic'))
+    setLoading(false)
+  }, [status, t])
+  useEffect(() => { load() }, [load])
 
   useEffect(() => {
-    fetchData(tenantId)
+    Promise.all([api<WarehouseOption[]>('/api/stock/warehouses'), api<Array<{ name: string; productCount: number }>>('/api/stock/categories')]).then(([w, c]) => {
+      if (w.ok) { setWarehouses(w.data); setForm(fm => ({ ...fm, warehouseId: w.data.find(x => x.isDefault)?.id ?? w.data[0]?.id ?? '' })) }
+      if (c.ok) setCategories(c.data)
+    })
+    if (new URLSearchParams(window.location.search).get('new')) setOpen(true)
   }, [])
 
-  const fetchData = async (tid: string) => {
-    setLoading(true)
-    try {
-      const url = `/api/stock/inventory${statusFilter ? `&status=${statusFilter}` : ''}`
-      const res = await fetch(url)
-      if (res.ok) setInventories(await res.json())
-    } catch (e) { console.error(e) }
-    setLoading(false)
-  }
-
-  const filtered = inventories.filter(i =>
-    i.reference.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const statusBadge = (s: string) => {
-    switch (s) {
-      case 'VALIDATED': return <span className="flex items-center gap-1 px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-[9px] font-black uppercase tracking-widest"><CheckCircle className="w-3 h-3" /> {t('Stock.validated')}</span>
-      case 'CANCELLED': return <span className="flex items-center gap-1 px-2 py-1 bg-red-500/10 text-red-400 rounded-full text-[9px] font-black uppercase tracking-widest"><XCircle className="w-3 h-3" /> {t('Stock.cancelled')}</span>
-      default: return <span className="flex items-center gap-1 px-2 py-1 bg-amber-500/10 text-amber-400 rounded-full text-[9px] font-black uppercase tracking-widest"><Clock className="w-3 h-3" /> {t('Stock.draft')}</span>
-    }
+  async function create() {
+    setSaving(true)
+    const r = await api<{ id: string }>('/api/stock/inventory', { method: 'POST', body: JSON.stringify({ ...form, category: form.scope === 'CATEGORY' ? form.category : undefined }) })
+    setSaving(false)
+    if (!r.ok) { setError(r.error === 'INVENTORY_ALREADY_OPEN' ? t('inventory_already_open') : (r.error || t('error_generic'))); setOpen(false); return }
+    router.push(`/stock/inventory/${r.data.id}`)
   }
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl mx-auto min-h-screen bg-transparent pt-0 font-sans">
-      <div className="flex items-center justify-between">
-        <div className="text-start">
-          <h1 className="text-3xl font-black text-white tracking-tight">{t('Stock.inventory_title')}</h1>
-          <p className="text-zinc-500 font-medium text-sm mt-1">{t('Stock.inventory_description')}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => fetchData(tenantId)} className="p-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-xl transition-all">
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+    <StockPage>
+      <PageHeader title={t('inventory_title')} description={t('inventory_desc')}
+        actions={<button onClick={() => setOpen(true)} className={cls.btnPrimary}><Plus className="w-4 h-4" /> {t('new_inventory')}</button>} />
+      <StockNav />
+      {error && <Alert onClose={() => setError('')}>{error}</Alert>}
+      <Card
+        title={t('inventory_sessions')}
+        actions={<div className="flex flex-wrap gap-1">{STATUSES.map(s => (
+          <button key={s || 'all'} onClick={() => setStatus(s)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${status === s ? 'bg-teal-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}>
+            {s ? t(`status_${s}`) : t('all')}
           </button>
-          <Link href="/stock/inventory/new" className="flex items-center gap-2 px-5 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-amber-600/20">
-            <Plus className="w-5 h-5" /> {t('Stock.new_inventory')}
-          </Link>
-        </div>
-      </div>
+        ))}</div>}
+        bodyClassName="p-0"
+      >
+        {loading ? <Loading /> : rows.length === 0 ? <EmptyState title={t('no_inventory')} /> : (
+          <div className="overflow-x-auto">
+            <table className={cls.table}>
+              <thead className="bg-zinc-50"><tr>
+                <th className={cls.th}>{t('reference')}</th>
+                <th className={cls.th}>{t('date')}</th>
+                <th className={cls.th}>{t('warehouse')}</th>
+                <th className={cls.th}>{t('scope')}</th>
+                <th className={`${cls.th} text-end`}>{t('progress')}</th>
+                <th className={`${cls.th} text-end`}>{t('gap_value')}</th>
+                <th className={cls.th}>{t('status')}</th>
+              </tr></thead>
+              <tbody className="divide-y divide-zinc-100">
+                {rows.map(inv => (
+                  <tr key={inv.id} className="hover:bg-zinc-50">
+                    <td className={cls.td}><Link href={`/stock/inventory/${inv.id}`} className="font-mono text-xs font-semibold text-teal-700 hover:underline">{inv.reference}</Link></td>
+                    <td className={`${cls.td} whitespace-nowrap`}>{f.date(inv.date)}</td>
+                    <td className={cls.td}>{inv.warehouse?.name ?? '—'}</td>
+                    <td className={cls.td}>{inv.scope === 'CATEGORY' ? `${t('scope_CATEGORY')} : ${inv.category}` : t('scope_FULL')}</td>
+                    <td className={cls.tdNum}>{f.qty(inv.summary.counted)} / {f.qty(inv.summary.lines)}</td>
+                    <td className={`${cls.tdNum} ${inv.summary.gapValue < 0 ? 'text-red-700' : inv.summary.gapValue > 0 ? 'text-emerald-700' : ''}`}>{f.money(inv.summary.gapValue)}</td>
+                    <td className={cls.td}><StatusBadge status={inv.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="w-5 h-5 absolute inset-inline-start-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder={t('Search.placeholder')} className="w-full bg-zinc-900/40 border border-zinc-800 rounded-xl ps-10 pe-4 py-3 text-white text-sm outline-none focus:border-amber-500/50" />
+      <Modal open={open} title={t('new_inventory')} onClose={() => setOpen(false)}
+        footer={<>
+          <button onClick={() => setOpen(false)} className={cls.btnSecondary}>{t('cancel')}</button>
+          <button onClick={create} disabled={saving || !form.warehouseId || (form.scope === 'CATEGORY' && !form.category)} className={cls.btnPrimary}>{t('open_inventory')}</button>
+        </>}>
+        <div className="space-y-4">
+          <Field label={`${t('warehouse')} *`}>
+            <select className={cls.input} value={form.warehouseId} onChange={e => setForm({ ...form, warehouseId: e.target.value })}>
+              {warehouses.map(w => <option key={w.id} value={w.id}>{w.name} ({w.code})</option>)}
+            </select>
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label={t('scope')}>
+              <select className={cls.input} value={form.scope} onChange={e => setForm({ ...form, scope: e.target.value })}>
+                <option value="FULL">{t('scope_FULL')}</option>
+                <option value="CATEGORY">{t('scope_CATEGORY')}</option>
+              </select>
+            </Field>
+            <Field label={t('date')}><input type="date" className={cls.input} value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></Field>
+          </div>
+          {form.scope === 'CATEGORY' && (
+            <Field label={`${t('category')} *`}>
+              <select className={cls.input} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                <option value="">{t('choose')}</option>
+                {categories.map(c => <option key={c.name} value={c.name}>{c.name} ({c.productCount})</option>)}
+              </select>
+            </Field>
+          )}
+          <Field label={t('notes')}><textarea rows={2} className={cls.input} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></Field>
+          <p className="text-xs text-zinc-500 text-start">{t('inventory_snapshot_hint')}</p>
         </div>
-        <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); fetchData(tenantId) }} className="bg-zinc-900/40 border border-zinc-800 text-zinc-400 rounded-xl px-3 py-3 text-sm outline-none">
-          <option value="">{t('Stock.all')}</option>
-          <option value="DRAFT">{t('Stock.draft')}</option>
-          <option value="VALIDATED">{t('Stock.validated')}</option>
-          <option value="CANCELLED">{t('Stock.cancelled')}</option>
-        </select>
-      </div>
-
-      <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] overflow-hidden">
-        <table className="w-full text-start border-collapse">
-          <thead>
-            <tr className="border-b border-zinc-800/50 bg-zinc-800/20">
-              <th className="px-8 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-start">{t('Stock.ref')}</th>
-              <th className="px-6 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-start">{t('Stock.date')}</th>
-              <th className="px-6 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-start">{t('Stock.warehouse')}</th>
-              <th className="px-6 py-5 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-start">{t('Stock.statut')}</th>
-              <th className="px-8 py-5 text-end text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('Stock.ecart')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800/30">
-            {loading ? (
-              <tr><td colSpan={5} className="px-8 py-20 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest">{t('Stock.loading')}</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={5} className="px-8 py-20 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest">{t('Stock.no_inventory')}</td></tr>
-            ) : filtered.map(inv => {
-              const totalVariance = inv.items?.reduce((sum: number, item: any) => sum + Number(item.variance || 0), 0) || 0
-              return (
-                <tr key={inv.id} className="hover:bg-zinc-800/30 group transition-colors">
-                  <td className="px-8 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-amber-500/10 rounded-lg"><FileText className="w-4 h-4 text-amber-400" /></div>
-                      <span className="font-bold text-white text-sm font-mono">{inv.reference}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-zinc-400 text-sm text-start">{new Date(inv.date).toLocaleDateString()}</td>
-                  <td className="px-6 py-5 text-zinc-400 text-sm text-start">{inv.warehouse?.name || '-'}</td>
-                  <td className="px-6 py-5 text-start">{statusBadge(inv.status)}</td>
-                  <td className="px-8 py-5 text-end">
-                    <span className={`font-black text-sm ${totalVariance > 0 ? 'text-emerald-400' : totalVariance < 0 ? 'text-red-400' : 'text-zinc-400'}`}>
-                      {totalVariance > 0 ? '+' : ''}{totalVariance}
-                    </span>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      </Modal>
+    </StockPage>
   )
 }

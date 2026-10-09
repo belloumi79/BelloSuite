@@ -18,6 +18,12 @@ model Product {
   fodec         Boolean  @default(false)
   minStock      Decimal  @default(0)
   currentStock  Decimal  @default(0)
+  /// Coût moyen unitaire pondéré (CMUP), recalculé à chaque entrée
+  averageCost   Decimal  @default(0)
+  /// Point de commande : en dessous (ou égal), le produit apparaît dans « à commander »
+  reorderPoint  Decimal  @default(0)
+  /// Quantité de réapprovisionnement suggérée (0 = calcul automatique)
+  reorderQty    Decimal  @default(0)
   images        String[] @default([])
   variants      Json     @default("[]")
   isActive      Boolean  @default(true)
@@ -45,9 +51,21 @@ model StockMovement {
   notes       String?
   warehouseId String?
   warehouse   Warehouse?        @relation(fields: [warehouseId], references: [id])
+  /// Motif (achat, vente, casse, perte, ajustement d'inventaire…)
+  reason      String?
+  /// Origine : MANUAL, PURCHASE, SALE, POS, TRANSFER, INVENTORY, OPENING
+  sourceType  String?
+  sourceId    String?
+  /// Stock du dépôt après le mouvement
+  balanceAfter Decimal?
+  /// CMUP du produit après le mouvement
+  costAfter   Decimal?
+  createdById String?
   createdAt   DateTime          @default(now())
 
   @@index([tenantId, productId])
+  @@index([tenantId, warehouseId, createdAt])
+  @@index([tenantId, createdAt])
 }
 
 enum StockMovementType {
@@ -68,6 +86,8 @@ model Warehouse {
   code      String
   name      String
   address   String?
+  manager   String?
+  phone     String?
   isDefault Boolean  @default(false)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -89,6 +109,8 @@ model ProductWarehouse {
   warehouseId String
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   stock       Decimal   @default(0)
+  /// Seuil d'alerte propre au dépôt (null = seuil du produit)
+  minStock    Decimal?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -110,6 +132,10 @@ model Inventory {
   reference   String
   date        DateTime
   status      InventoryStatus @default(DRAFT)
+  /// FULL (tout le dépôt) ou CATEGORY
+  scope       String          @default("FULL")
+  category    String?
+  validatedAt DateTime?
   notes       String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
@@ -123,6 +149,7 @@ model Inventory {
 
 enum InventoryStatus {
   DRAFT
+  IN_PROGRESS
   VALIDATED
   CANCELLED
 }
@@ -139,7 +166,11 @@ model InventoryItem {
   actualQty   Decimal
   unitCost    Decimal?
   variance    Decimal    @default(0)
+  /// true quand la quantité a été saisie au comptage
+  counted     Boolean    @default(false)
   notes       String?
+
+  @@index([inventoryId])
 }
 
 // ============================================
@@ -157,6 +188,7 @@ model StockTransfer {
   toWarehouseId   String
   toWarehouse     Warehouse      @relation("TransferTo", fields: [toWarehouseId], references: [id])
   status          TransferStatus @default(DRAFT)
+  validatedAt     DateTime?
   notes           String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -183,4 +215,34 @@ model StockTransferItem {
   product    Product       @relation(fields: [productId], references: [id])
   quantity   Decimal
   notes      String?
+}
+
+// ============================================
+// MODULE: STOCK — RÉFÉRENTIELS
+// ============================================
+
+model ProductCategory {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, name])
+}
+
+model StockUnit {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  code      String
+  name      String
+  /// Nombre de décimales autorisées (0 pour pièces, 3 pour kg…)
+  decimals  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, code])
 }

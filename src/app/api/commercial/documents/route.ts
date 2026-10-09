@@ -2,6 +2,7 @@ import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { tenantRefsError } from '@/lib/tenant-scope'
+import { applyMovementTx, getDefaultWarehouseId } from '@/services/stock'
 
 export async function GET(request: Request) {
   try {
@@ -102,46 +103,42 @@ export async function POST(request: Request) {
         },
       })
 
-      // Check if stock module is active and only decrement on INVOICE or DELIVERY_NOTE
-      const shouldDecrementStock = (type === 'INVOICE' || type === 'DELIVERY_NOTE');
+      // Pratique tunisienne : seul le bon de livraison (BL) sort la marchandise du stock.
+      // La facture est un document commercial/fiscal : elle peut précéder la livraison
+      // (client qui paie avant d'être livré) et ne touche donc jamais au stock.
+      const shouldDecrementStock = type === 'DELIVERY_NOTE'
 
       if (shouldDecrementStock) {
         const stockModule = await tx.tenantModule.findFirst({
           where: {
             tenantId,
-            module: { name: 'Stock' },
+            module: { name: { equals: 'stock', mode: 'insensitive' } },
             isEnabled: true
           }
         })
 
         if (stockModule) {
-          // Update Stock for each item that has a productId
+          // Sortie de stock via le service (mouvement = source de vérité, dépôt par défaut).
+          // Une vente n'est pas bloquée par un stock insuffisant (allowNegative) : voir alertes stock.
+          const defaultWarehouseId = await getDefaultWarehouseId(tenantId, tx)
           for (const item of items) {
-          if (item.productId) {
-            // 1. Update Product quantity
-            await tx.product.update({
-              where: { id: item.productId, tenantId: ctx.tenantId },
-              data: {
-                currentStock: {
-                  decrement: Number(item.quantity),
-                },
-              },
-            })
-
-            // 2. Create Stock Movement
-            await tx.stockMovement.create({
-              data: {
-                tenantId,
-                productId: item.productId,
-                type: 'EXIT',
-                quantity: Number(item.quantity),
-                notes: `${type === 'DELIVERY_NOTE' ? 'Livraison' : 'Vente'}: Doc ${number}`,
-                reference: number,
-              },
+            if (!item.productId || !(Number(item.quantity) > 0)) continue
+            await applyMovementTx(tx, {
+              tenantId,
+              productId: item.productId,
+              warehouseId: defaultWarehouseId,
+              type: 'EXIT',
+              quantity: Number(item.quantity),
+              reference: number,
+              reason: 'SALE',
+              notes: `Livraison: BL ${number}`,
+              sourceType: 'SALE',
+              sourceId: invoice.id,
+              createdById: ctx.user.id,
+              allowNegative: true,
             })
           }
         }
-      }
       }
 
       return invoice

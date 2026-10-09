@@ -1,25 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getProducts, createProduct } from '@/services/products'
+import { createProductSchema } from '@/lib/stock-api'
 import { handleApiError } from '@/lib/errors'
 import { requirePermission, Permission } from '@/lib/auth'
 import { requireTenant } from '@/lib/api-auth'
 import { z } from 'zod'
 
-export const createProductSchema = z.object({
-  tenantId: z.string().min(1, 'tenantId requis'),
-  code: z.string().min(1, 'code requis'),
-  name: z.string().min(1, 'name requis'),
-  description: z.string().optional(),
-  category: z.string().optional(),
-  unit: z.string().default('unit'),
-  purchasePrice: z.number().min(0).default(0),
-  salePrice: z.number().min(0).default(0),
-  vatRate: z.number().min(0).max(100).default(19),
-  fodec: z.boolean().default(false),
-  minStock: z.number().min(0).default(0),
-  initialStock: z.number().min(0).default(0),
-  barcode: z.string().optional(),
-})
 
 // GET /api/stock/products?tenantId=
 export async function GET(req: NextRequest) {
@@ -58,7 +44,7 @@ export async function POST(req: NextRequest) {
     // Le tenant vient toujours de la session
     validatedData = { ...validatedData, tenantId: ctx.tenantId }
 
-    const product = await createProduct(validatedData)
+    const product = await createProduct(validatedData, ctx.user.id)
     return NextResponse.json(product, { status: 201 })
   } catch (err) {
     return handleApiError(err, 'POST product')
