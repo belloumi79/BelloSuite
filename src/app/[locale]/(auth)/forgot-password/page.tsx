@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from '@/i18n/routing'
 import gsap from 'gsap'
 import { useTranslations } from 'next-intl'
+
 export default function ForgotPasswordPage() {
   const t = useTranslations('Auth.forgot')
   const [email, setEmail] = useState('')

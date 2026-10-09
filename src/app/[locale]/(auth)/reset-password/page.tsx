@@ -8,6 +8,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { supabase as ssrBrowserClient } from '@/lib/supabase/client'
 import { parseRecoveryParams } from '@/lib/supabase/recovery'
 import { useTranslations } from 'next-intl'
+
 type LinkStatus = 'checking' | 'ready' | 'invalid'
 
 function ResetPasswordForm() {

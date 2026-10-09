@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+
 function ConfirmContent() {
   const t = useTranslations('Auth.confirm')
   const router = useRouter()
