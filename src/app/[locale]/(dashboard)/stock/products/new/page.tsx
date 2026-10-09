@@ -6,6 +6,7 @@ import { Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import { ArrowLeft, Plus, Trash2, Save, Package, Image as ImageIcon, Hash, DollarSign, Layers, X } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
+import { useStockReferentials, CategoryInput, UnitSelect } from '@/components/stock/ProductFields'
 
 type Variant = {
   id: string
@@ -18,6 +19,8 @@ type Variant = {
 
 export default function NewProductPage() {
   const t = useTranslations()
+  const tm = useTranslations('StockMod')
+  const refs = useStockReferentials()
   const router = useRouter()
   const { tenantId } = useSession()
   const [loading, setLoading] = useState(false)
@@ -26,7 +29,7 @@ export default function NewProductPage() {
   const [form, setForm] = useState({
     code: '', barcode: '', name: '', description: '',
     category: '', unit: 'unit', purchasePrice: '', salePrice: '',
-    vatRate: '19', fodec: false, minStock: '', initialStock: '',
+    vatRate: '19', fodec: false, minStock: '', initialStock: '', reorderPoint: '', reorderQty: '', warehouseId: '',
   })
   const [images, setImages] = useState<string[]>([])
   const [newImage, setNewImage] = useState('')
@@ -79,34 +82,34 @@ export default function NewProductPage() {
     }
   }
 
-  const inputCls = "w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-teal-500/50"
+  const inputCls = "w-full bg-white border border-zinc-300 rounded-xl px-4 py-3 text-zinc-900 text-sm outline-none focus:border-teal-500/50"
   const labelCls = "block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 text-start"
 
   return (
-    <div className="p-8 max-w-4xl mx-auto min-h-screen bg-transparent pt-0 font-sans">
+    <div className="max-w-4xl mx-auto text-zinc-900 font-sans">
       <div className="flex items-center gap-4 mb-8">
-        <Link href="/stock/products" className="p-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-xl transition-all rtl:rotate-180">
+        <Link href="/stock/products" className="p-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-xl transition-all rtl:rotate-180">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="text-start">
-          <h1 className="text-3xl font-black text-white tracking-tight">{t('Stock.new_product_title')}</h1>
+          <h1 className="text-3xl font-black text-zinc-900 tracking-tight">{t('Stock.new_product_title')}</h1>
           <p className="text-zinc-500 font-medium text-sm mt-1">{t('Stock.new_product_description')}</p>
         </div>
       </div>
 
-      {error && <div className="mb-6 px-6 py-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-bold text-start">{error}</div>}
+      {error && <div className="mb-6 px-6 py-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-700 text-sm font-bold text-start">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Infos générales */}
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-8">
-          <h2 className="text-lg font-black text-white flex items-center gap-2 mb-6 rtl:flex-row-reverse">
-            <Package className="w-5 h-5 text-teal-400" /> {t('Stock.product_info')}
+        <div className="bg-white border border-zinc-200 rounded-[2rem] p-8">
+          <h2 className="text-lg font-black text-zinc-900 flex items-center gap-2 mb-6 rtl:flex-row-reverse">
+            <Package className="w-5 h-5 text-teal-700" /> {t('Stock.product_info')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className={labelCls}>{t('Stock.code_sku')} *</label>
               <div className="relative">
-                <Hash className="w-4 h-4 absolute inset-inline-start-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+                <Hash className="w-4 h-4 absolute inset-inline-start-3 top-1/2 -translate-y-1/2 text-zinc-500" />
                 <input value={form.code} onChange={e => set('code', e.target.value)} placeholder="PROD-001" className={inputCls + " ps-10"} required />
               </div>
             </div>
@@ -124,26 +127,19 @@ export default function NewProductPage() {
             </div>
             <div>
               <label className={labelCls}>{t('Stock.category_label')}</label>
-              <input value={form.category} onChange={e => set('category', e.target.value)} placeholder={t('Stock.category_label')} className={inputCls} />
+              <CategoryInput value={form.category} onChange={v => set('category', v)} className={inputCls} categories={refs.categories} />
             </div>
             <div>
               <label className={labelCls}>{t('Stock.unit')}</label>
-              <select value={form.unit} onChange={e => set('unit', e.target.value)} className={inputCls}>
-                <option value="unit">{t('Stock.unit_unit')}</option>
-                <option value="kg">{t('Stock.unit_kg')}</option>
-                <option value="l">{t('Stock.unit_l')}</option>
-                <option value="m">{t('Stock.unit_m')}</option>
-                <option value="piece">{t('Stock.unit_piece')}</option>
-                <option value="box">{t('Stock.unit_box')}</option>
-              </select>
+              <UnitSelect value={form.unit} onChange={v => set('unit', v)} className={inputCls} units={refs.units} />
             </div>
           </div>
         </div>
 
         {/* Prix */}
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-8">
-          <h2 className="text-lg font-black text-white flex items-center gap-2 mb-6 rtl:flex-row-reverse">
-            <DollarSign className="w-5 h-5 text-emerald-400" /> {t('Stock.pricing')}
+        <div className="bg-white border border-zinc-200 rounded-[2rem] p-8">
+          <h2 className="text-lg font-black text-zinc-900 flex items-center gap-2 mb-6 rtl:flex-row-reverse">
+            <DollarSign className="w-5 h-5 text-emerald-700" /> {t('Stock.pricing')}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
             <div>
@@ -171,28 +167,43 @@ export default function NewProductPage() {
               <label className={labelCls}>{t('Stock.min_stock_alert')}</label>
               <input type="number" step="1" value={form.minStock} onChange={e => set('minStock', e.target.value)} placeholder="0" className={inputCls} />
             </div>
+            <div>
+              <label className={labelCls}>{tm('reorder_point')}</label>
+              <input type="number" step="any" min="0" value={form.reorderPoint} onChange={e => set('reorderPoint', e.target.value)} placeholder="0" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>{tm('reorder_qty')}</label>
+              <input type="number" step="any" min="0" value={form.reorderQty} onChange={e => set('reorderQty', e.target.value)} placeholder="0" className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>{tm('initial_warehouse')}</label>
+              <select value={form.warehouseId} onChange={e => set('warehouseId', e.target.value)} className={inputCls}>
+                <option value="">{tm('default_warehouse')}</option>
+                {refs.warehouses.map(w => <option key={w.id} value={w.id}>{w.name} ({w.code})</option>)}
+              </select>
+            </div>
             <div className="flex items-center gap-3 pt-6 text-start">
               <input type="checkbox" id="fodec" checked={form.fodec} onChange={e => set('fodec', e.target.checked)} className="w-5 h-5 rounded accent-teal-500" />
-              <label htmlFor="fodec" className="text-zinc-400 text-sm font-bold cursor-pointer">{t('Stock.fodec_applicable')}</label>
+              <label htmlFor="fodec" className="text-zinc-600 text-sm font-bold cursor-pointer">{t('Stock.fodec_applicable')}</label>
             </div>
           </div>
         </div>
 
         {/* Images */}
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-8">
-          <h2 className="text-lg font-black text-white flex items-center gap-2 mb-6 rtl:flex-row-reverse">
-            <ImageIcon className="w-5 h-5 text-purple-400" /> {t('Stock.images_label')}
+        <div className="bg-white border border-zinc-200 rounded-[2rem] p-8">
+          <h2 className="text-lg font-black text-zinc-900 flex items-center gap-2 mb-6 rtl:flex-row-reverse">
+            <ImageIcon className="w-5 h-5 text-purple-700" /> {t('Stock.images_label')}
           </h2>
           <div className="flex gap-3 mb-4">
             <input value={newImage} onChange={e => setNewImage(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addImage())} placeholder={t('Stock.image_url_placeholder')} className={inputCls + " flex-1"} />
-            <button type="button" onClick={addImage} className="px-5 py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-xl font-bold text-sm"><Plus className="w-4 h-4" /></button>
+            <button type="button" onClick={addImage} className="px-5 py-3 bg-zinc-200 hover:bg-zinc-300 text-zinc-900 rounded-xl font-bold text-sm"><Plus className="w-4 h-4" /></button>
           </div>
           {images.length > 0 && (
             <div className="flex gap-3 flex-wrap">
               {images.map((url, i) => (
-                <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden bg-zinc-800">
+                <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden bg-zinc-100">
                   <img src={url} className="w-full h-full object-cover" alt="" />
-                  <button type="button" onClick={() => setImages(im => im.filter((_, j) => j !== i))} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4 text-red-400" /></button>
+                  <button type="button" onClick={() => setImages(im => im.filter((_, j) => j !== i))} className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4 text-red-700" /></button>
                 </div>
               ))}
             </div>
@@ -200,19 +211,19 @@ export default function NewProductPage() {
         </div>
 
         {/* Variantes */}
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-8">
-          <h2 className="text-lg font-black text-white flex items-center gap-2 mb-6 rtl:flex-row-reverse">
-            <Layers className="w-5 h-5 text-amber-400" /> {t('Stock.variants_label')}
+        <div className="bg-white border border-zinc-200 rounded-[2rem] p-8">
+          <h2 className="text-lg font-black text-zinc-900 flex items-center gap-2 mb-6 rtl:flex-row-reverse">
+            <Layers className="w-5 h-5 text-amber-700" /> {t('Stock.variants_label')}
           </h2>
           {variants.length > 0 && (
             <div className="mb-6 space-y-2">
               {variants.map((v, i) => (
-                <div key={v.id} className="flex items-center gap-4 bg-zinc-800/50 rounded-xl px-4 py-3 text-start">
-                  <span className="font-bold text-white text-sm flex-1">{v.name}</span>
+                <div key={v.id} className="flex items-center gap-4 bg-zinc-50 rounded-xl px-4 py-3 text-start">
+                  <span className="font-bold text-zinc-900 text-sm flex-1">{v.name}</span>
                   <span className="text-zinc-500 text-xs font-mono">{v.sku}</span>
-                  <span className="text-emerald-400 text-sm font-mono">{Number(v.price).toFixed(3)} TND</span>
-                  <span className="text-zinc-400 text-xs">{t('Stock.inventory')}: {v.stock}</span>
-                  <button type="button" onClick={() => setVariants(vs => vs.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300"><Trash2 className="w-4 h-4" /></button>
+                  <span className="text-emerald-700 text-sm font-mono">{Number(v.price).toFixed(3)} TND</span>
+                  <span className="text-zinc-600 text-xs">{t('Stock.inventory')}: {v.stock}</span>
+                  <button type="button" onClick={() => setVariants(vs => vs.filter((_, j) => j !== i))} className="text-red-700 hover:text-red-800"><Trash2 className="w-4 h-4" /></button>
                 </div>
               ))}
             </div>
@@ -231,7 +242,7 @@ export default function NewProductPage() {
         </div>
 
         <div className="flex items-center justify-end gap-4 pb-8">
-          <Link href="/stock/products" className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold">{t('Common.cancel')}</Link>
+          <Link href="/stock/products" className="px-6 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-bold">{t('Common.cancel')}</Link>
           <button type="submit" disabled={loading} className="flex items-center gap-2 px-8 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold shadow-lg shadow-teal-600/20 disabled:opacity-50">
             <Save className="w-5 h-5" /> {loading ? t('Stock.creating') : t('Stock.create_product')}
           </button>

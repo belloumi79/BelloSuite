@@ -1,259 +1,146 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
-import { useTranslations, useLocale } from 'next-intl'
-import { Package, Warehouse as WarehouseIcon, ArrowRightLeft, FileText, Plus, RefreshCw, ExternalLink, Upload, Tags, X } from 'lucide-react'
-import { useSession } from '@/hooks/useSession'
+import { Coins, Package, AlertTriangle, ArrowRightLeft, ClipboardList, Warehouse as WarehouseIcon, Plus, RefreshCw, PackageX } from 'lucide-react'
+import { StockPage, StockNav, PageHeader, KpiCard, Card, Loading, EmptyState, MovementBadge, Alert, cls, useStockFormat, api } from '@/components/stock/ui'
 
-export default function StockManagementPage() {
-  const t = useTranslations()
-  const locale = useLocale()
-  const [warehouses, setWarehouses] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
+type Dashboard = {
+  kpis: { totalValue: number; products: number; itemsInStock: number; lowStock: number; outOfStock: number; openTransfers: number; openInventories: number }
+  warehouses: Array<{ id: string; code: string; name: string; qty: number; value: number }>
+  lowStock: Array<{ productId: string; code: string; name: string; unit: string; stock: number; threshold: number; outOfStock: boolean }>
+  recentMovements: Array<{ id: string; type: string; quantity: string; reference: string | null; createdAt: string; product: { id: string; code: string; name: string; unit: string }; warehouse: { code: string; name: string } | null }>
+}
+
+export default function StockDashboardPage() {
+  const t = useTranslations('StockMod')
+  const f = useStockFormat()
+  const [data, setData] = useState<Dashboard | null>(null)
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const { tenantId } = useSession()
-  const [showImport, setShowImport] = useState(false)
-  const [showCategory, setShowCategory] = useState(false)
-  const [newCategory, setNewCategory] = useState('')
-  const [categories, setCategories] = useState<string[]>([])
 
-  useEffect(() => {
-    fetchData(tenantId)
-  }, [])
-
-  const fetchData = async (tid: string) => {
+  const load = useCallback(async () => {
     setLoading(true)
-    try {
-      const [whRes, prodRes] = await Promise.all([
-        fetch(`/api/stock/warehouses`),
-        fetch(`/api/stock/products`),
-      ])
-      if (whRes.ok) setWarehouses(await whRes.json())
-      if (prodRes.ok) setProducts(await prodRes.json())
-    } catch (e) {
-      console.error(e)
-    }
+    const r = await api<Dashboard>('/api/stock/dashboard')
+    if (r.ok) { setData(r.data); setError('') } else setError(r.error || t('error_generic'))
     setLoading(false)
-  }
+  }, [t])
 
-  const totalStockValue = products.reduce((sum, p) => sum + Number(p.currentStock) * Number(p.purchasePrice), 0)
-  const totalProducts = products.length
+  useEffect(() => { load() }, [load])
+
+  const maxValue = Math.max(1, ...(data?.warehouses.map(w => w.value) ?? [1]))
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto min-h-screen bg-transparent pt-0 font-sans">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4">
-        <div className="text-start">
-          <h1 className="text-4xl font-black text-white tracking-tighter flex items-center gap-3">
-            {t('Stock.title')}
-            <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('Stock.subtitle')}</span>
-          </h1>
-          <p className="text-zinc-500 mt-1 font-medium">{t('Stock.description')}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => fetchData(tenantId)} className="p-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-xl transition-all">
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button onClick={() => setShowImport(true)} className="flex items-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-purple-600/20 transition-all">
-            <Upload className="w-5 h-5" /> {t('Stock.import_csv')}
-          </button>
-          <button onClick={() => setShowCategory(true)} className="flex items-center gap-2 px-4 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-amber-600/20 transition-all">
-            <Tags className="w-5 h-5" /> {t('Stock.categories')}
-          </button>
-          <Link href="/stock/warehouses/new" className="flex items-center gap-2 px-5 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-600/20">
-            <Plus className="w-5 h-5" /> {t('Stock.new_warehouse')}
-          </Link>
-          <Link href="/stock/transfers/new" className="flex items-center gap-2 px-5 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-amber-600/20">
-            <ArrowRightLeft className="w-5 h-5" /> {t('Stock.transfer_order')}
-          </Link>
-        </div>
-      </div>
+    <StockPage>
+      <PageHeader
+        title={t('dashboard_title')}
+        description={t('dashboard_desc')}
+        actions={<>
+          <button onClick={load} className={cls.btnSecondary} aria-label={t('refresh')}><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
+          <Link href="/stock/movements?new=ENTRY" className={cls.btnSecondary}><Plus className="w-4 h-4" /> {t('new_movement')}</Link>
+          <Link href="/stock/transfers/new" className={cls.btnSecondary}><ArrowRightLeft className="w-4 h-4 rtl:rotate-180" /> {t('new_transfer')}</Link>
+          <Link href="/stock/inventory?new=1" className={cls.btnPrimary}><ClipboardList className="w-4 h-4" /> {t('new_inventory')}</Link>
+        </>}
+      />
+      <StockNav />
+      {error && <Alert onClose={() => setError('')}>{error}</Alert>}
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 rounded-[2rem] p-6">
-          <div className="p-3 bg-teal-500/10 rounded-xl w-fit">
-            <WarehouseIcon className="w-6 h-6 text-teal-400" />
+      {loading && !data ? <Loading /> : data && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard label={t('kpi_total_value')} value={f.money(data.kpis.totalValue)} sub={t('kpi_total_value_sub')} icon={Coins} tone="teal" href="/stock/valuation" />
+            <KpiCard label={t('kpi_items')} value={f.qty(data.kpis.itemsInStock)} sub={t('kpi_items_sub', { total: data.kpis.products })} icon={Package} tone="blue" href="/stock/products" />
+            <KpiCard label={t('kpi_low_stock')} value={f.qty(data.kpis.lowStock)} sub={t('kpi_out_of_stock_sub', { count: data.kpis.outOfStock })} icon={AlertTriangle} tone={data.kpis.lowStock ? 'amber' : 'emerald'} href="/stock/alerts" />
+            <KpiCard label={t('kpi_open_ops')} value={f.qty(data.kpis.openTransfers + data.kpis.openInventories)} sub={t('kpi_open_ops_sub', { transfers: data.kpis.openTransfers, inventories: data.kpis.openInventories })} icon={ClipboardList} tone="zinc" />
           </div>
-          <p className="text-3xl font-black text-white mt-4">{warehouses.length}</p>
-          <p className="text-xs font-black text-zinc-500 uppercase tracking-widest mt-1 text-start">{t('Stock.warehouses')}</p>
-        </div>
 
-        <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 rounded-[2rem] p-6">
-          <div className="p-3 bg-emerald-500/10 rounded-xl w-fit">
-            <Package className="w-6 h-6 text-emerald-400" />
-          </div>
-          <p className="text-3xl font-black text-white mt-4">{totalProducts}</p>
-          <p className="text-xs font-black text-zinc-500 uppercase tracking-widest mt-1 text-start">{t('Stock.ref_products')}</p>
-        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card title={t('value_by_warehouse')} actions={<Link href="/stock/warehouses" className={cls.btnGhost}>{t('see_all')}</Link>} className="lg:col-span-1">
+              {data.warehouses.length === 0 ? (
+                <EmptyState title={t('no_warehouse')} action={<Link href="/stock/warehouses?new=1" className={cls.btnPrimary}><Plus className="w-4 h-4" /> {t('create_warehouse')}</Link>} />
+              ) : (
+                <ul className="space-y-4">
+                  {data.warehouses.map(w => (
+                    <li key={w.id}>
+                      <Link href={`/stock/availability/${w.id}`} className="block group">
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="flex items-center gap-2 font-medium text-zinc-800 group-hover:text-teal-700 min-w-0">
+                            <WarehouseIcon className="w-4 h-4 text-zinc-400 shrink-0" />
+                            <span className="truncate">{w.name}</span>
+                            <span className="text-xs text-zinc-400 font-mono">{w.code}</span>
+                          </span>
+                          <span className="font-semibold tabular-nums text-zinc-900">{f.money(w.value)}</span>
+                        </div>
+                        <div className="mt-2 h-2 rounded-full bg-zinc-100 overflow-hidden">
+                          <div className="h-full bg-teal-500 rounded-full" style={{ width: `${Math.max(2, (w.value / maxValue) * 100)}%` }} />
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
 
-        <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 rounded-[2rem] p-6">
-          <div className="p-3 bg-amber-500/10 rounded-xl w-fit">
-            <FileText className="w-6 h-6 text-amber-400" />
+            <Card title={t('low_stock_widget')} actions={<Link href="/stock/alerts" className={cls.btnGhost}>{t('see_all')}</Link>} className="lg:col-span-2" bodyClassName="p-0">
+              {data.lowStock.length === 0 ? <EmptyState title={t('no_low_stock')} /> : (
+                <div className="overflow-x-auto">
+                  <table className={cls.table}>
+                    <thead className="bg-zinc-50"><tr>
+                      <th className={cls.th}>{t('product')}</th>
+                      <th className={`${cls.th} text-end`}>{t('stock')}</th>
+                      <th className={`${cls.th} text-end`}>{t('threshold')}</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-zinc-100">
+                      {data.lowStock.map(p => (
+                        <tr key={p.productId} className="hover:bg-zinc-50">
+                          <td className={cls.td}>
+                            <Link href={`/stock/products/${p.productId}`} className="font-medium text-zinc-900 hover:text-teal-700">{p.name}</Link>
+                            <span className="ms-2 text-xs text-zinc-400 font-mono">{p.code}</span>
+                          </td>
+                          <td className={`${cls.tdNum} ${p.outOfStock ? 'text-red-700 font-semibold' : 'text-amber-700 font-semibold'}`}>
+                            {p.outOfStock && <PackageX className="inline w-4 h-4 me-1 -mt-0.5" />}{f.qty(p.stock)} <span className="text-xs text-zinc-400">{p.unit}</span>
+                          </td>
+                          <td className={cls.tdNum}>{f.qty(p.threshold)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
           </div>
-          <p className="text-3xl font-black text-amber-400 mt-4">
-            {totalStockValue.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN', { style: 'currency', currency: 'TND' })}
-          </p>
-          <p className="text-xs font-black text-zinc-500 uppercase tracking-widest mt-1 text-start">{t('Stock.stock_value')}</p>
-        </div>
 
-        <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 rounded-[2rem] p-6">
-          <div className="p-3 bg-red-500/10 rounded-xl w-fit">
-            <Package className="w-6 h-6 text-red-400" />
-          </div>
-          <p className="text-3xl font-black text-red-400 mt-4">{products.filter(p => Number(p.currentStock) <= 0).length}</p>
-          <p className="text-xs font-black text-zinc-500 uppercase tracking-widest mt-1 text-start">{t('Stock.out_of_stock_kpi')}</p>
-        </div>
-      </div>
-
-      {/* Warehouses Grid */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-black text-white flex items-center gap-2">
-            <WarehouseIcon className="w-5 h-5 text-teal-400" /> {t('Stock.warehouses')}
-          </h2>
-          <div className="flex items-center gap-2">
-            <Link href="/stock/inventory" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold text-xs uppercase tracking-widest transition-all">
-              {t('Stock.inventory')}
-            </Link>
-            <Link href="/stock/transfers" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold text-xs uppercase tracking-widest transition-all">
-              {t('Stock.transfers')}
-            </Link>
-            <Link href="/stock/products" className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-teal-600/20">
-              {t('Stock.products')}
-            </Link>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-8 h-32 animate-pulse" />
-            ))}
-          </div>
-        ) : warehouses.length === 0 ? (
-          <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-20 text-center">
-            <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">{t('Stock.no_warehouse')}</p>
-            <Link href="/stock/warehouses/new" className="mt-4 inline-flex items-center gap-2 text-teal-400 font-bold text-sm hover:underline">
-              <Plus className="w-4 h-4" /> {t('Stock.create_warehouse')}
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {warehouses.map((wh) => {
-              const whProducts = products.filter((p: any) => {
-                const pw = (p as any).warehouseStock?.find((ws: any) => ws.warehouseId === wh.id)
-                return pw ? Number(pw.stock) > 0 : false
-              })
-              const whValue = whProducts.reduce((sum: number, p: any) => {
-                const pw = p.warehouseStock?.find((ws: any) => ws.warehouseId === wh.id)
-                return sum + (pw ? Number(pw.stock) * Number(p.purchasePrice) : 0)
-              }, 0)
-              return (
-                <Link key={wh.id} href={`/stock/availability/${wh.id}`} className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 hover:border-teal-500/30 rounded-[2rem] p-8 transition-all group text-start">
-                  <div className="flex items-start justify-between">
-                    <div className="p-3 bg-teal-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                      <WarehouseIcon className="w-6 h-6 text-teal-400" />
-                    </div>
-                    {wh.isDefault && (
-                      <span className="text-[9px] font-black text-teal-400 bg-teal-500/10 px-2 py-1 rounded-full uppercase tracking-widest">{t('Stock.main_warehouse')}</span>
-                    )}
-                  </div>
-                  <h3 className="font-black text-white text-lg mt-4">{wh.name}</h3>
-                  <p className="text-zinc-500 text-xs font-mono font-bold mt-1">{t('Stock.ref_code', { code: wh.code })}</p>
-                  {wh.address && <p className="text-zinc-600 text-xs mt-1">{wh.address}</p>}
-                  <div className="mt-4 pt-4 border-t border-zinc-800/50 flex items-center justify-between">
-                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('Stock.value')}</p>
-                    <p className="font-black text-emerald-400">
-                      {whValue.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN', { style: 'currency', currency: 'TND' })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 mt-2 text-teal-400 text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">
-                    {t('Stock.view_stock')} <ExternalLink className="w-3 h-3 rtl:rotate-180" />
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-        <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 rounded-[2rem] p-8 text-start">
-          <h3 className="text-lg font-black text-white flex items-center gap-2 mb-4">
-            <FileText className="w-5 h-5 text-amber-400" /> {t('Stock.physical_inventory')}
-          </h3>
-          <p className="text-zinc-500 text-sm font-medium mb-6">{t('Stock.physical_inventory_desc')}</p>
-          <Link href="/stock/inventory" className="inline-flex items-center gap-2 px-5 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-amber-600/20 transition-all">
-            <Plus className="w-5 h-5" /> {t('Stock.new_inventory')}
-          </Link>
-        </div>
-
-        <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/50 rounded-[2rem] p-8 text-start">
-          <h3 className="text-lg font-black text-white flex items-center gap-2 mb-4">
-            <ArrowRightLeft className="w-5 h-5 text-teal-400" /> {t('Stock.transfer_stock')}
-          </h3>
-          <p className="text-zinc-500 text-sm font-medium mb-6">{t('Stock.transfer_stock_desc')}</p>
-          <Link href="/stock/transfers/new" className="inline-flex items-center gap-2 px-5 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-600/20 transition-all">
-            <ArrowRightLeft className="w-5 h-5 rtl:rotate-180" /> {t('Stock.new_transfer')}
-          </Link>
-        </div>
-      </div>
-
-      {/* Import CSV Modal */}
-      {showImport && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowImport(false)}>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-lg w-full" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-black text-white">{t('Stock.import_title')}</h2>
-              <button onClick={() => setShowImport(false)} className="p-2 hover:bg-zinc-800 rounded-xl text-zinc-400"><X className="w-5 h-5" /></button>
-            </div>
-            <div className="border-2 border-dashed border-zinc-700 rounded-2xl p-12 text-center hover:border-purple-500 transition-colors">
-              <Upload className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-              <p className="text-white font-bold mb-2">{t('Stock.drop_file')}</p>
-              <p className="text-zinc-500 text-sm mb-4">{t('Stock.csv_or_excel')}</p>
-              <input type="file" accept=".csv,.xlsx,.xls" className="hidden" id="csvInput2" onChange={async e => {
-                const file = e.target.files?.[0]
-                if (!file) return
-                const fd = new FormData()
-                fd.append('file', file)
-                const r = await fetch('/api/stock/import', { method: 'POST', body: fd })
-                if (r.ok) { setShowImport(false); fetchData(tenantId) }
-                else { const d = await r.json(); alert(d.error || t('Common.error')) }
-              }} />
-              <label htmlFor="csvInput2" className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold cursor-pointer">
-                <Upload className="w-5 h-5" /> {t('Stock.choose_file')}
-              </label>
-            </div>
-            <div className="mt-4 p-4 bg-zinc-800/50 rounded-xl text-xs text-start">
-              <p className="text-zinc-400 font-bold uppercase tracking-widest mb-1">{t('Stock.required_columns')}</p>
-              <code className="text-teal-400">code, name, category, purchasePrice, salePrice, vatRate, currentStock</code>
-            </div>
-          </div>
+          <Card title={t('last_movements')} actions={<Link href="/stock/movements" className={cls.btnGhost}>{t('see_all')}</Link>} bodyClassName="p-0">
+            {data.recentMovements.length === 0 ? <EmptyState title={t('no_movement')} /> : (
+              <div className="overflow-x-auto">
+                <table className={cls.table}>
+                  <thead className="bg-zinc-50"><tr>
+                    <th className={cls.th}>{t('date')}</th>
+                    <th className={cls.th}>{t('type')}</th>
+                    <th className={cls.th}>{t('product')}</th>
+                    <th className={cls.th}>{t('warehouse')}</th>
+                    <th className={cls.th}>{t('reference')}</th>
+                    <th className={`${cls.th} text-end`}>{t('quantity')}</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-zinc-100">
+                    {data.recentMovements.map(m => (
+                      <tr key={m.id} className="hover:bg-zinc-50">
+                        <td className={`${cls.td} whitespace-nowrap text-zinc-500`}>{f.dateTime(m.createdAt)}</td>
+                        <td className={cls.td}><MovementBadge type={m.type} /></td>
+                        <td className={cls.td}><Link href={`/stock/products/${m.product.id}`} className="font-medium text-zinc-900 hover:text-teal-700">{m.product.name}</Link></td>
+                        <td className={cls.td}>{m.warehouse?.name ?? '—'}</td>
+                        <td className={`${cls.td} font-mono text-xs`}>{m.reference ?? '—'}</td>
+                        <td className={cls.tdNum}>{f.signedQty(m.type === 'EXIT' ? -Math.abs(Number(m.quantity)) : m.type === 'ENTRY' ? Math.abs(Number(m.quantity)) : m.quantity)} <span className="text-xs text-zinc-400">{m.product.unit}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
         </div>
       )}
-
-      {/* Categories Modal */}
-      {showCategory && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCategory(false)}>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-md w-full" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-black text-white">{t('Stock.manage_categories')}</h2>
-              <button onClick={() => setShowCategory(false)} className="p-2 hover:bg-zinc-800 rounded-xl text-zinc-400"><X className="w-5 h-5" /></button>
-            </div>
-            <div className="flex gap-3 mb-6">
-              <input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder={t('Stock.new_category')} className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white outline-none focus:border-teal-500" onKeyDown={e => { if (e.key === 'Enter') { const cat = newCategory.trim(); if (cat) setCategories(prev => [...prev.filter(x => x !== cat), cat]); setNewCategory('') } }} />
-              <button onClick={() => { const cat = newCategory.trim(); if (cat) setCategories(prev => [...prev.filter(x => x !== cat), cat]); setNewCategory('') }} className="px-6 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold">{t('Stock.add')}</button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {categories.map(cat => <span key={cat} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-300 rounded-full text-sm"><Tags className="w-3 h-3 text-amber-400" /> {cat}</span>)}
-              {categories.length === 0 && <p className="text-zinc-600 text-sm">{t('Stock.no_category')}</p>}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </StockPage>
   )
 }

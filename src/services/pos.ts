@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { BusinessError } from '@/lib/errors'
 import { POSSessionStatus, POSOrderStatus, PaymentMethod, POSType } from '@prisma/client'
 import { assertBelongsToTenant, assertAllBelongToTenant } from '@/lib/tenant-scope'
+import { applyMovementTx, getDefaultWarehouseId } from '@/services/stock'
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -123,23 +124,22 @@ export async function createPOSOrder(data: POSOrderData) {
       }
     })
 
-    // 3. Update Stocks
+    // 3. Update Stocks — via le service stock (mouvement = source de vérité, dépôt par défaut)
+    const defaultWarehouseId = await getDefaultWarehouseId(data.tenantId, tx)
     for (const item of data.items) {
-      if (item.productId) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { currentStock: { decrement: item.quantity } }
-        })
-
-        await tx.stockMovement.create({
-          data: {
-            tenantId: data.tenantId,
-            productId: item.productId,
-            type: 'EXIT',
-            quantity: item.quantity,
-            notes: `Vente POS #${data.orderNumber}`,
-            reference: order.id
-          }
+      if (item.productId && item.quantity > 0) {
+        await applyMovementTx(tx, {
+          tenantId: data.tenantId,
+          productId: item.productId,
+          warehouseId: defaultWarehouseId,
+          type: 'EXIT',
+          quantity: item.quantity,
+          reference: order.id,
+          reason: 'SALE',
+          notes: `Vente POS #${data.orderNumber}`,
+          sourceType: 'POS',
+          sourceId: order.id,
+          allowNegative: true,
         })
       }
     }

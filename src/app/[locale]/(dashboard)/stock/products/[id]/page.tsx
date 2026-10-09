@@ -1,163 +1,150 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { Link } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
-import { Package, ArrowLeft, Edit2, AlertTriangle, TrendingUp, TrendingDown, Archive, ImageIcon } from 'lucide-react'
-import { useSession } from '@/hooks/useSession'
+import { Link } from '@/i18n/routing'
+import { Pencil, Plus, History, Save, Package } from 'lucide-react'
+import { StockPage, StockNav, PageHeader, Card, Loading, EmptyState, MovementBadge, Badge, Alert, KpiCard, cls, useStockFormat, api } from '@/components/stock/ui'
+import MovementFormModal, { useReasonLabel, type ProductOption, type WarehouseOption } from '@/components/stock/MovementFormModal'
+import { isLowStock, valuationCost } from '@/lib/stock-logic'
 
-type Movement = { id: string; type: string; quantity: string; unitPrice: string; reference: string; notes: string; createdAt: string; warehouse: { name: string } | null; product: { name: string } }
-type WarehouseStock = { warehouse: { id: string; name: string; code: string }; stock: string }
+type Movement = { id: string; type: string; quantity: string; unitPrice: string | null; reference: string | null; reason: string | null; notes: string | null; balanceAfter: string | null; costAfter: string | null; createdAt: string; warehouse: { id: string; code: string; name: string } | null }
+type Product = {
+  id: string; code: string; barcode: string | null; name: string; description: string | null; category: string | null; unit: string
+  purchasePrice: string; salePrice: string; averageCost: string; minStock: string; reorderPoint: string; reorderQty: string; currentStock: string; isActive: boolean; images: string[]
+  movements: Movement[]
+  warehouseStock: Array<{ warehouseId: string; stock: string; minStock: string | null; warehouse: { id: string; code: string; name: string; isActive: boolean } }>
+}
 
 export default function ProductDetailPage() {
-  const t = useTranslations()
-  const { id } = useParams()
-  const [product, setProduct] = useState<any>(null)
-  const [movements, setMovements] = useState<Movement[]>([])
-  const [loading, setLoading] = useState(true)
-  const { tenantId } = useSession()
+  const t = useTranslations('StockMod')
+  const f = useStockFormat()
+  const reasonLabel = useReasonLabel()
+  const { id } = useParams<{ id: string }>()
+  const [p, setP] = useState<Product | null>(null)
+  const [warehouses, setWarehouses] = useState<WarehouseOption[]>([])
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [modal, setModal] = useState(false)
+  const [mins, setMins] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    const tid = tenantId
-    fetch(`/api/stock/products/${id}`)
-      .then(r => r.json())
-      .then(d => { setProduct(d); setMovements(d.movements || []) })
-      .finally(() => setLoading(false))
-  }, [id])
+  const load = useCallback(async () => {
+    const [r, w] = await Promise.all([api<Product>(`/api/stock/products/${id}`), api<WarehouseOption[]>('/api/stock/warehouses')])
+    if (!r.ok) { setError(r.error || t('error_generic')); return }
+    setP(r.data)
+    if (w.ok) setWarehouses(w.data)
+    setMins(Object.fromEntries(r.data.warehouseStock.map(ws => [ws.warehouseId, ws.minStock === null ? '' : String(Number(ws.minStock))])))
+  }, [id, t])
+  useEffect(() => { load() }, [load])
 
-  if (loading) return <div className="p-8 text-zinc-500 font-bold text-start">{t('Stock.loading')}</div>
-  if (!product) return <div className="p-8 text-red-400 font-bold text-start">{t('Stock.not_found')}</div>
-
-  const stock = Number(product.currentStock)
-  const min = Number(product.minStock)
-  const isOut = stock <= 0
-  const isLow = stock > 0 && stock < min
-  const stockValue = stock * Number(product.purchasePrice)
-  const saleValue = stock * Number(product.salePrice)
-
-  const typeLabel: Record<string, { cls: string; icon: any; labelKey: string }> = {
-    ENTRY: { cls: 'bg-emerald-500/10 text-emerald-400', icon: TrendingUp, labelKey: 'ENTRY' },
-    EXIT: { cls: 'bg-red-500/10 text-red-400', icon: TrendingDown, labelKey: 'EXIT' },
-    ADJUSTMENT: { cls: 'bg-amber-500/10 text-amber-400', icon: Archive, labelKey: 'ADJUSTMENT' },
-    TRANSFER: { cls: 'bg-blue-500/10 text-blue-400', icon: Archive, labelKey: 'TRANSFER' },
+  async function saveMins() {
+    if (!p) return
+    const warehouseMinStock = Object.entries(mins).map(([warehouseId, v]) => ({ warehouseId, minStock: v === '' ? null : Number(v) }))
+    const r = await api(`/api/stock/products/${id}`, { method: 'PUT', body: JSON.stringify({ warehouseMinStock }) })
+    if (r.ok) { setNotice(t('saved')); load() } else setError(r.error || t('error_generic'))
   }
 
+  const stock = Number(p?.currentStock ?? 0)
+  const cost = p ? valuationCost(Number(p.averageCost), Number(p.purchasePrice)) : 0
+  const low = p ? isLowStock(stock, Number(p.minStock), Number(p.reorderPoint)) : false
+  const depots = warehouses.map(w => ({ w, ws: p?.warehouseStock.find(x => x.warehouseId === w.id) }))
+  const productOption: ProductOption[] = p ? [{ id: p.id, code: p.code, name: p.name, unit: p.unit, barcode: p.barcode, averageCost: p.averageCost, purchasePrice: p.purchasePrice, warehouseStock: p.warehouseStock }] : []
+
   return (
-    <div className="p-8 space-y-6 max-w-6xl mx-auto min-h-screen bg-transparent pt-0 font-sans">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/stock/products" className="p-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-xl transition-all rtl:rotate-180">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="text-start">
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-black text-white tracking-tight">{product.name}</h1>
-              <span className="text-zinc-500 text-sm font-mono">{product.code}</span>
-            </div>
-            <p className="text-zinc-500 text-sm mt-1">
-              {product.category || t('Stock.uncategorized')} {product.barcode ? `· ${product.barcode}` : ''}
-            </p>
+    <StockPage>
+      <PageHeader
+        backHref="/stock/products"
+        title={p ? p.name : t('product')}
+        description={p ? [p.code, p.barcode, p.category].filter(Boolean).join(' · ') : undefined}
+        actions={p && <>
+          <Link href={`/stock/movements?productId=${p.id}`} className={cls.btnSecondary}><History className="w-4 h-4" /> {t('full_history')}</Link>
+          <Link href={`/stock/products/${p.id}/edit`} className={cls.btnSecondary}><Pencil className="w-4 h-4" /> {t('edit')}</Link>
+          <button onClick={() => setModal(true)} className={cls.btnPrimary}><Plus className="w-4 h-4" /> {t('new_movement')}</button>
+        </>}
+      />
+      <StockNav />
+      {error && <Alert onClose={() => setError('')}>{error}</Alert>}
+      {notice && <Alert tone="green" onClose={() => setNotice('')}>{notice}</Alert>}
+      {!p ? <Loading /> : (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard label={t('stock')} value={<span className={stock <= 0 ? 'text-red-700' : low ? 'text-amber-700' : ''}>{f.qty(stock)} <span className="text-sm text-zinc-400">{p.unit}</span></span>}
+              sub={stock <= 0 ? t('out_of_stock') : low ? t('below_threshold') : t('threshold_value', { value: f.qty(Math.max(Number(p.minStock), Number(p.reorderPoint))) })} icon={Package} tone={stock <= 0 ? 'red' : low ? 'amber' : 'teal'} />
+            <KpiCard label={t('cmup')} value={f.money(cost)} sub={t('purchase_price_value', { value: f.money(p.purchasePrice) })} tone="blue" />
+            <KpiCard label={t('stock_value')} value={f.money(stock * cost)} tone="emerald" />
+            <KpiCard label={t('sale_price')} value={f.money(p.salePrice)} sub={!p.isActive ? t('inactive') : undefined} tone="zinc" />
           </div>
-        </div>
-        <Link href={`/stock/products/${id}/edit`} className="flex items-center gap-2 px-5 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-600/20">
-          <Edit2 className="w-5 h-5" /> {t('Common.edit')}
-        </Link>
-      </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-6 text-start">
-          <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">{t('Stock.current_stock')}</p>
-          <p className={`text-3xl font-black mt-2 ${isOut ? 'text-red-400' : isLow ? 'text-amber-400' : 'text-white'}`}>{stock}</p>
-          {isLow && <AlertTriangle className="w-4 h-4 text-amber-400 mt-1" />}
-        </div>
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-6 text-start">
-          <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">{t('Stock.purchase_value')}</p>
-          <p className="text-2xl font-black text-white mt-2">{stockValue.toFixed(3)} TND</p>
-        </div>
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-6 text-start">
-          <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">{t('Stock.sale_value')}</p>
-          <p className="text-2xl font-black text-emerald-400 mt-2">{saleValue.toFixed(3)} TND</p>
-        </div>
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-6 text-start">
-          <p className="text-xs font-black text-zinc-500 uppercase tracking-widest">{t('Stock.margin')}</p>
-          <p className="text-2xl font-black text-teal-400 mt-2">{Number(product.purchasePrice) > 0 ? (((Number(product.salePrice) - Number(product.purchasePrice)) / Number(product.purchasePrice)) * 100).toFixed(1) : 0}%</p>
-        </div>
-      </div>
+          <Card title={t('stock_by_warehouse')} actions={<button onClick={saveMins} className={cls.btnSecondary}><Save className="w-4 h-4" /> {t('save_thresholds')}</button>} bodyClassName="p-0">
+            {depots.length === 0 ? <EmptyState title={t('no_warehouse')} /> : (
+              <table className={cls.table}>
+                <thead className="bg-zinc-50"><tr>
+                  <th className={cls.th}>{t('warehouse')}</th>
+                  <th className={`${cls.th} text-end`}>{t('stock')}</th>
+                  <th className={`${cls.th} text-end`}>{t('value')}</th>
+                  <th className={`${cls.th} text-end w-44`}>{t('depot_min')}</th>
+                </tr></thead>
+                <tbody className="divide-y divide-zinc-100">
+                  {depots.map(({ w, ws }) => {
+                    const q = Number(ws?.stock ?? 0)
+                    const m = mins[w.id] ?? ''
+                    const depotLow = m !== '' && isLowStock(q, Number(m))
+                    return (
+                      <tr key={w.id}>
+                        <td className={cls.td}><Link href={`/stock/availability/${w.id}`} className="font-medium hover:text-teal-700">{w.name}</Link> <span className="text-xs text-zinc-400 font-mono">{w.code}</span></td>
+                        <td className={`${cls.tdNum} ${q < 0 ? 'text-red-700' : depotLow ? 'text-amber-700 font-semibold' : ''}`}>{f.qty(q)} {depotLow && <Badge tone="amber">{t('low')}</Badge>}</td>
+                        <td className={cls.tdNum}>{f.money(q * cost)}</td>
+                        <td className={cls.td}><input type="number" min="0" step="any" className={`${cls.input} text-end`} placeholder={t('use_product_threshold')} value={m} onChange={e => setMins(s => ({ ...s, [w.id]: e.target.value }))} /></td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </Card>
 
-      {/* Info produit */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-8 text-start">
-          <h2 className="text-lg font-black text-white mb-4">{t('Stock.details')}</h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">{t('Stock.purchase_price_label')}</span><span className="text-white font-mono text-sm">{Number(product.purchasePrice).toFixed(3)} TND</span></div>
-            <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">{t('Stock.sale_price_ht_label')}</span><span className="text-emerald-400 font-mono text-sm font-bold">{Number(product.salePrice).toFixed(3)} TND</span></div>
-            <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">{t('Stock.tva')}</span><span className="text-white font-mono text-sm">{product.vatRate}%</span></div>
-            <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">{t('Stock.stock_min')}</span><span className="text-amber-400 font-mono text-sm">{min}</span></div>
-            <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">{t('Stock.unit')}</span><span className="text-white font-mono text-sm">{product.unit}</span></div>
-            <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">{t('Stock.fodec')}</span><span className="text-white font-mono text-sm">{product.fodec ? t('Stock.yes') : t('Stock.no')}</span></div>
-            {product.supplierId && <div className="flex justify-between items-center"><span className="text-zinc-500 text-sm">{t('Stock.supplier')}</span><span className="text-white text-sm">{product.supplierId}</span></div>}
-          </div>
-          {product.description && <div className="mt-4 pt-4 border-t border-zinc-800"><p className="text-zinc-400 text-xs">{product.description}</p></div>}
+          <Card title={t('last_movements')} actions={<Link href={`/stock/movements?productId=${p.id}`} className={cls.btnGhost}>{t('see_all')}</Link>} bodyClassName="p-0">
+            {p.movements.length === 0 ? <EmptyState title={t('no_movement')} /> : (
+              <div className="overflow-x-auto">
+                <table className={cls.table}>
+                  <thead className="bg-zinc-50"><tr>
+                    <th className={cls.th}>{t('date')}</th>
+                    <th className={cls.th}>{t('type')}</th>
+                    <th className={cls.th}>{t('warehouse')}</th>
+                    <th className={`${cls.th} text-end`}>{t('quantity')}</th>
+                    <th className={`${cls.th} text-end`}>{t('unit_cost')}</th>
+                    <th className={`${cls.th} text-end`}>{t('balance_after')}</th>
+                    <th className={`${cls.th} text-end`}>{t('cmup_after')}</th>
+                    <th className={cls.th}>{t('reason')}</th>
+                    <th className={cls.th}>{t('reference')}</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-zinc-100">
+                    {p.movements.map(m => {
+                      const q = m.type === 'EXIT' ? -Math.abs(Number(m.quantity)) : m.type === 'ENTRY' ? Math.abs(Number(m.quantity)) : Number(m.quantity)
+                      return (
+                        <tr key={m.id} className="hover:bg-zinc-50">
+                          <td className={`${cls.td} whitespace-nowrap text-zinc-500`}>{f.dateTime(m.createdAt)}</td>
+                          <td className={cls.td}><MovementBadge type={m.type} /></td>
+                          <td className={cls.td}>{m.warehouse?.name ?? '—'}</td>
+                          <td className={`${cls.tdNum} font-semibold ${q < 0 ? 'text-red-700' : 'text-emerald-700'}`}>{f.signedQty(q)}</td>
+                          <td className={cls.tdNum}>{m.unitPrice !== null ? f.money(m.unitPrice) : '—'}</td>
+                          <td className={cls.tdNum}>{m.balanceAfter !== null ? f.qty(m.balanceAfter) : '—'}</td>
+                          <td className={cls.tdNum}>{m.costAfter !== null ? f.money(m.costAfter) : '—'}</td>
+                          <td className={cls.td}>{reasonLabel(m.reason)}</td>
+                          <td className={`${cls.td} font-mono text-xs`}>{m.reference ?? '—'}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+          {p.description && <Card title={t('description')}><p className="text-sm text-zinc-600 whitespace-pre-line text-start">{p.description}</p></Card>}
         </div>
-
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] p-8 text-start">
-          <h2 className="text-lg font-black text-white mb-4">{t('Stock.warehouses')}</h2>
-          {product.warehouseStock && product.warehouseStock.length > 0 ? (
-            <div className="space-y-3">
-              {product.warehouseStock.map((ws: WarehouseStock) => (
-                <div key={ws.warehouse.id} className="flex items-center justify-between bg-zinc-800/50 rounded-xl px-4 py-3">
-                  <div className="text-start"><p className="font-bold text-white text-sm">{ws.warehouse.name}</p><p className="text-zinc-600 text-xs font-mono">{ws.warehouse.code}</p></div>
-                  <span className="font-black text-lg text-white">{Number(ws.stock)}</span>
-                </div>
-              ))}
-            </div>
-          ) : <p className="text-zinc-500 text-sm">{t('Stock.no_warehouse')}</p>}
-        </div>
-      </div>
-
-      {/* Historique mouvements */}
-      <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[2rem] overflow-hidden">
-        <div className="px-8 py-5 border-b border-zinc-800/50 text-start">
-          <h2 className="text-lg font-black text-white">{t('Stock.last_movements')}</h2>
-        </div>
-        <table className="w-full text-start border-collapse">
-          <thead>
-            <tr className="bg-zinc-800/20">
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-start">{t('Stock.date')}</th>
-              <th className="px-4 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-start">{t('Stock.statut')}</th>
-              <th className="px-4 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-start">{t('Stock.qty')}</th>
-              <th className="px-4 py-4 text-[10px) font-black text-zinc-500 uppercase tracking-widest text-start">{t('Stock.warehouse')}</th>
-              <th className="px-4 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-start">{t('Stock.ref')}</th>
-              <th className="px-6 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-start">{t('Stock.notes')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800/30">
-            {movements.length === 0 ? (
-              <tr><td colSpan={6} className="px-6 py-12 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest">{t('Stock.no_movement')}</td></tr>
-            ) : movements.map(m => {
-              const mt = typeLabel[m.type] || typeLabel.ADJUSTMENT
-              const MoveIcon = mt.icon
-              return (
-                <tr key={m.id} className="hover:bg-zinc-800/30 transition-colors">
-                  <td className="px-6 py-4 text-zinc-400 text-xs text-start">{new Date(m.createdAt).toLocaleDateString()}</td>
-                  <td className="px-4 py-4 text-start">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${mt.cls}`}>
-                      <MoveIcon className="w-3 h-3" />
-                      {m.type}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 font-black text-sm text-start">{m.type === 'EXIT' ? '-' : '+'}{m.quantity}</td>
-                  <td className="px-4 py-4 text-zinc-400 text-xs text-start">{m.warehouse?.name || '—'}</td>
-                  <td className="px-4 py-4 text-zinc-500 text-xs font-mono text-start">{m.reference || '—'}</td>
-                  <td className="px-6 py-4 text-zinc-500 text-xs text-start">{m.notes || '—'}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      )}
+      <MovementFormModal open={modal} onClose={() => setModal(false)} onSaved={() => { setNotice(t('movement_saved')); load() }} products={productOption} warehouses={warehouses} initialProductId={p?.id} />
+    </StockPage>
   )
 }

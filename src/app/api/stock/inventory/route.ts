@@ -1,101 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getApiContext } from '@/lib/api'
+import { getApiContext, parseBody } from '@/lib/api'
 import { handleApiError } from '@/lib/errors'
-import { validateInventory } from '@/services/stock'
+import { createInventory, createInventorySchema, validateInventory, cancelInventory } from '@/services/stock'
 import { prisma } from '@/lib/db'
 import { InventoryStatus } from '@prisma/client'
-import { assertBelongsToTenant, assertAllBelongToTenant } from '@/lib/tenant-scope'
+import { inventorySummary } from '@/lib/stock-logic'
+import { isStockAdmin, forbidden, readJson, str } from '@/lib/stock-api'
 
-// GET /api/stock/inventory?tenantId=
+const STATUSES = Object.values(InventoryStatus) as string[]
+
+// GET /api/stock/inventory?status=&warehouseId=
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const tenantId = searchParams.get('tenantId')
-
-    const ctx = await getApiContext(req, tenantId)
+    const ctx = await getApiContext(req, searchParams.get('tenantId'))
     if (ctx instanceof NextResponse) return ctx
+    const status = searchParams.get('status')
+    const warehouseId = searchParams.get('warehouseId')
 
     const inventories = await prisma.inventory.findMany({
-      where: { tenantId: ctx.tenantId },
-      include: {
-        warehouse: { select: { code: true, name: true } },
-        items: { include: { product: { select: { name: true, code: true } } } },
+      where: {
+        tenantId: ctx.tenantId,
+        ...(status && STATUSES.includes(status) ? { status: status as InventoryStatus } : {}),
+        ...(warehouseId ? { warehouseId } : {}),
       },
-      orderBy: { date: 'desc' },
+      include: {
+        warehouse: { select: { id: true, code: true, name: true } },
+        items: { select: { expectedQty: true, actualQty: true, counted: true, unitCost: true, productId: true } },
+      },
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+      take: 300,
     })
-    return NextResponse.json(inventories)
+    return NextResponse.json(inventories.map(({ items, ...inv }) => ({
+      ...inv,
+      summary: inventorySummary(items.map(i => ({
+        productId: i.productId, expectedQty: Number(i.expectedQty), actualQty: Number(i.actualQty), counted: i.counted, unitCost: Number(i.unitCost ?? 0),
+      }))),
+    })))
   } catch (err) {
     return handleApiError(err, 'GET inventories')
   }
 }
 
-// POST /api/stock/inventory
+// POST /api/stock/inventory { warehouseId, scope: FULL|CATEGORY, category?, date?, notes? } → session + photo du stock théorique
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const ctx = await getApiContext(req, body?.tenantId)
+    const body = await readJson(req)
+    const ctx = await getApiContext(req, str(body.tenantId))
     if (ctx instanceof NextResponse) return ctx
-
-    const { warehouseId, reference, date, items, notes } = body
-
-    if (!reference || !items?.length) {
-      return NextResponse.json({ error: 'Référence et articles requis' }, { status: 400 })
-    }
-    await assertBelongsToTenant('warehouse', warehouseId, ctx.tenantId)
-    await assertAllBelongToTenant('product', items.map((i: { productId?: string }) => i.productId), ctx.tenantId)
-
-    const inventory = await prisma.inventory.create({
-      data: {
-        tenantId: ctx.tenantId,
-        warehouseId,
-        reference,
-        date: new Date(date),
-        notes,
-        status: InventoryStatus.DRAFT,
-        items: {
-          create: items.map((i: any) => ({
-            productId: i.productId,
-            expectedQty: i.expectedQty,
-            actualQty: i.actualQty,
-            unitCost: i.unitCost,
-            variance: Number(i.actualQty) - Number(i.expectedQty),
-            notes: i.notes,
-          })),
-        },
-      },
-      include: { items: true },
-    })
+    const data = parseBody(createInventorySchema, body)
+    if (data instanceof NextResponse) return data
+    const inventory = await createInventory(ctx.tenantId, data)
     return NextResponse.json(inventory, { status: 201 })
   } catch (err) {
     return handleApiError(err, 'POST inventory')
   }
 }
 
-// PATCH /api/stock/inventory?id=
+// PATCH /api/stock/inventory?id=  { status: VALIDATED | CANCELLED }  (compatibilité ; préférer /inventory/:id)
 export async function PATCH(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
+    const id = new URL(req.url).searchParams.get('id')
     if (!id) return NextResponse.json({ error: 'id requis' }, { status: 400 })
-
-    const body = await req.json()
-    const ctx = await getApiContext(req, body?.tenantId)
+    const body = await readJson(req)
+    const ctx = await getApiContext(req, str(body.tenantId))
     if (ctx instanceof NextResponse) return ctx
-
-    const { status, warehouseId } = body
-
-    if (status === InventoryStatus.VALIDATED) {
-      const updated = await validateInventory(id, ctx.tenantId, warehouseId)
-      return NextResponse.json(updated)
+    if (body.status === InventoryStatus.VALIDATED) {
+      if (!isStockAdmin(ctx)) return forbidden()
+      return NextResponse.json(await validateInventory(id, ctx.tenantId, { userId: ctx.user.id }))
     }
-
-    await assertBelongsToTenant('warehouse', warehouseId, ctx.tenantId)
-    const updated = await prisma.inventory.update({
-      where: { id, tenantId: ctx.tenantId },
-      data: { status, warehouseId },
-      include: { items: true },
-    })
-    return NextResponse.json(updated)
+    if (body.status === InventoryStatus.CANCELLED) return NextResponse.json(await cancelInventory(id, ctx.tenantId))
+    return NextResponse.json({ error: 'Statut non supporté' }, { status: 400 })
   } catch (err) {
     return handleApiError(err, 'PATCH inventory')
   }

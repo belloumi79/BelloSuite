@@ -1,26 +1,28 @@
-import { unstable_cache } from 'next/cache'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
-import { createProductSchema } from '../app/api/stock/products/route'
+import { createProductSchema } from '@/lib/stock-api'
 import { BusinessError } from '@/lib/errors'
+import { StockMovementType } from '@prisma/client'
+import { applyMovementTx, getDefaultWarehouseId } from '@/services/stock'
+import { assertBelongsToTenant } from '@/lib/tenant-scope'
 
 type CreateProductData = z.infer<typeof createProductSchema>
 
-export const getProducts = unstable_cache(
-  async (tenantId: string) => {
-    return prisma.product.findMany({
-      where: { tenantId },
-      orderBy: { name: 'asc' },
-    })
-  },
-  ['products'],
-  { revalidate: 300 } // Cache for 5 minutes
-)
+/**
+ * Liste des produits du tenant, avec le stock par dépôt.
+ * (Plus de cache : le stock change à chaque mouvement et doit être lu à jour.)
+ */
+export async function getProducts(tenantId: string) {
+  return prisma.product.findMany({
+    where: { tenantId },
+    include: { warehouseStock: { select: { warehouseId: true, stock: true, minStock: true } } },
+    orderBy: { name: 'asc' },
+  })
+}
 
-export async function createProduct(data: CreateProductData) {
-  const { tenantId, code, name, description, category, unit, purchasePrice, salePrice, vatRate, fodec, minStock, initialStock, barcode } = data
+export async function createProduct(data: CreateProductData, userId?: string | null) {
+  const { tenantId, code, name, description, category, unit, purchasePrice, salePrice, vatRate, fodec, minStock, reorderPoint, reorderQty, initialStock, barcode } = data
 
-  // Check for existing code
   const existing = await prisma.product.findUnique({
     where: { tenantId_code: { tenantId, code } },
   })
@@ -28,7 +30,13 @@ export async function createProduct(data: CreateProductData) {
     throw new BusinessError('Code produit déjà utilisé', 409)
   }
 
-  // Atomic transaction: create product + initial stock movement
+  let warehouseId: string | null = null
+  if (initialStock > 0) {
+    await assertBelongsToTenant('warehouse', data.warehouseId, tenantId)
+    warehouseId = data.warehouseId || (await getDefaultWarehouseId(tenantId))
+  }
+
+  // Transaction : création du produit + mouvement d'entrée initial (le stock ne bouge que par mouvement)
   return prisma.$transaction(async (tx) => {
     const product = await tx.product.create({
       data: {
@@ -40,27 +48,33 @@ export async function createProduct(data: CreateProductData) {
         category: category || null,
         unit,
         purchasePrice,
+        averageCost: purchasePrice,
         salePrice,
         vatRate,
         fodec,
         minStock,
-        currentStock: initialStock,
+        reorderPoint,
+        reorderQty,
+        currentStock: 0,
       },
     })
 
     if (initialStock > 0) {
-      await tx.stockMovement.create({
-        data: {
-          tenantId,
-          productId: product.id,
-          type: 'ENTRY',
-          quantity: initialStock,
-          unitPrice: purchasePrice,
-          notes: 'Stock initial',
-        },
+      await applyMovementTx(tx, {
+        tenantId,
+        productId: product.id,
+        warehouseId,
+        type: StockMovementType.ENTRY,
+        quantity: initialStock,
+        unitCost: purchasePrice,
+        reason: 'OPENING',
+        notes: 'Stock initial',
+        sourceType: 'OPENING',
+        createdById: userId ?? null,
+        allowNegative: true,
       })
     }
 
-    return product
+    return tx.product.findUnique({ where: { id: product.id } })
   })
 }

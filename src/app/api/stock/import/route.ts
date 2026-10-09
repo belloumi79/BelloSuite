@@ -2,9 +2,10 @@ import { requireTenant, requireSession, resolveTenantContext } from '@/lib/api-a
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import * as XLSX from 'xlsx'
+import { createProduct } from '@/services/products'
 
 const REQUIRED = ['code', 'name']
-const OPTIONAL = ['barcode','description','category','unit','purchasePrice','salePrice','vatRate','fodec','minStock','initialStock']
+const OPTIONAL = ['barcode','description','category','unit','purchasePrice','salePrice','vatRate','fodec','minStock','reorderPoint','reorderQty','initialStock']
 
 function toBool(v: any): boolean {
   if (v === null || v === undefined) return false
@@ -78,39 +79,25 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        const purchasePrice = toNum(get('purchasePrice'))
-        const initialStock = toNum(get('initialStock'))
-
-        const product = await prisma.product.create({
-          data: {
-            tenantId,
-            code,
-            barcode: String(get('barcode') || '').trim() || null,
-            name,
-            description: String(get('description') || '').trim() || null,
-            category: String(get('category') || '').trim() || null,
-            unit: String(get('unit') || 'unit').trim() || 'unit',
-            purchasePrice,
-            salePrice: toNum(get('salePrice')),
-            vatRate: toNum(get('vatRate'), 19),
-            fodec: toBool(get('fodec')),
-            minStock: toNum(get('minStock')),
-            currentStock: initialStock,
-          },
-        })
-
-        if (initialStock > 0) {
-          await prisma.stockMovement.create({
-            data: {
-              tenantId,
-              productId: product.id,
-              type: 'ENTRY',
-              quantity: initialStock,
-              unitPrice: purchasePrice,
-              notes: 'Import initial',
-            },
-          })
-        }
+        // Création via le service : le stock initial passe par un mouvement d'entrée (dépôt par défaut)
+        await createProduct({
+          tenantId,
+          code,
+          barcode: String(get('barcode') || '').trim() || undefined,
+          name,
+          description: String(get('description') || '').trim() || undefined,
+          category: String(get('category') || '').trim() || undefined,
+          unit: String(get('unit') || 'unit').trim() || 'unit',
+          purchasePrice: Math.max(0, toNum(get('purchasePrice'))),
+          salePrice: Math.max(0, toNum(get('salePrice'))),
+          vatRate: Math.min(100, Math.max(0, toNum(get('vatRate'), 19))),
+          fodec: toBool(get('fodec')),
+          minStock: Math.max(0, toNum(get('minStock'))),
+          reorderPoint: Math.max(0, toNum(get('reorderPoint'))),
+          reorderQty: Math.max(0, toNum(get('reorderQty'))),
+          initialStock: Math.max(0, toNum(get('initialStock'), toNum(get('currentStock')))),
+          warehouseId: null,
+        }, session.id)
 
         log.push({ row: rowNum, code, name, status: 'created' })
       } catch (e: any) {
