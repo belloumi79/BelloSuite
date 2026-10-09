@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getApiContext } from '@/lib/api'
+import { getApiContext, parseBody } from '@/lib/api'
 import { handleApiError } from '@/lib/errors'
 import { readJson, str, isStockAdmin, forbidden } from '@/lib/stock-api'
-import { getPurchaseOrderDetail, updatePurchaseStatus, deletePurchaseDraft } from '@/services/purchase-orders'
+import { getPurchaseOrderDetail, updatePurchaseStatus, deletePurchaseDraft, updatePurchaseDoc, updatePurchaseDocSchema } from '@/services/purchase-orders'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 }
 
 // PATCH { action: 'confirm' | 'cancel' | 'validate' | 'pay' } — l'annulation est réservée aux administrateurs
+// PATCH { action: 'update', supplierId, warehouseId, date, expectedDate, supplierRef, notes, vatRate, items[{ id?, productId, description, quantity, unitPrice }] }
 export async function PATCH(req: NextRequest, { params }: Params) {
   try {
     const { id } = await params
@@ -28,6 +29,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const ctx = await getApiContext(req, str(body.tenantId))
     if (ctx instanceof NextResponse) return ctx
     const action = str(body.action)
+    if (action === 'update') {
+      const data = parseBody(updatePurchaseDocSchema, body)
+      if (data instanceof NextResponse) return data
+      return NextResponse.json(await updatePurchaseDoc(ctx.tenantId, id, data))
+    }
     if (!action || !['confirm', 'cancel', 'validate', 'pay'].includes(action)) return NextResponse.json({ error: 'Action inconnue' }, { status: 400 })
     if (action === 'cancel' && !isStockAdmin(ctx)) return forbidden()
     return NextResponse.json(await updatePurchaseStatus(ctx.tenantId, id, action))
