@@ -103,8 +103,10 @@ export async function POST(request: Request) {
         },
       })
 
-      // Check if stock module is active and only decrement on INVOICE or DELIVERY_NOTE
-      const shouldDecrementStock = (type === 'INVOICE' || type === 'DELIVERY_NOTE');
+      // Pratique tunisienne : seul le bon de livraison (BL) sort la marchandise du stock.
+      // La facture est un document commercial/fiscal : elle peut précéder la livraison
+      // (client qui paie avant d'être livré) et ne touche donc jamais au stock.
+      const shouldDecrementStock = type === 'DELIVERY_NOTE'
 
       if (shouldDecrementStock) {
         const stockModule = await tx.tenantModule.findFirst({
@@ -129,7 +131,7 @@ export async function POST(request: Request) {
               quantity: Number(item.quantity),
               reference: number,
               reason: 'SALE',
-              notes: `${type === 'DELIVERY_NOTE' ? 'Livraison' : 'Vente'}: Doc ${number}`,
+              notes: `Livraison: BL ${number}`,
               sourceType: 'SALE',
               sourceId: invoice.id,
               createdById: ctx.user.id,
