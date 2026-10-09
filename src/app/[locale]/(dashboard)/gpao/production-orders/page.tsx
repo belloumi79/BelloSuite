@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Plus, CheckCircle2, Clock, XCircle, Search, Settings, AlertCircle, PlayCircle, CalendarClock } from "lucide-react";
 import { ProductionOrderFormModal } from "./components/ProductionOrderFormModal";
 import { useSession } from '@/hooks/useSession'
+import { useTranslations, useLocale } from 'next-intl'
 
 interface ProductionOrder {
   id: string;
@@ -16,6 +17,8 @@ interface ProductionOrder {
 }
 
 export default function ProductionOrdersPage() {
+  const t = useTranslations('GPAO.orders')
+  const locale = useLocale()
   const { tenantId } = useSession()
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [productsMap, setProductsMap] = useState<Record<string, {name: string, sku: string}>>({});
@@ -24,10 +27,10 @@ export default function ProductionOrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const statusConfig = {
-    PENDING: { label: "En attente", color: "bg-blue-50 text-blue-700 border-blue-200", icon: Clock },
-    IN_PROGRESS: { label: "En cours", color: "bg-yellow-50 text-yellow-700 border-yellow-200", icon: PlayCircle },
-    COMPLETED: { label: "Terminé", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
-    CANCELLED: { label: "Annulé", color: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
+    PENDING: { label: t('pending'), color: "bg-blue-50 text-blue-700 border-blue-200", icon: Clock },
+    IN_PROGRESS: { label: t('in_progress'), color: "bg-yellow-50 text-yellow-700 border-yellow-200", icon: PlayCircle },
+    COMPLETED: { label: t('completed'), color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle2 },
+    CANCELLED: { label: t('cancelled'), color: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
   };
 
 
@@ -87,15 +90,15 @@ export default function ProductionOrdersPage() {
         <div>
           <h1 className="text-3xl font-black text-stone-900 tracking-tight flex items-center gap-3">
             <Settings className="w-8 h-8 text-emerald-600" />
-            Ordres de Fabrication (OF)
+            {t('title')}
           </h1>
-          <p className="text-stone-500 font-medium text-sm mt-1">Pilotez et suivez vos lancements en production.</p>
+          <p className="text-stone-500 font-medium text-sm mt-1">{t('subtitle')}</p>
         </div>
         <button 
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all shadow-sm shadow-emerald-900/20"
         >
-          <Plus className="w-4 h-4" /> Nouvel OF
+          <Plus className="w-4 h-4" /> {t('new')}
         </button>
       </div>
 
@@ -104,7 +107,7 @@ export default function ProductionOrdersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <input 
             type="text" 
-            placeholder="Rechercher par produit..." 
+            placeholder={t('search')} 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
@@ -118,7 +121,7 @@ export default function ProductionOrdersPage() {
         </div>
       ) : filteredOrders.length === 0 ? (
         <div className="text-center py-24 px-4 bg-white rounded-2xl border border-stone-200 shadow-sm mt-8">
-          <p className="text-stone-500 font-medium">Aucun ordre de fabrication trouvé.</p>
+          <p className="text-stone-500 font-medium">{t('empty')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -142,14 +145,14 @@ export default function ProductionOrdersPage() {
                     {statusStyle.label}
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-stone-400 font-bold tracking-wider uppercase">CIBLE</p>
+                    <p className="text-xs text-stone-400 font-bold tracking-wider uppercase">{t('target')}</p>
                     <p className="font-black text-xl text-stone-800">{order.quantity} x</p>
                   </div>
                 </div>
 
                 <div className="relative z-10 mb-5 flex-1">
                   <h3 className="font-bold text-stone-900 text-lg line-clamp-2 leading-tight mb-2" title={product?.name}>
-                    {product?.name || "Produit Inconnu"}
+                    {product?.name || t('unknown_product')}
                   </h3>
                   <p className="text-xs font-mono font-medium text-stone-500 bg-stone-100 px-2 py-0.5 rounded inline-block">
                     {product?.sku || "N/A"}
@@ -159,11 +162,11 @@ export default function ProductionOrdersPage() {
                 <div className="space-y-2 mb-6 relative z-10 p-3 bg-stone-50 rounded-xl border border-stone-100">
                   <div className="flex items-center gap-2 text-xs font-medium text-stone-600">
                     <Settings className="w-3.5 h-3.5 text-stone-400" />
-                    <span className="truncate">{order.workStation?.name || "Aucun Poste Assigné"}</span>
+                    <span className="truncate">{order.workStation?.name || t('no_station')}</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs font-medium text-stone-600">
                     <CalendarClock className="w-3.5 h-3.5 text-stone-400" />
-                    <span>{order.plannedStartDate ? new Date(order.plannedStartDate).toLocaleDateString() : "Non planifié"}</span>
+                    <span>{order.plannedStartDate ? new Date(order.plannedStartDate).toLocaleDateString(`${locale}-TN`) : t('not_planned')}</span>
                   </div>
                 </div>
 
@@ -172,12 +175,12 @@ export default function ProductionOrdersPage() {
                   <div className="flex bg-stone-100 rounded-lg p-1">
                     {order.status !== "PENDING" && (
                       <button onClick={() => updateStatus(order.id, "PENDING")} className="px-2 py-1 text-xs font-bold text-stone-500 hover:text-blue-600 hover:bg-white rounded transition-all">
-                        Attente
+                        {t('hold')}
                       </button>
                     )}
                     {order.status !== "IN_PROGRESS" && order.status !== "COMPLETED" && (
                       <button onClick={() => updateStatus(order.id, "IN_PROGRESS")} className="px-2 py-1 text-xs font-bold text-stone-500 hover:text-yellow-600 hover:bg-white rounded transition-all">
-                        Lancer
+                        {t('start')}
                       </button>
                     )}
                     {order.status === "IN_PROGRESS" && (
@@ -187,7 +190,7 @@ export default function ProductionOrdersPage() {
                     )}
                   </div>
                   {(order.status === "PENDING" || order.status === "IN_PROGRESS") && (
-                    <button onClick={() => updateStatus(order.id, "CANCELLED")} className="p-1.5 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Annuler l'OF">
+                    <button onClick={() => updateStatus(order.id, "CANCELLED")} className="p-1.5 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title={t('cancel_order')}>
                       <XCircle className="w-5 h-5" />
                     </button>
                   )}

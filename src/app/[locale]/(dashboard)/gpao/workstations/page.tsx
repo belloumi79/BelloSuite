@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { Plus, Factory, MapPin, Activity, Search, Loader2 } from "lucide-react";
 import { WorkstationFormModal } from "./components/WorkstationFormModal";
 import { useSession } from '@/hooks/useSession'
+import { useTranslations } from 'next-intl'
 
 interface Workstation {
   id: string;
@@ -20,6 +21,7 @@ interface Workstation {
 }
 
 export default function WorkstationsPage() {
+  const t = useTranslations('GPAO.workstations')
   const { tenantId } = useSession()
   const [workstations, setWorkstations] = useState<Workstation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,15 +59,15 @@ export default function WorkstationsPage() {
         <div>
           <h1 className="text-3xl font-black text-stone-900 tracking-tight flex items-center gap-3">
             <Factory className="w-8 h-8 text-slate-700" />
-            Postes de Charge
+            {t('title')}
           </h1>
-          <p className="text-stone-500 font-medium text-sm mt-1">Vos lignes de production et centres de frais matériels.</p>
+          <p className="text-stone-500 font-medium text-sm mt-1">{t('subtitle')}</p>
         </div>
         <button 
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-sm transition-all shadow-sm shadow-slate-900/20"
         >
-          <Plus className="w-4 h-4" /> Nouveau Poste
+          <Plus className="w-4 h-4" /> {t('new')}
         </button>
       </div>
 
@@ -74,7 +76,7 @@ export default function WorkstationsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <input 
             type="text" 
-            placeholder="Rechercher un poste..." 
+            placeholder={t('search')} 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-500 outline-none transition-all"
@@ -89,7 +91,7 @@ export default function WorkstationsPage() {
           </div>
         ) : filteredWorkstations.length === 0 ? (
           <div className="text-center py-24 px-4">
-            <p className="text-stone-500 font-medium">Aucun poste de charge trouvé.</p>
+            <p className="text-stone-500 font-medium">{t('empty')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 bg-stone-50/50">
@@ -100,7 +102,7 @@ export default function WorkstationsPage() {
                     <Factory className="w-5 h-5" />
                   </div>
                   <span className={`text-xs font-bold px-2 py-1 rounded border ${ws.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-stone-50 text-stone-500 border-stone-200'}`}>
-                    {ws.isActive ? 'Actif' : 'Inactif'}
+                    {ws.isActive ? t('active') : t('inactive')}
                   </span>
                 </div>
                 
@@ -112,20 +114,20 @@ export default function WorkstationsPage() {
                 <div className="space-y-2 mt-2">
                   <div className="flex items-center gap-2 text-sm text-stone-600 font-medium">
                     <MapPin className="w-4 h-4 text-stone-400" />
-                    <span>{ws.location || "Non défini"}</span>
+                    <span>{ws.location || t('undefined_location')}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-stone-600 font-medium">
                     <Activity className="w-4 h-4 text-stone-400" />
-                    <span>Capacité: {ws.capacity} un/h</span>
+                    <span>{t('capacity', { capacity: ws.capacity })}</span>
                   </div>
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded">
-                    {ws._count?.productionOrders || 0} OFs liés
+                    {t('linked_orders', { count: ws._count?.productionOrders || 0 })}
                   </span>
                   <Link href={`/gpao/workstations/${ws.id}`} className="text-sm font-bold text-slate-700 hover:text-slate-900">
-                    Gérer &rarr;
+                    {t('manage')}
                   </Link>
                 </div>
               </div>
