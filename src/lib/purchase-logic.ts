@@ -101,3 +101,71 @@ export function invoicingSummary(ordered: number, received: number, invoiced: nu
     status: i === 0 ? 'NOT_INVOICED' : i < r ? 'PARTIALLY_INVOICED' : i === r ? 'INVOICED' : 'OVER_INVOICED',
   } as const
 }
+
+// ─── Modification d'une commande / facture ──────────────────
+
+/**
+ * Mode d'édition d'un document d'achat :
+ * - `full` : tout est modifiable (commande DRAFT / CONFIRMED sans réception, facture DRAFT) ;
+ * - `received` : commande partiellement reçue — en-tête modifiable, lignes contraintes par le déjà-reçu ;
+ * - `locked` : lecture seule (commande soldée / annulée, facture validée / payée / annulée).
+ */
+export type PurchaseEditMode = 'full' | 'received' | 'locked'
+export type PurchaseLockReason = 'ORDER_RECEIVED' | 'ORDER_CANCELLED' | 'INVOICE_VALIDATED' | 'INVOICE_PAID' | 'INVOICE_CANCELLED'
+
+export function purchaseEditMode(type: string, status: string, hasReceipts = false): { mode: PurchaseEditMode; reason: PurchaseLockReason | null } {
+  if (purchaseDocType(type) === 'INVOICE') {
+    if (status === 'DRAFT') return { mode: 'full', reason: null }
+    const reason = status === 'PAID' ? 'INVOICE_PAID' : status === 'CANCELLED' ? 'INVOICE_CANCELLED' : 'INVOICE_VALIDATED'
+    return { mode: 'locked', reason }
+  }
+  const s = normalizePoStatus(status)
+  if (s === 'RECEIVED') return { mode: 'locked', reason: 'ORDER_RECEIVED' }
+  if (s === 'CANCELLED') return { mode: 'locked', reason: 'ORDER_CANCELLED' }
+  if (s === 'PARTIALLY_RECEIVED' || hasReceipts) return { mode: 'received', reason: null }
+  return { mode: 'full', reason: null }
+}
+
+/** Ligne existante : quantité reçue nette des retours et présence d'une réception (même brouillon). */
+export interface ExistingOrderLine { id: string; productId: string | null; received: number; hasReceipts: boolean }
+/** Ligne soumise : `id` présent = ligne existante modifiée, absent = nouvelle ligne. */
+export interface EditedOrderLine { id?: string | null; productId?: string | null; quantity: number; unitPrice: number }
+
+export type OrderEditErrorCode = 'LOCKED' | 'NO_LINES' | 'UNKNOWN_LINE' | 'DUPLICATE_LINE' | 'LINE_HAS_RECEIPTS' | 'QTY_BELOW_RECEIVED' | 'PRODUCT_CHANGED'
+export interface OrderEditError { code: OrderEditErrorCode; lineId?: string; min?: number }
+
+/**
+ * Contrôle d'une modification de lignes de commande au regard des réceptions :
+ * une ligne réceptionnée ne peut ni être supprimée, ni changer d'article, ni descendre sous le reçu net.
+ * Les nouvelles lignes sont toujours permises (sauf document verrouillé).
+ */
+export function validateOrderEdit(existing: ExistingOrderLine[], next: EditedOrderLine[], mode: PurchaseEditMode = 'full'): OrderEditError[] {
+  if (mode === 'locked') return [{ code: 'LOCKED' }]
+  const errors: OrderEditError[] = []
+  if (next.length === 0) errors.push({ code: 'NO_LINES' })
+  const byId = new Map(existing.map(l => [l.id, l]))
+  const seen = new Set<string>()
+  for (const l of next) {
+    if (!l.id) continue
+    const ex = byId.get(l.id)
+    if (!ex) { errors.push({ code: 'UNKNOWN_LINE', lineId: l.id }); continue }
+    if (seen.has(l.id)) { errors.push({ code: 'DUPLICATE_LINE', lineId: l.id }); continue }
+    seen.add(l.id)
+    const received = round3(Math.max(0, Number(ex.received)))
+    if (ex.hasReceipts && (l.productId ?? null) !== (ex.productId ?? null)) errors.push({ code: 'PRODUCT_CHANGED', lineId: l.id })
+    if (round3(Number(l.quantity)) < received) errors.push({ code: 'QTY_BELOW_RECEIVED', lineId: l.id, min: received })
+  }
+  for (const ex of existing) {
+    if (!seen.has(ex.id) && ex.hasReceipts) errors.push({ code: 'LINE_HAS_RECEIPTS', lineId: ex.id })
+  }
+  return errors
+}
+
+/** Totaux d'un document d'achat : HT = Σ qté × PU, TVA = HT × taux % (ou montant fourni), TTC. Arrondis au millime. */
+export function purchaseTotals(lines: Array<{ quantity: number; unitPrice: number }>, tax: { rate?: number | null; amount?: number | null }) {
+  const subtotal = round3(lines.reduce((s, l) => s + Number(l.quantity) * Number(l.unitPrice), 0))
+  const taxAmount = tax.rate !== null && tax.rate !== undefined
+    ? round3(subtotal * Number(tax.rate) / 100)
+    : round3(Math.max(0, Number(tax.amount ?? 0)))
+  return { subtotal, taxAmount, total: round3(subtotal + taxAmount) }
+}

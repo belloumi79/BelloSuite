@@ -14,6 +14,7 @@ import { formatReference, round3 } from '@/lib/stock-logic'
 import {
   purchaseDocType, normalizePoStatus, poStatusFromReceipts, canTransitionPo, canReceive,
   findOverReceipts, remainingQty, returnableQty, linesAmount, invoicingSummary,
+  purchaseEditMode, validateOrderEdit, purchaseTotals, type OrderEditError,
 } from '@/lib/purchase-logic'
 
 type Tx = Prisma.TransactionClient
@@ -90,6 +91,26 @@ export const poFromAlertsSchema = z.object({
   /** Lignes choisies ; à défaut, toute la liste « à commander » */
   items: z.array(z.object({ productId: z.string().min(1).max(64), quantity: z.coerce.number().positive() })).max(500).optional(),
 })
+
+/** Modification d'une commande / facture existante (PATCH action 'update'). */
+export const updatePurchaseDocSchema = z.object({
+  supplierId: optId,
+  warehouseId: optId,
+  date: z.string().trim().max(40).optional().nullable(),
+  expectedDate: z.string().trim().max(40).optional().nullable(),
+  supplierRef: optStr,
+  notes: z.string().trim().max(2000).optional().nullable(),
+  /** Taux de TVA en % ; à défaut, le taux implicite actuel du document est conservé */
+  vatRate: z.coerce.number().min(0).max(100).optional().nullable(),
+  items: z.array(z.object({
+    id: optId,
+    productId: optId,
+    description: z.string().trim().min(1, 'description requise').max(300),
+    quantity: z.coerce.number().positive('quantité doit être positive'),
+    unitPrice: z.coerce.number().min(0),
+  })).min(1, 'au moins un article requis').max(500),
+})
+export type UpdatePurchaseDocData = z.infer<typeof updatePurchaseDocSchema>
 
 // ─── Numérotation ───────────────────────────────────────────
 
@@ -252,6 +273,10 @@ export async function getPurchaseOrderDetail(tenantId: string, id: string) {
     : []
   const pMap = new Map(products.map(p => [p.id, p]))
   const rec = po.type === 'ORDER' ? await receivedByLine(prisma, po.id) : new Map()
+  const receiptCounts = po.type === 'ORDER' && po.items.length
+    ? await prisma.goodsReceiptItem.groupBy({ by: ['purchaseOrderItemId'], where: { purchaseOrderItemId: { in: po.items.map(i => i.id) } }, _count: { _all: true } })
+    : []
+  const withReceipts = new Set(receiptCounts.map(c => c.purchaseOrderItemId))
   const lines = po.items.map(i => {
     const r = rec.get(i.id) ?? { received: 0, returned: 0, amount: 0 }
     const net = round3(r.received - r.returned)
@@ -259,14 +284,19 @@ export async function getPurchaseOrderDetail(tenantId: string, id: string) {
       id: i.id, productId: i.productId, product: i.productId ? pMap.get(i.productId) ?? null : null,
       description: i.description, quantity: Number(i.quantity), unitPrice: Number(i.unitPrice), total: Number(i.total),
       received: round3(r.received), returned: round3(r.returned), remaining: remainingQty(Number(i.quantity), net),
+      hasReceipts: withReceipts.has(i.id),
     }
   })
+  const status = po.type === 'ORDER' ? normalizePoStatus(po.status) : po.status
+  const edit = purchaseEditMode(po.type, status, withReceipts.size > 0)
   const receivedAmount = round3(Array.from(rec.values()).reduce((s, r) => s + r.amount, 0))
   const invoicedAmount = round3(po.linkedInvoices.filter(i => i.status !== 'CANCELLED').reduce((s, i) => s + Number(i.subtotal), 0))
   return {
     ...po,
-    status: po.type === 'ORDER' ? normalizePoStatus(po.status) : po.status,
+    status,
     lines,
+    editMode: edit.mode,
+    lockReason: edit.reason,
     summary: po.type === 'ORDER' ? invoicingSummary(Number(po.subtotal), receivedAmount, invoicedAmount) : null,
   }
 }
@@ -289,6 +319,111 @@ export async function updatePurchaseStatus(tenantId: string, id: string, action:
   const tr = map[action]
   if (!tr || !tr.from.includes(po.status)) throw new BusinessError('Transition de statut impossible', 409)
   return prisma.purchaseOrder.update({ where: { id }, data: { status: tr.to } })
+}
+
+function parseDate(v: string | null | undefined, field: string): Date | null {
+  if (!v) return null
+  const d = new Date(v)
+  if (Number.isNaN(d.getTime())) throw new BusinessError(`Date invalide (${field})`, 400)
+  return d
+}
+
+function editErrorMessage(e: OrderEditError, desc: (id?: string) => string): string {
+  switch (e.code) {
+    case 'LOCKED': return 'Document verrouillé : modification impossible'
+    case 'NO_LINES': return 'Au moins une ligne est requise'
+    case 'UNKNOWN_LINE': return 'Ligne de commande invalide'
+    case 'DUPLICATE_LINE': return 'Ligne de commande en double'
+    case 'LINE_HAS_RECEIPTS': return `La ligne « ${desc(e.lineId)} » a déjà été réceptionnée : suppression impossible`
+    case 'PRODUCT_CHANGED': return `La ligne « ${desc(e.lineId)} » a déjà été réceptionnée : l'article ne peut pas être changé`
+    case 'QTY_BELOW_RECEIVED': return `Quantité inférieure au déjà reçu pour « ${desc(e.lineId)} » (minimum ${e.min})`
+  }
+}
+
+/**
+ * Modifie une commande (DRAFT / CONFIRMED / PARTIALLY_RECEIVED, lignes contraintes par le reçu)
+ * ou une facture fournisseur (DRAFT uniquement). Ne touche jamais au stock.
+ * Verrouille la ligne PurchaseOrder (FOR UPDATE) : sérialisé avec les réceptions concurrentes.
+ */
+export async function updatePurchaseDoc(tenantId: string, id: string, data: UpdatePurchaseDocData) {
+  await assertBelongsToTenant('supplier', data.supplierId, tenantId)
+  await assertBelongsToTenant('warehouse', data.warehouseId, tenantId)
+  await assertAllBelongToTenant('product', data.items.map(i => i.productId), tenantId)
+  const date = parseDate(data.date, 'date')
+  const expectedDate = parseDate(data.expectedDate, 'expectedDate')
+
+  return prisma.$transaction(async (tx) => {
+    const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM "PurchaseOrder" WHERE id = ${id} AND "tenantId" = ${tenantId} FOR UPDATE`
+    if (!locked.length) throw new BusinessError('Introuvable', 404)
+    const po = await tx.purchaseOrder.findFirst({
+      where: { id, tenantId },
+      include: { items: { include: { _count: { select: { receiptItems: true } } } } },
+    })
+    if (!po) throw new BusinessError('Introuvable', 404)
+    const isOrder = po.type === 'ORDER'
+    const hasReceipts = isOrder && po.items.some(i => i._count.receiptItems > 0)
+    const { mode, reason } = purchaseEditMode(po.type, po.status, hasReceipts)
+    if (mode === 'locked') {
+      throw new BusinessError(isOrder
+        ? 'Commande soldée ou annulée : modification impossible'
+        : `Facture ${reason === 'INVOICE_PAID' ? 'payée' : reason === 'INVOICE_CANCELLED' ? 'annulée' : 'validée'} : modification impossible (établir un avoir fournisseur)`, 409)
+    }
+    if (isOrder && !data.supplierId) throw new BusinessError('Fournisseur requis', 400)
+    if (hasReceipts && data.supplierId !== po.supplierId) throw new BusinessError('Commande déjà réceptionnée : le fournisseur ne peut pas être changé', 409)
+    if (data.warehouseId) {
+      const wh = await tx.warehouse.findFirst({ where: { id: data.warehouseId, tenantId }, select: { isActive: true } })
+      if (!wh?.isActive && data.warehouseId !== po.warehouseId) throw new BusinessError('Dépôt inactif', 400)
+    }
+    if (!isOrder && po.linkedOrderId && data.supplierId) {
+      const linked = await tx.purchaseOrder.findFirst({ where: { id: po.linkedOrderId, tenantId }, select: { supplierId: true } })
+      if (linked?.supplierId && linked.supplierId !== data.supplierId) throw new BusinessError('Fournisseur différent de celui de la commande', 400)
+    }
+
+    const rec = isOrder ? await receivedByLine(tx, po.id) : new Map<string, { received: number; returned: number; amount: number }>()
+    const existing = po.items.map(i => {
+      const r = rec.get(i.id)
+      return { id: i.id, productId: i.productId, received: r ? r.received - r.returned : 0, hasReceipts: i._count.receiptItems > 0 }
+    })
+    const errors = validateOrderEdit(existing, data.items.map(i => ({ id: i.id || null, productId: i.productId || null, quantity: i.quantity, unitPrice: i.unitPrice })), mode)
+    if (errors.length) {
+      const desc = (lineId?: string) => po.items.find(i => i.id === lineId)?.description ?? '?'
+      throw new BusinessError(editErrorMessage(errors[0], desc), errors[0].code === 'UNKNOWN_LINE' || errors[0].code === 'NO_LINES' ? 400 : 409)
+    }
+
+    const oldSub = Number(po.subtotal)
+    const vatRate = data.vatRate ?? (oldSub > 0 ? round3(Number(po.taxAmount) / oldSub * 100) : Number(po.taxRate))
+    const totals = purchaseTotals(data.items, { rate: vatRate })
+
+    const keep = new Set(data.items.map(i => i.id).filter((v): v is string => !!v))
+    const toDelete = po.items.filter(i => !keep.has(i.id)).map(i => i.id)
+    if (toDelete.length) await tx.purchaseOrderItem.deleteMany({ where: { id: { in: toDelete }, purchaseOrderId: po.id } })
+    for (const it of data.items) {
+      const row = {
+        productId: it.productId || null, description: it.description, quantity: it.quantity, unitPrice: it.unitPrice,
+        total: round3(it.quantity * it.unitPrice),
+      }
+      if (it.id) await tx.purchaseOrderItem.update({ where: { id: it.id }, data: row })
+      else await tx.purchaseOrderItem.create({ data: { ...row, purchaseOrderId: po.id } })
+    }
+    await tx.purchaseOrder.update({
+      where: { id: po.id },
+      data: {
+        supplierId: data.supplierId || null,
+        warehouseId: isOrder ? (data.warehouseId || null) : po.warehouseId,
+        supplierRef: data.supplierRef ?? null,
+        notes: data.notes ?? null,
+        ...(date ? { date } : {}),
+        expectedDate: isOrder ? expectedDate : po.expectedDate,
+        taxRate: vatRate,
+        subtotal: totals.subtotal,
+        taxAmount: totals.taxAmount,
+        total: totals.total,
+      },
+    })
+    // Baisser une quantité au niveau du reçu peut solder la commande
+    if (isOrder) await refreshPoStatus(tx, po.id)
+    return tx.purchaseOrder.findUnique({ where: { id: po.id }, include: { supplier: true, items: true } })
+  }, { timeout: 30000 })
 }
 
 /** Supprime un brouillon sans réception. */
