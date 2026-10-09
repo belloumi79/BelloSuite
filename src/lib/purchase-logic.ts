@@ -63,6 +63,11 @@ export function canTransitionPo(from: string, to: string): boolean {
   return false
 }
 
+/** Une facture fournisseur peut être rattachée à cette commande (pas à une commande annulée). */
+export function canInvoiceOrder(status: string | null | undefined): boolean {
+  return normalizePoStatus(status) !== 'CANCELLED'
+}
+
 /** Une commande peut recevoir des marchandises. */
 export function canReceive(status: string): boolean {
   const s = normalizePoStatus(status)
