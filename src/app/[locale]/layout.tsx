@@ -28,9 +28,9 @@ const ibmPlexArabic = IBM_Plex_Sans_Arabic({
 })
 
 export const metadata: Metadata = {
-  title: 'BelloSuite - ERP Modulaire Tunisien',
-  description: 'Système ERP modulaire pour les entreprises tunisiennes. Gérez votre stock, commerciaux, comptabilité et plus.',
-  keywords: 'ERP, Tunisia, 企业管理, stock management, facturation',
+  title: 'BelloSuite — Stock, ventes et factures dans une seule application',
+  description: 'Gérez votre stock, vos ventes, vos clients et vos factures depuis une seule application pensée pour les PME tunisiennes.',
+  keywords: 'logiciel de facturation Tunisie, gestion de stock, devis, factures, PME tunisienne',
 }
 
 export default async function RootLayout({

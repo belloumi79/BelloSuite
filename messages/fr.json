@@ -761,5 +761,97 @@
         }
       }
     }
+  },
+  "Landing": {
+    "nav": {
+      "demo": "Voir la démo",
+      "login": "Connexion",
+      "trial": "Essayer gratuitement"
+    },
+    "hero": {
+      "kicker": "Pour les PME tunisiennes",
+      "title1": "Gérez votre stock, vos ventes et vos factures",
+      "title2": "depuis une seule application.",
+      "subtitle": "Moins d'Excel. Moins d'erreurs. Plus de temps pour vendre.",
+      "trial": "Essayer gratuitement",
+      "demo": "Voir la démo",
+      "meeting": "Demander une présentation",
+      "note": "Démo ouverte sans inscription · Données d'exemple · Aucun engagement"
+    },
+    "pain": {
+      "title": "Combien vous coûtent vos fichiers Excel ?",
+      "items": [
+        "Un stock que personne ne connaît vraiment avant l'inventaire.",
+        "Des factures oubliées, des relances jamais faites, de la trésorerie qui dort.",
+        "Des clients éparpillés entre un cahier, WhatsApp et trois fichiers Excel.",
+        "Des heures perdues chaque mois à recopier les mêmes chiffres."
+      ],
+      "punch": "Ce n'est pas un problème d'organisation. C'est un problème d'outil."
+    },
+    "solution": {
+      "title": "Ce que vous gagnez dès la première semaine",
+      "subtitle": "Pas de jargon. Des réponses claires aux questions que vous vous posez chaque jour.",
+      "punch": "Résultat : des heures gagnées chaque semaine.",
+      "items": [
+        {
+          "title": "Moins d'Excel",
+          "text": "Produits, clients, ventes et factures au même endroit, accessibles depuis n'importe quel navigateur."
+        },
+        {
+          "title": "Moins d'erreurs",
+          "text": "Prix, TVA, timbre fiscal et totaux calculés automatiquement."
+        },
+        {
+          "title": "Savoir ce que vous avez en stock",
+          "text": "Chaque vente met le stock à jour. Vous êtes alerté avant la rupture."
+        },
+        {
+          "title": "Savoir qui vous doit de l'argent",
+          "text": "Factures impayées et échéances visibles d'un coup d'œil, relances comprises."
+        },
+        {
+          "title": "Des devis et factures en quelques clics",
+          "text": "Du devis à la facture sans rien ressaisir."
+        },
+        {
+          "title": "Retrouver un client en une seconde",
+          "text": "Coordonnées, historique d'achats et factures réunis sur une fiche."
+        }
+      ]
+    },
+    "local": {
+      "title": "Pensé pour la Tunisie. Pas traduit pour elle.",
+      "items": [
+        "TVA 7 %, 13 % et 19 %, timbre fiscal et FODEC",
+        "Retenue à la source et export TEJ",
+        "Préparation à la facture électronique TTN",
+        "Paie avec CNSS et IRPP",
+        "Interface en français, arabe et anglais",
+        "Montants en dinars, à 3 décimales"
+      ]
+    },
+    "modules": {
+      "title": "Commencez simple. Ajoutez le reste plus tard.",
+      "text": "Vous pourrez ajouter la comptabilité, la paie, les RH, la production ou la maintenance lorsque vous en aurez besoin, sans changer de logiciel."
+    },
+    "demo": {
+      "title": "Ne nous croyez pas sur parole. Cliquez.",
+      "text": "Une entreprise de démonstration vous attend : produits, clients, six mois de ventes, factures et graphiques. Aucun compte à créer.",
+      "button": "Ouvrir la démo maintenant"
+    },
+    "final": {
+      "title": "Arrêtez de gérer votre entreprise à moitié.",
+      "text": "Commencez aujourd'hui. Vos premières factures peuvent partir avant ce soir.",
+      "trial": "Essayer gratuitement",
+      "meeting": "Demander une présentation"
+    },
+    "mail": {
+      "subject": "Demande de présentation BelloSuite",
+      "body": "Bonjour, je souhaite une présentation de BelloSuite.\n\nEntreprise :\nTéléphone :\nSecteur :"
+    },
+    "footer": {
+      "rights": "© 2026 BelloSuite. Tous droits réservés.",
+      "contact": "Contact"
+    }
   }
 }

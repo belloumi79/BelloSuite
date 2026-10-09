@@ -761,5 +761,97 @@
         }
       }
     }
+  },
+  "Landing": {
+    "nav": {
+      "demo": "See the demo",
+      "login": "Log in",
+      "trial": "Try it free"
+    },
+    "hero": {
+      "kicker": "For Tunisian SMEs",
+      "title1": "Manage your stock, sales and invoices",
+      "title2": "from one single app.",
+      "subtitle": "Less Excel. Fewer mistakes. More time to sell.",
+      "trial": "Try it free",
+      "demo": "See the demo",
+      "meeting": "Request a presentation",
+      "note": "Demo open without sign-up · Sample data · No commitment"
+    },
+    "pain": {
+      "title": "What are your Excel files really costing you?",
+      "items": [
+        "Stock nobody really knows until inventory day.",
+        "Forgotten invoices, reminders never sent, cash sitting idle.",
+        "Customers scattered across a notebook, WhatsApp and three spreadsheets.",
+        "Hours lost every month copying the same numbers again."
+      ],
+      "punch": "It's not an organisation problem. It's a tool problem."
+    },
+    "solution": {
+      "title": "What you gain from week one",
+      "subtitle": "No jargon. Clear answers to the questions you ask yourself every day.",
+      "punch": "The result: hours saved every week.",
+      "items": [
+        {
+          "title": "Less Excel",
+          "text": "Products, customers, sales and invoices in one place, from any browser."
+        },
+        {
+          "title": "Fewer mistakes",
+          "text": "Prices, VAT, stamp duty and totals calculated automatically."
+        },
+        {
+          "title": "Know what's in stock",
+          "text": "Every sale updates stock. You're alerted before you run out."
+        },
+        {
+          "title": "Know who owes you money",
+          "text": "Unpaid invoices and due dates at a glance, reminders included."
+        },
+        {
+          "title": "Quotes and invoices in a few clicks",
+          "text": "From quote to invoice without retyping anything."
+        },
+        {
+          "title": "Find a customer in a second",
+          "text": "Contact details, purchase history and invoices on one record."
+        }
+      ]
+    },
+    "local": {
+      "title": "Built for Tunisia. Not translated for it.",
+      "items": [
+        "VAT 7%, 13% and 19%, stamp duty and FODEC",
+        "Withholding tax and TEJ export",
+        "Ready for TTN e-invoicing",
+        "Payroll with CNSS and IRPP",
+        "French, Arabic and English interface",
+        "Amounts in dinars, 3 decimals"
+      ]
+    },
+    "modules": {
+      "title": "Start simple. Add the rest later.",
+      "text": "You can add accounting, payroll, HR, production or maintenance when you need them, without changing software."
+    },
+    "demo": {
+      "title": "Don't take our word for it. Click.",
+      "text": "A demo company is waiting: products, customers, six months of sales, invoices and charts. No account needed.",
+      "button": "Open the demo now"
+    },
+    "final": {
+      "title": "Stop running half of your business.",
+      "text": "Start today. Your first invoices can go out tonight.",
+      "trial": "Try it free",
+      "meeting": "Request a presentation"
+    },
+    "mail": {
+      "subject": "BelloSuite presentation request",
+      "body": "Hello, I would like a presentation of BelloSuite.\n\nCompany:\nPhone:\nIndustry:"
+    },
+    "footer": {
+      "rights": "© 2026 BelloSuite. All rights reserved.",
+      "contact": "Contact"
+    }
   }
 }
