@@ -1238,5 +1238,60 @@
   },
   "Search": {
     "placeholder": "Search for a product..."
+  },
+  "POS": {
+    "open_hint": "Open a session to get started",
+    "search_product": "Search for a product...",
+    "open_till": "Open the till",
+    "in_stock": "{count} in stock",
+    "closed": "Till closed",
+    "no_product": "No products",
+    "empty_cart": "Cart is empty",
+    "total_ttc": "Total incl. VAT",
+    "discount_pct": "Discount %",
+    "total_ht": "Total excl. VAT",
+    "close": "Close",
+    "cart": "Cart",
+    "discount": "Discount",
+    "stamp": "Stamp duty",
+    "pay": "Pay",
+    "vat": "VAT",
+    "payment": {
+      "method": "Payment method",
+      "cash_received": "Cash received",
+      "total_due": "Amount due",
+      "confirm": "Confirm",
+      "title": "Payment",
+      "methods": {
+        "BANK_TRANSFER": "Bank transfer",
+        "CASH": "Cash",
+        "CHECK": "Cheque",
+        "CARD": "Card"
+      },
+      "change": "Change",
+      "cancel": "Cancel"
+    },
+    "session": {
+      "subtitle": "Set up your till before you start",
+      "opening_cash": "Opening cash float",
+      "currency": "Tunisian dinar (TND)",
+      "title": "Open a session",
+      "open": "Open the till",
+      "cancel": "Cancel"
+    },
+    "receipt": {
+      "thanks": "Thank you for your visit!",
+      "title": "Receipt",
+      "ticket_no": "Receipt #{number}",
+      "ticket_title": "Receipt {number}",
+      "till_no": "Till #{id}",
+      "total_ttc": "TOTAL INCL. VAT",
+      "print": "Print",
+      "stamp": "Stamp duty",
+      "close": "Close",
+      "paid": "PAID",
+      "vat": "VAT",
+      "ht": "Excl. VAT"
+    }
   }
 }

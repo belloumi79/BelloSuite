@@ -980,7 +980,7 @@
       "regime": {
         "admission": "Admission temporaire",
         "temporaire": "Temporaire",
-        "definitif": "Définitif"
+        "definitif": "Definitif"
       },
       "title": "Export International",
       "hs_code": "Code SH / Tarifaire",
@@ -1001,7 +1001,7 @@
       "col_transport": "Transport",
       "transport": {
         "MARITIME": "Maritime",
-        "AIR": "Aérien",
+        "AIR": "Aerien",
         "ROAD": "Route",
         "RAIL": "Rail"
       },
@@ -1027,11 +1027,11 @@
       },
       "webhook_placeholder": "whsec_xxxxx (reçu lors de l'inscription)",
       "features": {
-        "stats_dashboard": "Tableau de bord statistiques",
+        "stats_dashboard": "Dashboard stats",
         "webhook_realtime": "Webhook temps réel",
         "signed_pdf_included": "PDF signé inclus",
         "api_rest_edi": "API REST EDI",
-        "web_portal": "Portail Web",
+        "web_portal": "Portal Web",
         "signed_pdf": "PDF signé",
         "api_rest": "API REST",
         "sftp": "SFTP"
@@ -1238,5 +1238,60 @@
   },
   "Search": {
     "placeholder": "Rechercher un produit..."
+  },
+  "POS": {
+    "open_hint": "Ouvrez une session pour commencer",
+    "search_product": "Rechercher un produit...",
+    "open_till": "Ouvrir la Caisse",
+    "in_stock": "{count} en stock",
+    "closed": "Caisse Fermee",
+    "no_product": "Aucun produit",
+    "empty_cart": "Panier vide",
+    "total_ttc": "Total TTC",
+    "discount_pct": "Remise %",
+    "total_ht": "Total HT",
+    "close": "Fermer",
+    "cart": "Panier",
+    "discount": "Remise",
+    "stamp": "Timbre",
+    "pay": "Payer",
+    "vat": "TVA",
+    "payment": {
+      "method": "Mode de Paiement",
+      "cash_received": "Espèces Reçues",
+      "total_due": "Total à Payer",
+      "confirm": "Confirmer",
+      "title": "Paiement",
+      "methods": {
+        "BANK_TRANSFER": "Virement",
+        "CASH": "Espèces",
+        "CHECK": "Chèque",
+        "CARD": "Carte"
+      },
+      "change": "Monnaie",
+      "cancel": "Annuler"
+    },
+    "session": {
+      "subtitle": "Initialisez votre caisse avant de commencer",
+      "opening_cash": "Fond de Caisse Initial",
+      "currency": "Dinar Tunisien (TND)",
+      "title": "Ouvrir une Session",
+      "open": "Ouvrir la Caisse",
+      "cancel": "Annuler"
+    },
+    "receipt": {
+      "thanks": "Merci de votre visite !",
+      "title": "Ticket de Caisse",
+      "ticket_no": "Ticket #{number}",
+      "ticket_title": "Ticket {number}",
+      "till_no": "Caisse #{id}",
+      "total_ttc": "TOTAL TTC",
+      "print": "Imprimer",
+      "stamp": "Timbre",
+      "close": "Fermer",
+      "paid": "PAYÉ",
+      "vat": "TVA",
+      "ht": "HT"
+    }
   }
 }
