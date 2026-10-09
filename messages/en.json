@@ -89,7 +89,10 @@
     "logout": "Logout",
     "unsubscribed": "Not Subscribed",
     "locked_title": "Module {name} — Not Activated",
-    "smart_erp": "Smart ERP"
+    "smart_erp": "Smart ERP",
+    "toggle": "Collapse / expand menu",
+    "pos": "Point of sale",
+    "avatar_alt": "Avatar"
   },
   "Common": {
     "dashboard": "Dashboard"
@@ -890,5 +893,49 @@
       "rights": "© 2026 BelloSuite. All rights reserved.",
       "contact": "Contact"
     }
+  },
+  "Accounting": {
+    "tabs": {
+      "entries": "Entries (draft)",
+      "chart": "Chart of accounts",
+      "ledger": "General ledger",
+      "periods": "Fiscal years",
+      "journals": "Journals"
+    }
+  },
+  "Notifications": {
+    "enable_desc": "Get real-time alerts.",
+    "enable_title": "Enable notifications",
+    "empty": "No notifications",
+    "title": "Notifications",
+    "no_thanks": "No thanks",
+    "enable": "Enable",
+    "read": "Read",
+    "allow_desc": "Get an alert for due dates, payments or anomalies.",
+    "empty_recent": "No recent notifications.",
+    "allow_title": "Allow notifications",
+    "show": "Show notifications",
+    "clear_all": "Clear all",
+    "mark_read": "Mark as read",
+    "later": "Later",
+    "allow": "Allow",
+    "unread_count": "{count} unread"
+  },
+  "Cookies": {
+    "intro": "We use cookies to improve your experience, analyse traffic and personalise content.",
+    "necessary_desc": "Cookies essential for the site to work. Always active.",
+    "analytics_desc": "Help us understand how visitors use the site.",
+    "question": "🍪 Do you accept the use of cookies?",
+    "marketing_desc": "Used to show relevant ads.",
+    "functional_desc": "Personalise your experience and preferences.",
+    "consent_given": "Consent given on {date}",
+    "hide_details": "Hide details",
+    "learn_more": "Learn more",
+    "functional": "Functional",
+    "necessary": "Necessary",
+    "analytics": "Analytics",
+    "marketing": "Marketing",
+    "accept": "Accept",
+    "reject": "Decline"
   }
 }

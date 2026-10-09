@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useNotifications } from '@/hooks/useNotifications'
 import { Bell as BellIcon, X as CloseIcon } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
 
 const priorityColor: Record<string, string> = {
   info: 'bg-blue-500',
@@ -12,6 +13,8 @@ const priorityColor: Record<string, string> = {
 }
 
 export function NotificationBell() {
+  const t = useTranslations('Notifications')
+  const locale = useLocale()
   const {
     notifications,
     unreadCount,
@@ -28,35 +31,35 @@ export function NotificationBell() {
       <button
         onClick={() => setOpen(prev => !prev)}
         className="relative flex items-center justify-center w-10 h-10 rounded-full hover:bg-zinc-800 transition-colors"
-        aria-label="Notifications"
+        aria-label={t('title')}
       >
         <BellIcon className="w-5 h-5 text-zinc-400" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+          <span className="absolute top-1 end-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {showPermissionBanner && (
-        <div className="absolute right-0 mt-2 w-72 p-3 bg-zinc-900 rounded-2xl border border-blue-500 shadow-xl text-xs">
+        <div className="absolute end-0 mt-2 w-72 p-3 bg-zinc-900 rounded-2xl border border-blue-500 shadow-xl text-xs">
           <div className="flex items-start gap-2">
             <BellIcon className="w-4 h-4 text-blue-400 mt-0.5" />
             <div className="flex-1">
-              <p className="font-semibold text-white">Activer les notifications</p>
-              <p className="text-zinc-400 mt-0.5">Recevez des alertes en temps réel.</p>
+              <p className="font-semibold text-white">{t('enable_title')}</p>
+              <p className="text-zinc-400 mt-0.5">{t('enable_desc')}</p>
               <div className="mt-2 flex justify-end gap-2">
                 <button
                   className="px-3 py-1 text-xs text-zinc-300 border border-zinc-700 rounded-xl"
                   onClick={dismissPermissionBanner}
                 >
-                  Non merci
+                  {t('no_thanks')}
                 </button>
                 <button
                   className="px-3 py-1 text-xs font-semibold text-white bg-blue-600 rounded-xl"
                   onClick={requestPermission}
                 >
-                  Activer
+                  {t('enable')}
                 </button>
               </div>
             </div>
@@ -67,17 +70,17 @@ export function NotificationBell() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-2 w-80 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-2xl z-50">
+          <div className="absolute end-0 mt-2 w-80 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-2xl z-50">
             <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-950">
-              <span className="text-sm font-semibold text-white">Notifications</span>
+              <span className="text-sm font-semibold text-white">{t('title')}</span>
               {unreadCount > 0 && (
-                <span className="text-xs text-zinc-500">{unreadCount} non lue(s)</span>
+                <span className="text-xs text-zinc-500">{t('unread_count', { count: unreadCount })}</span>
               )}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 && (
                 <div className="p-4 text-xs text-zinc-400 text-center">
-                  Aucune notification
+                  {t('empty')}
                 </div>
               )}
               {notifications.map(notif => (
@@ -92,7 +95,7 @@ export function NotificationBell() {
                     <p className="text-[11px] text-zinc-400">{notif.message}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-zinc-500">
-                        {new Date(notif.timestamp).toLocaleString('fr-TN', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(notif.timestamp).toLocaleString(`${locale}-TN`, { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       <div className="flex gap-2">
                         {!notif.read && (
@@ -100,7 +103,7 @@ export function NotificationBell() {
                             className="text-[10px] text-blue-400"
                             onClick={() => markRead(notif.id)}
                           >
-                            Lu
+                            {t('read')}
                           </button>
                         )}
                         <button

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useNotifications } from '@/hooks/useNotifications'
 import { Bell as BellIcon, X as CloseIcon } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
 
 const priorityColor: Record<string, string> = {
   info: 'bg-blue-500 text-white',
@@ -12,6 +13,8 @@ const priorityColor: Record<string, string> = {
 }
 
 export function NotificationCenter() {
+  const t = useTranslations('Notifications')
+  const locale = useLocale()
   const {
     notifications,
     unreadCount,
@@ -26,15 +29,15 @@ export function NotificationCenter() {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-50">
+    <div className="fixed bottom-6 end-6 flex flex-col items-end gap-3 z-50">
       <button
         onClick={() => setOpen(prev => !prev)}
         className="relative flex items-center justify-center w-14 h-14 rounded-full bg-zinc-800 border border-blue-500 text-white shadow-lg hover:scale-105 transition-transform"
-        aria-label="Afficher les notifications"
+        aria-label={t('show')}
       >
         <BellIcon className="w-6 h-6" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
+          <span className="absolute top-1 end-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
             {unreadCount}
           </span>
         )}
@@ -42,20 +45,20 @@ export function NotificationCenter() {
 
       {showPermissionBanner && (
         <div className="w-80 p-4 bg-zinc-900 rounded-2xl border border-blue-500 shadow-xl text-xs text-zinc-200">
-          <p className="font-semibold">Autorisez les notifications</p>
-          <p className="text-zinc-400 mt-1">Recevez une alerte en cas d'échéance, paiement ou anomalie.</p>
+          <p className="font-semibold">{t('allow_title')}</p>
+          <p className="text-zinc-400 mt-1">{t('allow_desc')}</p>
           <div className="mt-3 flex justify-end gap-2">
             <button
               className="px-3 py-1 text-xs font-medium text-zinc-300 border border-zinc-700 rounded-xl"
               onClick={dismissPermissionBanner}
             >
-              Plus tard
+              {t('later')}
             </button>
             <button
               className="px-3 py-1 text-xs font-semibold text-white bg-blue-600 rounded-xl"
               onClick={requestPermission}
             >
-              Autoriser
+              {t('allow')}
             </button>
           </div>
         </div>
@@ -69,12 +72,12 @@ export function NotificationCenter() {
               className="flex items-center gap-1 text-xs text-zinc-400"
               onClick={clearAll}
             >
-              Tout effacer
+              {t('clear_all')}
             </button>
           </div>
           <div className="max-h-[430px] overflow-y-auto">
             {notifications.length === 0 && (
-              <div className="p-4 text-xs text-zinc-400">Aucune notification récente.</div>
+              <div className="p-4 text-xs text-zinc-400">{t('empty_recent')}</div>
             )}
             {notifications.map(notif => (
               <div key={notif.id} className="flex gap-3 px-4 py-3 border-b border-zinc-800 last:border-b-0">
@@ -93,13 +96,13 @@ export function NotificationCenter() {
                   </div>
                   <p className="text-xs text-zinc-400">{notif.message}</p>
                   <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                    <span>{new Date(notif.timestamp).toLocaleString('fr-TN')}</span>
+                    <span>{new Date(notif.timestamp).toLocaleString(`${locale}-TN`)}</span>
                     {!notif.read && (
                       <button
                         className="text-blue-400"
                         onClick={() => markRead(notif.id)}
                       >
-                        Marquer lu
+                        {t('mark_read')}
                       </button>
                     )}
                   </div>

@@ -89,7 +89,10 @@
     "logout": "Déconnexion",
     "unsubscribed": "Non abonné",
     "locked_title": "Module {name} — Non activé",
-    "smart_erp": "Smart ERP"
+    "smart_erp": "Smart ERP",
+    "toggle": "Réduire / déplier le menu",
+    "pos": "Point de vente",
+    "avatar_alt": "Avatar"
   },
   "Common": {
     "dashboard": "Tableau de Bord"
@@ -890,5 +893,49 @@
       "rights": "© 2026 BelloSuite. Tous droits réservés.",
       "contact": "Contact"
     }
+  },
+  "Accounting": {
+    "tabs": {
+      "entries": "Écritures (Brouillard)",
+      "chart": "Plan Comptable",
+      "ledger": "Grand Livre",
+      "periods": "Exercices",
+      "journals": "Journaux"
+    }
+  },
+  "Notifications": {
+    "enable_desc": "Recevez des alertes en temps réel.",
+    "enable_title": "Activer les notifications",
+    "empty": "Aucune notification",
+    "title": "Notifications",
+    "no_thanks": "Non merci",
+    "enable": "Activer",
+    "read": "Lu",
+    "allow_desc": "Recevez une alerte en cas d'échéance, paiement ou anomalie.",
+    "empty_recent": "Aucune notification récente.",
+    "allow_title": "Autorisez les notifications",
+    "show": "Afficher les notifications",
+    "clear_all": "Tout effacer",
+    "mark_read": "Marquer lu",
+    "later": "Plus tard",
+    "allow": "Autoriser",
+    "unread_count": "{count} non lue(s)"
+  },
+  "Cookies": {
+    "intro": "Nous utilisons des cookies pour améliorer votre expérience, analyser le trafic et personnaliser le contenu.",
+    "necessary_desc": "Cookies essentiels au fonctionnement du site. Toujours actifs.",
+    "analytics_desc": "Aident à comprendre comment les visiteurs utilisent le site.",
+    "question": "🍪 Acceptez-vous de nous laisser utiliser des cookies ?",
+    "marketing_desc": "Utilisés pour afficher des publicités pertinentes.",
+    "functional_desc": "Personnalisent votre expérience et préférences.",
+    "consent_given": "Consentement donné le {date}",
+    "hide_details": "Masquer les détails",
+    "learn_more": "En savoir plus",
+    "functional": "Fonctionnels",
+    "necessary": "Nécessaires",
+    "analytics": "Analytiques",
+    "marketing": "Marketing",
+    "accept": "Accepter",
+    "reject": "Refuser"
   }
 }
