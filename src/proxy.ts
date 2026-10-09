@@ -117,6 +117,10 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // Langue de la requête pour next-intl (pas de middleware next-intl : sans cet en-tête,
+  // getRequestConfig retombe sur 'fr' et /ar, /en s'affichaient en français).
+  requestHeaders.set('X-NEXT-INTL-LOCALE', locale)
+
   // 2) Les routes reçoivent uniquement les en-têtes dérivés de la session vérifiée.
   return NextResponse.next({ request: { headers: requestHeaders } })
 }

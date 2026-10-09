@@ -4,7 +4,7 @@ import { Cairo, Inter, IBM_Plex_Sans_Arabic } from 'next/font/google'
 import { CookieConsentBanner } from '@/components/ui/CookieConsentBanner'
 import { NotificationCenter } from '@/components/ui/NotificationCenter'
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 
@@ -49,14 +49,15 @@ export default async function RootLayout({
 
   // Providing all messages to the client
   // side is the easiest way to get started
-  const messages = await getMessages();
+  setRequestLocale(locale);
+  const messages = await getMessages({ locale });
   
   const isRtl = locale === 'ar';
 
   return (
     <html lang={locale} dir={isRtl ? 'rtl' : 'ltr'} className={`${cairo.variable} ${inter.variable} ${ibmPlexArabic.variable} h-full`}>
       <body className={`h-full antialiased bg-zinc-50 text-zinc-900 ${isRtl ? 'font-arabic' : 'font-sans'}`}>
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
           <CookieConsentBanner />
           <NotificationCenter />
