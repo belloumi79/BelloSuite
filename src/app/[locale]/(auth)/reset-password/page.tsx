@@ -7,10 +7,11 @@ import gsap from 'gsap'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { supabase as ssrBrowserClient } from '@/lib/supabase/client'
 import { parseRecoveryParams } from '@/lib/supabase/recovery'
-
+import { useTranslations } from 'next-intl'
 type LinkStatus = 'checking' | 'ready' | 'invalid'
 
 function ResetPasswordForm() {
+  const t = useTranslations('Auth.reset')
   const router = useRouter()
   const params = useParams<{ locale?: string }>()
   const locale = params?.locale && ['fr', 'ar', 'en'].includes(params.locale) ? params.locale : 'fr'
@@ -77,13 +78,13 @@ function ResetPasswordForm() {
     setError('')
 
     if (password !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas')
+      setError(t('mismatch'))
       gsap.fromTo('.rp-error', { x: -15, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'back.out(1.7)' })
       return
     }
 
     if (password.length < 8) {
-      setError('Le mot de passe doit contenir au moins 8 caractères')
+      setError(t('min_length'))
       gsap.fromTo('.rp-error', { x: -15, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'back.out(1.7)' })
       return
     }
@@ -93,11 +94,11 @@ function ResetPasswordForm() {
 
     try {
       const client = clientRef.current
-      if (!client) throw new Error('Lien de réinitialisation invalide ou expiré')
+      if (!client) throw new Error(t('invalid_link_error'))
 
       // Mot de passe géré uniquement par Supabase Auth (plus aucune écriture de User.password)
       const { error: updateError } = await client.auth.updateUser({ password })
-      if (updateError) throw new Error(updateError.message || 'Erreur')
+      if (updateError) throw new Error(updateError.message || t('error'))
       await client.auth.signOut({ scope: 'local' }).catch(() => {})
 
       setSuccess(true)
@@ -109,7 +110,7 @@ function ResetPasswordForm() {
         onComplete: () => router.push(`/${locale}/login?reset=success`)
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur serveur')
+      setError(err instanceof Error ? err.message : t('server_error'))
       gsap.fromTo('.rp-error', { x: -15, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'back.out(1.7)' })
       setLoading(false)
     }
@@ -125,13 +126,13 @@ function ResetPasswordForm() {
             BelloSuite
           </h1>
           <p className="text-slate-400 mt-3 text-sm tracking-wide">
-            Nouveau mot de passe
+            {t('title')}
           </p>
         </div>
 
         <div className="rp-card bg-slate-800/80 backdrop-blur-xl rounded-3xl p-8 border border-slate-700/50 shadow-2xl shadow-emerald-500/5">
           {linkStatus === 'checking' ? (
-            <p className="text-center text-slate-400 py-8">Vérification du lien…</p>
+            <p className="text-center text-slate-400 py-8">{t('checking')}</p>
           ) : linkStatus === 'invalid' ? (
             <div className="text-center">
               <div className="relative w-20 h-20 mx-auto mb-6">
@@ -141,14 +142,14 @@ function ResetPasswordForm() {
                 </div>
               </div>
 
-              <h2 className="text-2xl font-bold text-white mb-3">Lien invalide</h2>
+              <h2 className="text-2xl font-bold text-white mb-3">{t('invalid_link')}</h2>
               <p className="text-slate-400 mb-8 leading-relaxed">
-                Ce lien de réinitialisation est invalide ou a expiré.
+                {t('invalid_link_desc')}
               </p>
               {linkError && <p className="text-slate-500 text-xs -mt-6 mb-8">{linkError}</p>}
 
               <Link href={`/${locale}/forgot-password`} className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
-                <span>Demander un nouveau lien</span>
+                <span>{t('request_new')}</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
@@ -159,7 +160,7 @@ function ResetPasswordForm() {
               <div className="flex items-start gap-3 mb-6 p-4 bg-slate-900/50 rounded-xl border border-slate-700/30">
                 <span className="text-2xl">🔐</span>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  Définissez votre nouveau mot de passe. Assurez-vous qu'il contient au moins 8 caractères.
+                  {t('intro')}
                 </p>
               </div>
 
@@ -173,7 +174,7 @@ function ResetPasswordForm() {
               <div className="mb-4">
                 <label className="block text-slate-300 text-sm font-medium mb-2 flex items-center gap-2">
                   <span className="w-1 h-1 rounded-full bg-emerald-400" />
-                  Nouveau mot de passe
+                  {t('title')}
                 </label>
                 <input
                   type="password"
@@ -189,7 +190,7 @@ function ResetPasswordForm() {
               <div className="mb-6">
                 <label className="block text-slate-300 text-sm font-medium mb-2 flex items-center gap-2">
                   <span className="w-1 h-1 rounded-full bg-amber-400" />
-                  Confirmer le mot de passe
+                  {t('confirm')}
                 </label>
                 <input
                   type="password"
@@ -214,12 +215,12 @@ function ResetPasswordForm() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      Mise à jour...
+                      {t('updating')}
                     </>
                   ) : (
                     <>
-                      Définir le mot de passe
-                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {t('submit')}
+                      <svg className="w-4 h-4 rtl:rotate-180 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>
                     </>
@@ -230,10 +231,10 @@ function ResetPasswordForm() {
 
               <div className="text-center mt-6">
                 <Link href={`/${locale}/login`} className="text-sm text-slate-400 hover:text-emerald-400 transition-colors inline-flex items-center gap-1 group">
-                  <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 rtl:rotate-180 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                   </svg>
-                  Retour à la connexion
+                  {t('back_to_login')}
                 </Link>
               </div>
             </form>

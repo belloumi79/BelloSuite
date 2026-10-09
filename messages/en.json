@@ -128,7 +128,44 @@
       "email_required": "Please enter your email address",
       "password_min": "Password must contain at least 6 characters",
       "password_mismatch": "Passwords do not match",
-      "generic_error": "Error creating account"
+      "generic_error": "Error creating account",
+      "connection_error": "Connection error",
+      "auth_error": "Authentication error: {error}",
+      "error_prefix": "Error: {error}"
+    },
+    "forgot": {
+      "intro": "Enter your email address. You will receive a link to reset your password.",
+      "email_sent_desc": "If an account exists with this address, you will receive a reset link.",
+      "subtitle": "Password reset",
+      "sent_subtitle": "Instructions sent!",
+      "back_to_login": "Back to sign in",
+      "sending": "Sending...",
+      "send_link": "Send link",
+      "server_error": "Server error",
+      "email_sent": "Email sent!",
+      "email_label": "Email address",
+      "error": "Error"
+    },
+    "reset": {
+      "intro": "Set your new password. Make sure it is at least 8 characters long.",
+      "invalid_link_desc": "This reset link is invalid or has expired.",
+      "min_length": "Password must be at least 8 characters long",
+      "invalid_link_error": "Invalid or expired reset link",
+      "mismatch": "Passwords do not match",
+      "confirm": "Confirm password",
+      "request_new": "Request a new link",
+      "submit": "Set password",
+      "checking": "Checking the link…",
+      "back_to_login": "Back to sign in",
+      "title": "New password",
+      "server_error": "Server error",
+      "updating": "Updating...",
+      "invalid_link": "Invalid link",
+      "error": "Error"
+    },
+    "confirm": {
+      "redirecting": "Redirecting...",
+      "title": "Confirmation"
     }
   },
   "Dashboard": {

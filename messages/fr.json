@@ -128,7 +128,44 @@
       "email_required": "Veuillez entrer votre adresse email",
       "password_min": "Le mot de passe doit contenir au moins 6 caractères",
       "password_mismatch": "Les mots de passe ne correspondent pas",
-      "generic_error": "Erreur lors de la création du compte"
+      "generic_error": "Erreur lors de la création du compte",
+      "connection_error": "Erreur de connexion",
+      "auth_error": "Erreur d'authentification : {error}",
+      "error_prefix": "Erreur : {error}"
+    },
+    "forgot": {
+      "intro": "Entrez votre adresse email. Vous recevrez un lien pour réinitialiser votre mot de passe.",
+      "email_sent_desc": "Si un compte existe avec cette adresse, vous recevrez un lien de réinitialisation.",
+      "subtitle": "Réinitialisation du mot de passe",
+      "sent_subtitle": "Instructions envoyées !",
+      "back_to_login": "Retour à la connexion",
+      "sending": "Envoi en cours...",
+      "send_link": "Envoyer le lien",
+      "server_error": "Erreur serveur",
+      "email_sent": "Email envoyé !",
+      "email_label": "Adresse email",
+      "error": "Erreur"
+    },
+    "reset": {
+      "intro": "Définissez votre nouveau mot de passe. Assurez-vous qu'il contient au moins 8 caractères.",
+      "invalid_link_desc": "Ce lien de réinitialisation est invalide ou a expiré.",
+      "min_length": "Le mot de passe doit contenir au moins 8 caractères",
+      "invalid_link_error": "Lien de réinitialisation invalide ou expiré",
+      "mismatch": "Les mots de passe ne correspondent pas",
+      "confirm": "Confirmer le mot de passe",
+      "request_new": "Demander un nouveau lien",
+      "submit": "Définir le mot de passe",
+      "checking": "Vérification du lien…",
+      "back_to_login": "Retour à la connexion",
+      "title": "Nouveau mot de passe",
+      "server_error": "Erreur serveur",
+      "updating": "Mise à jour...",
+      "invalid_link": "Lien invalide",
+      "error": "Erreur"
+    },
+    "confirm": {
+      "redirecting": "Redirection...",
+      "title": "Confirmation"
     }
   },
   "Dashboard": {

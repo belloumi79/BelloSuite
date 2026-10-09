@@ -20,7 +20,8 @@
     "db:migrate": "prisma migrate dev --schema ./prisma/schema",
     "db:studio": "prisma studio --schema ./prisma/schema",
     "db:seed": "npx tsx prisma/seed.ts",
-    "db:seed-demo": "npx tsx prisma/seed-demo.ts"
+    "db:seed-demo": "npx tsx prisma/seed-demo.ts",
+    "i18n:check": "node scripts/check-i18n-keys.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

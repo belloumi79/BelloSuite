@@ -19,7 +19,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (errorParam) {
-      alert('Authentication Error: ' + errorParam + (detailsParam ? 'Details: ' + detailsParam : ''))
+      alert(t('errors.auth_error', { error: errorParam + (detailsParam ? ' — ' + detailsParam : '') }))
     }
   }, [errorParam, detailsParam])
 
@@ -38,7 +38,7 @@ export default function LoginPage() {
         alert(data.error || t('invalid_credentials'))
       }
     } catch (err) {
-      alert('Erreur: ' + err)
+      alert(t('errors.error_prefix', { error: String(err) }))
     } finally {
       setLoading(false)
     }

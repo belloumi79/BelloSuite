@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import gsap from 'gsap'
-
+import { useTranslations } from 'next-intl'
 export default function ForgotPasswordPage() {
+  const t = useTranslations('Auth.forgot')
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
@@ -32,10 +33,10 @@ export default function ForgotPasswordPage() {
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      if (!res.ok) throw new Error(data.error || t('error'))
       setSent(true)
     } catch (err: any) {
-      setError(err.message || 'Erreur serveur')
+      setError(err.message || t('server_error'))
       setLoading(false)
     }
   }
@@ -50,7 +51,7 @@ export default function ForgotPasswordPage() {
             BelloSuite
           </h1>
           <p className="fp-subtitle text-slate-400 mt-3 text-sm tracking-wide">
-            {sent ? 'Instructions envoyées !' : 'Réinitialisation du mot de passe'}
+            {sent ? t('sent_subtitle') : t('subtitle')}
           </p>
         </div>
 
@@ -66,16 +67,16 @@ export default function ForgotPasswordPage() {
                 </div>
               </div>
 
-              <h2 className="text-2xl font-bold text-white mb-3">Email envoyé !</h2>
+              <h2 className="text-2xl font-bold text-white mb-3">{t('email_sent')}</h2>
               <p className="text-slate-400 mb-8 leading-relaxed">
-                Si un compte existe avec cette adresse, vous recevrez un lien de réinitialisation.
+                {t('email_sent_desc')}
               </p>
 
               <Link href="/login" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors group">
-                <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 rtl:rotate-180 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Retour à la connexion
+                {t('back_to_login')}
               </Link>
             </div>
           ) : (
@@ -83,7 +84,7 @@ export default function ForgotPasswordPage() {
               <div className="flex items-start gap-3 mb-6 p-4 bg-slate-900/50 rounded-xl border border-slate-700/30">
                 <span className="text-2xl">🔑</span>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  Entrez votre adresse email. Vous recevrez un lien pour réinitialiser votre mot de passe.
+                  {t('intro')}
                 </p>
               </div>
 
@@ -98,7 +99,7 @@ export default function ForgotPasswordPage() {
                 <div className="mb-6">
                   <label className="block text-slate-300 text-sm font-medium mb-2 flex items-center gap-2">
                     <span className="w-1 h-1 rounded-full bg-amber-400" />
-                    Adresse email
+                    {t('email_label')}
                   </label>
                   <input
                     type="email"
@@ -122,12 +123,12 @@ export default function ForgotPasswordPage() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
-                        Envoi en cours...
+                        {t('sending')}
                       </>
                     ) : (
                       <>
-                        Envoyer le lien
-                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {t('send_link')}
+                        <svg className="w-4 h-4 rtl:rotate-180 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
                       </>
@@ -138,10 +139,10 @@ export default function ForgotPasswordPage() {
 
                 <div className="text-center">
                   <Link href="/login" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors inline-flex items-center gap-1 group">
-                    <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 rtl:rotate-180 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    Retour à la connexion
+                    {t('back_to_login')}
                   </Link>
                 </div>
               </form>
