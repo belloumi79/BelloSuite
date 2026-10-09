@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Settings2, Plus, Save, BookOpen, AlertTriangle } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
+import { useTranslations } from 'next-intl'
 
 interface Journal {
   id: string
@@ -13,6 +14,7 @@ interface Journal {
 }
 
 export default function JournalsPage() {
+  const t = useTranslations('Accounting.journals')
   const { tenantId } = useSession()
   const [journals, setJournals] = useState<Journal[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,7 +53,7 @@ export default function JournalsPage() {
         setFormData({ code: '', name: '', type: 'GENERAL' })
         fetchJournals(tenantId)
       } else {
-        alert('Erreur lors de la création')
+        alert(t('create_error'))
       }
     } catch (err) {
       console.error(err)
@@ -63,8 +65,8 @@ export default function JournalsPage() {
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-black text-white tracking-tighter">Journaux Auxiliaires</h1>
-        <p className="text-zinc-400 mt-2 text-sm">Gérez vos journaux de saisie pour ventiler vos écritures (Achats, Ventes, BQ, OD...)</p>
+        <h1 className="text-3xl font-black text-white tracking-tighter">{t('title')}</h1>
+        <p className="text-zinc-400 mt-2 text-sm">{t('subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -74,12 +76,12 @@ export default function JournalsPage() {
             <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center text-teal-500">
               <Plus className="w-5 h-5" />
             </div>
-            <h2 className="text-lg font-bold text-white">Nouveau Journal</h2>
+            <h2 className="text-lg font-bold text-white">{t('new')}</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Code du Journal (Ex: ACH)</label>
+              <label className="block text-xs font-medium text-zinc-400 mb-1">{t('code')}</label>
               <input 
                 type="text" 
                 maxLength={5}
@@ -90,7 +92,7 @@ export default function JournalsPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Nom (Ex: Journal des Achats)</label>
+              <label className="block text-xs font-medium text-zinc-400 mb-1">{t('name')}</label>
               <input 
                 type="text" 
                 required
@@ -100,17 +102,17 @@ export default function JournalsPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">Type de Journal</label>
+              <label className="block text-xs font-medium text-zinc-400 mb-1">{t('type')}</label>
               <select 
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-white focus:border-teal-500 transition-all"
                 value={formData.type}
                 onChange={e => setFormData({...formData, type: e.target.value})}
               >
-                <option value="PURCHASES">Achats</option>
-                <option value="SALES">Ventes</option>
-                <option value="BANK">Banque</option>
-                <option value="CASH">Caisse</option>
-                <option value="GENERAL">Opérations Diverses (OD)</option>
+                <option value="PURCHASES">{t('purchases')}</option>
+                <option value="SALES">{t('sales')}</option>
+                <option value="BANK">{t('bank')}</option>
+                <option value="CASH">{t('cash')}</option>
+                <option value="GENERAL">{t('general')}</option>
               </select>
             </div>
             <button 
@@ -119,22 +121,22 @@ export default function JournalsPage() {
               className="w-full mt-4 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-500 text-white font-bold py-3 rounded-xl transition-all"
             >
               {isSubmitting ? <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span> : <Save className="w-4 h-4" />}
-              Créer le Journal
+              {t('create')}
             </button>
           </form>
         </div>
 
         {/* LIST */}
         <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800/50 rounded-3xl p-6">
-          <h2 className="text-lg font-bold text-white mb-6">Journaux paramétrés</h2>
+          <h2 className="text-lg font-bold text-white mb-6">{t('configured')}</h2>
           
           {loading ? (
             <div className="flex justify-center py-10"><span className="animate-spin w-6 h-6 border-2 border-teal-500/30 border-t-teal-500 rounded-full"></span></div>
           ) : journals.length === 0 ? (
             <div className="text-center py-12">
               <Settings2 className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-              <h3 className="text-white font-medium">Aucun journal</h3>
-              <p className="text-zinc-500 text-sm mt-1">Créez votre premier journal pour commencer à saisir.</p>
+              <h3 className="text-white font-medium">{t('empty_title')}</h3>
+              <p className="text-zinc-500 text-sm mt-1">{t('empty_desc')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -146,12 +148,12 @@ export default function JournalsPage() {
                     </div>
                     <div>
                       <h3 className="text-white font-bold">{journal.name}</h3>
-                      <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wider">{journal.type}</p>
+                      <p className="text-xs text-zinc-500 mt-1 uppercase tracking-wider">{t.has(`types.${journal.type}`) ? t(`types.${journal.type}`) : journal.type}</p>
                     </div>
                   </div>
                   <div>
                     <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                      Actif
+                      {t('active')}
                     </span>
                   </div>
                 </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Search, BookOpen, AlertCircle, CheckCircle2, ChevronRight, ChevronDown, Download } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
+import { useTranslations } from 'next-intl'
 
 type Account = {
   id: string
@@ -21,15 +22,9 @@ const TYPE_COLORS: Record<string, string> = {
   EXPENSE: 'text-orange-500 bg-orange-500/10 border-orange-500/20',
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  ASSET: 'Actifs',
-  LIABILITY: 'Passifs',
-  EQUITY: 'Capitaux Propres',
-  REVENUE: 'Produits',
-  EXPENSE: 'Charges',
-}
 
 export default function ChartOfAccountsPage() {
+  const t = useTranslations('Accounting.chart')
   const { tenantId } = useSession()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,7 +80,7 @@ export default function ChartOfAccountsPage() {
   }
 
   const handleInit = async () => {
-    if (!confirm('Voulez-vous initialiser le Plan Comptable Tunisien Standard ?')) return
+    if (!confirm(t('init_confirm'))) return
     setInitLoading(true)
     try {
       const res = await fetch('/api/accounting/init', {
@@ -96,7 +91,7 @@ export default function ChartOfAccountsPage() {
       if (res.ok) {
         fetchAccounts(tenantId)
       } else {
-        alert("Erreur d'initialisation")
+        alert(t('init_error'))
       }
     } catch (err) {
       console.error(err)
@@ -121,21 +116,21 @@ export default function ChartOfAccountsPage() {
       <div key={account.id} className="w-full">
         <div 
           className={`flex items-center justify-between p-3 border-b flex-wrap gap-2 border-zinc-800/50 hover:bg-zinc-800/30 transition-all cursor-pointer ${matchSearch ? 'bg-teal-500/10' : ''}`}
-          style={{ paddingLeft: `${level * 2 + 1}rem` }}
+          style={{ paddingInlineStart: `${level * 2 + 1}rem` }}
           onClick={() => hasChildren && toggleExpand(account.id)}
         >
           <div className="flex items-center gap-3">
             <span className="w-6 flex justify-center text-zinc-500">
-              {hasChildren ? (isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />) : <span className="w-4 h-4" />}
+              {hasChildren ? (isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4 rtl:rotate-180" />) : <span className="w-4 h-4" />}
             </span>
             <span className="font-mono font-bold text-teal-400">{account.accountNumber}</span>
             <span className="text-zinc-200 font-medium">{account.name}</span>
           </div>
           <div className="flex items-center gap-3">
             <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md border ${TYPE_COLORS[account.type] || 'text-zinc-400 bg-zinc-800 border-zinc-700'}`}>
-              {TYPE_LABELS[account.type] || account.type}
+              {t.has(`types.${account.type}`) ? t(`types.${account.type}`) : account.type}
             </span>
-            <button className="text-zinc-600 hover:text-white transition-all text-xs opacity-0 group-hover:opacity-100">Modifier</button>
+            <button className="text-zinc-600 hover:text-white transition-all text-xs opacity-0 group-hover:opacity-100">{t('edit')}</button>
           </div>
         </div>
         
@@ -152,12 +147,12 @@ export default function ChartOfAccountsPage() {
     <div className="p-8 max-w-6xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tighter">Plan Comptable</h1>
-          <p className="text-zinc-400 text-sm mt-1">Gérez la nomenclature comptable de votre entreprise</p>
+          <h1 className="text-3xl font-black text-white tracking-tighter">{t('title')}</h1>
+          <p className="text-zinc-400 text-sm mt-1">{t('subtitle')}</p>
         </div>
         <div className="flex gap-3">
           <button className="px-4 py-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white rounded-xl transition-all font-semibold text-sm flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Ajouter un compte
+            <Plus className="w-4 h-4" /> {t('add')}
           </button>
         </div>
       </div>
@@ -169,9 +164,9 @@ export default function ChartOfAccountsPage() {
           <div className="w-20 h-20 bg-teal-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <BookOpen className="w-10 h-10 text-teal-500" />
           </div>
-          <h3 className="text-2xl font-black text-white">Aucun Plan Comptable Initialisé</h3>
+          <h3 className="text-2xl font-black text-white">{t('empty_title')}</h3>
           <p className="text-zinc-400 max-w-lg mx-auto">
-            Votre base de données ne contient aucun compte. Vous pouvez initialiser automatiquement le Plan Comptable Tunisien officiel contenant les classes 1 à 7.
+            {t('empty_desc')}
           </p>
           <button 
             onClick={handleInit}
@@ -179,20 +174,20 @@ export default function ChartOfAccountsPage() {
             className="px-8 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-2xl font-bold transition-all flex items-center gap-2 mx-auto justify-center min-w-[250px]"
           >
             {initLoading ? <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span> : <Download className="w-5 h-5" />}
-            {initLoading ? 'Initialisation...' : 'Importer Plan Comptable Tunisien'}
+            {initLoading ? t('initializing') : t('import_tn')}
           </button>
         </div>
       ) : (
         <div className="bg-zinc-950 border border-zinc-800/50 rounded-3xl overflow-hidden shadow-2xl">
           <div className="p-4 border-b border-zinc-800/50 bg-zinc-900/50 flex items-center gap-4">
             <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input 
                 type="text"
-                placeholder="Rechercher par numéro ou libellé..."
+                placeholder={t('search')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white outline-none focus:border-teal-500 transition-all"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl ps-10 pe-4 py-2 text-sm text-white outline-none focus:border-teal-500 transition-all"
               />
             </div>
             <div className="flex gap-2">
@@ -200,7 +195,7 @@ export default function ChartOfAccountsPage() {
                 onClick={() => setExpanded({})}
                 className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-400 rounded-lg transition-all"
               >
-                Tout réduire
+                {t('collapse_all')}
               </button>
               {/* Optional "Expand all" logic could go here */}
             </div>
