@@ -761,5 +761,86 @@
         }
       }
     }
+  },
+  "Landing": {
+    "nav": {
+      "demo": "See the demo",
+      "login": "Log in",
+      "trial": "Try it free"
+    },
+    "hero": {
+      "kicker": "ERP for Tunisian SMEs",
+      "title1": "Your business.",
+      "title2": "Finally in one place.",
+      "subtitle": "Stock, sales, customers and invoicing in a single solution built for Tunisian SMEs.",
+      "trial": "Try it free",
+      "demo": "See the demo",
+      "meeting": "Request a presentation",
+      "note": "Demo open without sign-up · Sample data · No commitment"
+    },
+    "pain": {
+      "title": "What are your Excel files really costing you?",
+      "items": [
+        "Stock nobody really knows until inventory day.",
+        "Forgotten invoices, reminders never sent, cash sitting idle.",
+        "Customers scattered across a notebook, WhatsApp and three spreadsheets.",
+        "Hours lost every month copying the same numbers again."
+      ],
+      "punch": "It's not an organisation problem. It's a tool problem."
+    },
+    "solution": {
+      "title": "One app. Your whole business.",
+      "subtitle": "Every sale updates stock, invoice, customer and cash. Automatically.",
+      "stock": {
+        "title": "Real-time stock",
+        "text": "Receipts, issues, low-stock alerts and inventories without waiting for month end."
+      },
+      "sales": {
+        "title": "Sales & invoicing",
+        "text": "Quotes, orders, delivery notes and invoices in a few clicks, with VAT and stamp duty."
+      },
+      "clients": {
+        "title": "Customers & reminders",
+        "text": "Full history for each customer and unpaid invoice tracking to get paid faster."
+      },
+      "dashboard": {
+        "title": "Dashboard",
+        "text": "Revenue, receivables and stock on one screen, always up to date."
+      }
+    },
+    "local": {
+      "title": "Built for Tunisia. Not translated for it.",
+      "items": [
+        "VAT 7%, 13% and 19%, stamp duty and FODEC",
+        "Withholding tax and TEJ export",
+        "Ready for TTN e-invoicing",
+        "Payroll with CNSS and IRPP",
+        "French, Arabic and English interface",
+        "Amounts in dinars, 3 decimals"
+      ]
+    },
+    "modules": {
+      "title": "And as you grow, BelloSuite follows.",
+      "text": "Add payroll, accounting, production, maintenance or project management without changing software."
+    },
+    "demo": {
+      "title": "Don't take our word for it. Click.",
+      "text": "A demo company is waiting: products, customers, six months of sales, invoices and charts. No account needed.",
+      "button": "Open the demo now"
+    },
+    "final": {
+      "title": "Stop running half of your business.",
+      "text": "Start today. Your first invoices can go out tonight.",
+      "trial": "Try it free",
+      "meeting": "Request a presentation"
+    },
+    "mail": {
+      "subject": "BelloSuite presentation request",
+      "body": "Hello, I would like a presentation of BelloSuite.\n\nCompany:\nPhone:\nIndustry:"
+    },
+    "footer": {
+      "rights": "© 2026 BelloSuite. All rights reserved.",
+      "contact": "Contact"
+    }
   }
 }
