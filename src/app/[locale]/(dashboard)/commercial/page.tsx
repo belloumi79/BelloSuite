@@ -69,6 +69,7 @@ export default function CommercialDashboard() {
     { key: 'delivery_note', label: t('doc_types.delivery_note'), icon: Truck, href: '/commercial/documents/delivery-notes', color: 'purple', desc: t('doc_types.delivery_note_desc') },
     { key: 'invoice', label: t('doc_types.invoice'), icon: FileText, href: '/commercial/documents', color: 'teal', desc: t('doc_types.invoice_desc') },
     { key: 'supplier_order', label: t('doc_types.supplier_order'), icon: Package, href: '/commercial/documents/supplier-orders', color: 'amber', desc: t('doc_types.supplier_order_desc') },
+    { key: 'supplier_receipt', label: t('doc_types.supplier_receipt'), icon: Truck, href: '/commercial/documents/supplier-receipts', color: 'teal', desc: t('doc_types.supplier_receipt_desc') },
   ]
 
   useEffect(() => {

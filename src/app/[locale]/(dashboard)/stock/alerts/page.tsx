@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { Download, Printer, AlertTriangle, PackageX, ShoppingCart } from 'lucide-react'
+import { PoFromAlertsButton } from '@/components/purchases/PurchasesUI'
 import { StockPage, StockNav, PageHeader, Card, Loading, EmptyState, Badge, Alert, KpiCard, cls, useStockFormat, api, downloadCsv } from '@/components/stock/ui'
 
 type Base = { productId: string; code: string; name: string; category: string | null; unit: string; stock: number; minStock: number; reorderPoint: number; unitCost: number }
@@ -51,7 +52,7 @@ export default function AlertsPage() {
             <KpiCard label={t('to_order_value')} value={f.money(data.totals.toOrderValue)} icon={ShoppingCart} tone="teal" />
           </div>
 
-          <Card title={t('to_order')} bodyClassName="p-0">
+          <Card title={t('to_order')} bodyClassName="p-0" actions={data.toOrder.length > 0 ? <PoFromAlertsButton items={data.toOrder} /> : undefined}>
             {data.toOrder.length === 0 ? <EmptyState title={t('nothing_to_order')} /> : (
               <div className="overflow-x-auto">
                 <table className={cls.table}>
