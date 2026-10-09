@@ -1293,5 +1293,131 @@
       "vat": "TVA",
       "ht": "HT"
     }
+  },
+  "HR": {
+    "home": {
+      "subtitle": "Gestion des ressources humaines et payroll Tunisia",
+      "modules": {
+        "employees": {
+          "desc": "Gestion des employés et contrats",
+          "label": "Employés"
+        },
+        "evaluations": {
+          "desc": "Management des qualifications",
+          "label": "Évaluations"
+        },
+        "payroll": {
+          "desc": "Bulletins de salaire Tunisia",
+          "label": "Paie"
+        },
+        "attendance": {
+          "desc": "Absences et retards",
+          "label": "Présences"
+        }
+      },
+      "title": "RH & Paie"
+    },
+    "employees": {
+      "subtitle": "Gérez vos employés et leur dossier RH",
+      "new": "Nouvel Employé",
+      "import_csv": "Import CSV",
+      "title": "Employés",
+      "table": {
+        "empty": "Aucun employé trouvé.",
+        "position_contract": "Poste & Contrat",
+        "id_number": "Matricule",
+        "edit": "Modifier",
+        "employee": "Employé",
+        "contact": "Contact",
+        "actions": "Actions",
+        "inactive": "Inactif",
+        "status": "Statut",
+        "active": "Actif"
+      },
+      "form": {
+        "subtitle": "Ajouter un collaborateur à votre organisation",
+        "professional": "Informations Professionnelles & Paie",
+        "base_salary": "Salaire de Base (Brut TND)",
+        "personal": "Informations Personnelles",
+        "error": "Une erreur est survenue.",
+        "cin_placeholder": "N° de carte d'identité",
+        "contract_type": "Type de contrat",
+        "hire_date": "Date d'embauche",
+        "title": "Nouvel Employé",
+        "id_placeholder": "ex: MAT-001",
+        "department": "Département",
+        "save": "Enregistrer",
+        "id_number": "Matricule",
+        "phone": "Téléphone",
+        "cnss": "N° CNSS",
+        "cancel": "Annuler",
+        "first_name": "Prénom",
+        "email": "Email",
+        "position": "Poste",
+        "cin": "CIN",
+        "last_name": "Nom"
+      }
+    },
+    "payroll": {
+      "subtitle": "Gestion des bulletins de salaire",
+      "payslips": "Bulletins de Salaire",
+      "draft_count": "Brouillon ({count})",
+      "generate": "Générer Bulletins",
+      "validated_count": "Validé ({count})",
+      "paid_count": "Payé ({count})",
+      "settings": "Paramètres",
+      "period": "Période:",
+      "title": "Paie",
+      "slip": {
+        "overtime": "Heures supplémentaires ({hours}h)",
+        "title": "Bulletin de Salaire",
+        "earnings": "Éléments de Salaire",
+        "absences": "Déductions absences",
+        "seniority": "Prime ancienneté",
+        "base_salary": "Salaire de base",
+        "transport": "Prime transport",
+        "cnavis": "CNAVIS salarial",
+        "other_deductions": "Autres retenues",
+        "cnrps": "CNRPS salarial",
+        "other_bonuses": "Autres primes",
+        "cnss": "CNSS salarial",
+        "meal": "Prime panier",
+        "gross": "Salaire Brut",
+        "amo": "AMO salarial",
+        "department": "Département",
+        "net": "NET À PAYER",
+        "pending": "En attente",
+        "id_number": "Matricule",
+        "deductions": "Retenues",
+        "print": "Imprimer",
+        "employee": "Employé",
+        "validate": "Valider",
+        "cancelled": "Annulé",
+        "position": "Poste",
+        "paid": "Payé"
+      },
+      "table": {
+        "empty": "Aucun bulletin de salaire pour cette période",
+        "view": "Voir le bulletin",
+        "base_salary": "Salaire Base",
+        "contributions": "Cotisations",
+        "status": {
+          "PAID": "Payé"
+        },
+        "id_number": "Matricule",
+        "employee": "Employé",
+        "actions": "Actions",
+        "gross": "Brut",
+        "net": "Net"
+      },
+      "summary": {
+        "total_cnss": "Total CNSS (Employé)",
+        "total_gross": "Salaire Brut Total",
+        "total_net": "Salaire Net Total",
+        "overtime": "Heures Supp.",
+        "total_irpp": "Total IRPP",
+        "employees": "Employés"
+      }
+    }
   }
 }

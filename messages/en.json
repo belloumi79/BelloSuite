@@ -1293,5 +1293,131 @@
       "vat": "VAT",
       "ht": "Excl. VAT"
     }
+  },
+  "HR": {
+    "home": {
+      "subtitle": "Human resources and Tunisian payroll management",
+      "modules": {
+        "employees": {
+          "desc": "Employee and contract management",
+          "label": "Employees"
+        },
+        "evaluations": {
+          "desc": "Skills management",
+          "label": "Evaluations"
+        },
+        "payroll": {
+          "desc": "Tunisian payslips",
+          "label": "Payroll"
+        },
+        "attendance": {
+          "desc": "Absences and late arrivals",
+          "label": "Attendance"
+        }
+      },
+      "title": "HR & Payroll"
+    },
+    "employees": {
+      "subtitle": "Manage your employees and their HR records",
+      "new": "New employee",
+      "import_csv": "Import CSV",
+      "title": "Employees",
+      "table": {
+        "empty": "No employees found.",
+        "position_contract": "Position & contract",
+        "id_number": "Employee ID",
+        "edit": "Edit",
+        "employee": "Employee",
+        "contact": "Contact",
+        "actions": "Actions",
+        "inactive": "Inactive",
+        "status": "Status",
+        "active": "Active"
+      },
+      "form": {
+        "subtitle": "Add a team member to your organisation",
+        "professional": "Job & payroll information",
+        "base_salary": "Base salary (gross TND)",
+        "personal": "Personal information",
+        "error": "An error occurred.",
+        "cin_placeholder": "National ID card number",
+        "contract_type": "Contract type",
+        "hire_date": "Hire date",
+        "title": "New employee",
+        "id_placeholder": "e.g. MAT-001",
+        "department": "Department",
+        "save": "Save",
+        "id_number": "Employee ID",
+        "phone": "Phone",
+        "cnss": "CNSS no.",
+        "cancel": "Cancel",
+        "first_name": "First name",
+        "email": "Email",
+        "position": "Position",
+        "cin": "ID card no.",
+        "last_name": "Last name"
+      }
+    },
+    "payroll": {
+      "subtitle": "Payslip management",
+      "payslips": "Payslips",
+      "draft_count": "Draft ({count})",
+      "generate": "Generate payslips",
+      "validated_count": "Validated ({count})",
+      "paid_count": "Paid ({count})",
+      "settings": "Settings",
+      "period": "Period:",
+      "title": "Payroll",
+      "slip": {
+        "overtime": "Overtime ({hours}h)",
+        "title": "Payslip",
+        "earnings": "Salary components",
+        "absences": "Absence deductions",
+        "seniority": "Seniority bonus",
+        "base_salary": "Base salary",
+        "transport": "Transport allowance",
+        "cnavis": "CNAVIS (employee)",
+        "other_deductions": "Other deductions",
+        "cnrps": "CNRPS (employee)",
+        "other_bonuses": "Other bonuses",
+        "cnss": "CNSS (employee)",
+        "meal": "Meal allowance",
+        "gross": "Gross salary",
+        "amo": "AMO (employee)",
+        "department": "Department",
+        "net": "NET PAY",
+        "pending": "Pending",
+        "id_number": "Employee ID",
+        "deductions": "Deductions",
+        "print": "Print",
+        "employee": "Employee",
+        "validate": "Validate",
+        "cancelled": "Cancelled",
+        "position": "Position",
+        "paid": "Paid"
+      },
+      "table": {
+        "empty": "No payslips for this period",
+        "view": "View payslip",
+        "base_salary": "Base salary",
+        "contributions": "Contributions",
+        "status": {
+          "PAID": "Paid"
+        },
+        "id_number": "Employee ID",
+        "employee": "Employee",
+        "actions": "Actions",
+        "gross": "Gross",
+        "net": "Net"
+      },
+      "summary": {
+        "total_cnss": "Total CNSS (employee)",
+        "total_gross": "Total gross salary",
+        "total_net": "Total net salary",
+        "overtime": "Overtime",
+        "total_irpp": "Total income tax (IRPP)",
+        "employees": "Employees"
+      }
+    }
   }
 }

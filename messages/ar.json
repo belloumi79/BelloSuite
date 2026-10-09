@@ -1293,5 +1293,131 @@
       "vat": "الأداء",
       "ht": "دون أداء"
     }
+  },
+  "HR": {
+    "home": {
+      "subtitle": "إدارة الموارد البشرية والأجور (تونس)",
+      "modules": {
+        "employees": {
+          "desc": "إدارة الموظفين والعقود",
+          "label": "الموظفون"
+        },
+        "evaluations": {
+          "desc": "إدارة المؤهلات",
+          "label": "التقييمات"
+        },
+        "payroll": {
+          "desc": "بطاقات الخلاص (تونس)",
+          "label": "الأجور"
+        },
+        "attendance": {
+          "desc": "الغيابات والتأخيرات",
+          "label": "الحضور"
+        }
+      },
+      "title": "الموارد البشرية والأجور"
+    },
+    "employees": {
+      "subtitle": "أدِر موظفيك وملفاتهم الإدارية",
+      "new": "موظف جديد",
+      "import_csv": "استيراد CSV",
+      "title": "الموظفون",
+      "table": {
+        "empty": "لم يتم العثور على أي موظف.",
+        "position_contract": "الخطة والعقد",
+        "id_number": "المعرّف",
+        "edit": "تعديل",
+        "employee": "الموظف",
+        "contact": "الاتصال",
+        "actions": "الإجراءات",
+        "inactive": "غير نشط",
+        "status": "الحالة",
+        "active": "نشط"
+      },
+      "form": {
+        "subtitle": "أضف موظفًا إلى مؤسستك",
+        "professional": "المعلومات المهنية والأجر",
+        "base_salary": "الأجر الأساسي (خام بالدينار)",
+        "personal": "المعلومات الشخصية",
+        "error": "حدث خطأ.",
+        "cin_placeholder": "رقم بطاقة التعريف الوطنية",
+        "contract_type": "نوع العقد",
+        "hire_date": "تاريخ الانتداب",
+        "title": "موظف جديد",
+        "id_placeholder": "مثال: MAT-001",
+        "department": "القسم",
+        "save": "حفظ",
+        "id_number": "المعرّف",
+        "phone": "الهاتف",
+        "cnss": "رقم الضمان الاجتماعي (CNSS)",
+        "cancel": "إلغاء",
+        "first_name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "position": "الخطة",
+        "cin": "بطاقة التعريف",
+        "last_name": "اللقب"
+      }
+    },
+    "payroll": {
+      "subtitle": "إدارة بطاقات الخلاص",
+      "payslips": "بطاقات الخلاص",
+      "draft_count": "مسودة ({count})",
+      "generate": "إنشاء بطاقات الخلاص",
+      "validated_count": "مصادق عليها ({count})",
+      "paid_count": "مدفوعة ({count})",
+      "settings": "الإعدادات",
+      "period": "الفترة:",
+      "title": "الأجور",
+      "slip": {
+        "overtime": "الساعات الإضافية ({hours} س)",
+        "title": "بطاقة الخلاص",
+        "earnings": "عناصر الأجر",
+        "absences": "اقتطاعات الغيابات",
+        "seniority": "منحة الأقدمية",
+        "base_salary": "الأجر الأساسي",
+        "transport": "منحة النقل",
+        "cnavis": "CNAVIS (حصة الأجير)",
+        "other_deductions": "اقتطاعات أخرى",
+        "cnrps": "CNRPS (حصة الأجير)",
+        "other_bonuses": "منح أخرى",
+        "cnss": "CNSS (حصة الأجير)",
+        "meal": "منحة الأكل",
+        "gross": "الأجر الخام",
+        "amo": "AMO (حصة الأجير)",
+        "department": "القسم",
+        "net": "الصافي للدفع",
+        "pending": "في الانتظار",
+        "id_number": "المعرّف",
+        "deductions": "الاقتطاعات",
+        "print": "طباعة",
+        "employee": "الموظف",
+        "validate": "المصادقة",
+        "cancelled": "ملغى",
+        "position": "الخطة",
+        "paid": "مدفوع"
+      },
+      "table": {
+        "empty": "لا توجد بطاقات خلاص لهذه الفترة",
+        "view": "عرض بطاقة الخلاص",
+        "base_salary": "الأجر الأساسي",
+        "contributions": "المساهمات",
+        "status": {
+          "PAID": "مدفوع"
+        },
+        "id_number": "المعرّف",
+        "employee": "الموظف",
+        "actions": "الإجراءات",
+        "gross": "الخام",
+        "net": "الصافي"
+      },
+      "summary": {
+        "total_cnss": "إجمالي CNSS (حصة الأجير)",
+        "total_gross": "إجمالي الأجور الخام",
+        "total_net": "إجمالي الأجور الصافية",
+        "overtime": "الساعات الإضافية",
+        "total_irpp": "إجمالي الضريبة على الدخل (IRPP)",
+        "employees": "الموظفون"
+      }
+    }
   }
 }
