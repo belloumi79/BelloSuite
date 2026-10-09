@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { ArrowRight, TrendingUp, CheckCircle, Clock, AlertTriangle, FileText, RefreshCw, ExternalLink, X } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
+import { useTranslations, useLocale } from 'next-intl'
 
 const TYPE_COLORS: Record<string, string> = {
   QUOTE: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -17,17 +18,18 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 function PipelineColumn({ title, items, color, icon }: { title: string; items: any[]; color: string; icon: any }) {
+  const t = useTranslations('Commercial.Pipeline')
   const Icon = icon
   return (
     <div className="flex-1 min-w-[280px] max-w-[340px]">
       <div className={`flex items-center gap-2 px-4 py-3 rounded-t-2xl border-t-2 ${color}`}>
         <Icon className="w-4 h-4" />
         <span className="font-black text-sm">{title}</span>
-        <span className="ml-auto px-2 py-0.5 bg-white/30 rounded-full text-xs font-black">{items.length}</span>
+        <span className="ms-auto px-2 py-0.5 bg-white/30 rounded-full text-xs font-black">{items.length}</span>
       </div>
       <div className="bg-white border-x border-b border-stone-200 rounded-b-2xl p-4 space-y-3 min-h-[200px]">
         {items.length === 0 ? (
-          <p className="text-stone-400 text-xs font-bold text-center py-8">Aucun document</p>
+          <p className="text-stone-400 text-xs font-bold text-center py-8">{t('no_document')}</p>
         ) : items.map(item => (
           <DocumentCard key={item.id} item={item} />
         ))}
@@ -37,6 +39,8 @@ function PipelineColumn({ title, items, color, icon }: { title: string; items: a
 }
 
 function DocumentCard({ item }: { item: any }) {
+  const t = useTranslations('Commercial.Pipeline')
+  const numLocale = `${useLocale()}-TN`
   const [expanded, setExpanded] = useState(false)
   const daysColor = item.daysUntilDue === null ? '' : item.daysUntilDue < 0 ? 'text-red-600' : item.daysUntilDue <= 3 ? 'text-amber-600' : 'text-stone-500'
   return (
@@ -52,18 +56,18 @@ function DocumentCard({ item }: { item: any }) {
         </span>
       </div>
       <div className="flex items-center justify-between mt-3">
-        <span className="text-sm font-black text-stone-900">{item.totalTTC.toLocaleString('fr-TN', { maximumFractionDigits: 3 })} DT</span>
+        <span className="text-sm font-black text-stone-900">{item.totalTTC.toLocaleString(numLocale, { maximumFractionDigits: 3 })} DT</span>
         {item.daysUntilDue !== null && (
           <span className={`text-[10px] font-black ${daysColor}`}>
-            {item.daysUntilDue < 0 ? `${Math.abs(item.daysUntilDue)}j retard` : item.daysUntilDue === 0 ? 'Échéance aujourd\'hui' : `${item.daysUntilDue}j`}
+            {item.daysUntilDue < 0 ? t('days_late', { count: Math.abs(item.daysUntilDue) }) : item.daysUntilDue === 0 ? t('due_today') : t('days_left', { count: item.daysUntilDue })}
           </span>
         )}
       </div>
       {expanded && (
         <div className="mt-3 pt-3 border-t border-stone-200 space-y-1">
-          <div className="flex justify-between text-[10px]"><span className="text-stone-500">Date</span><span className="font-bold text-stone-700">{item.date}</span></div>
-          {item.dueDate && <div className="flex justify-between text-[10px]"><span className="text-stone-500">Échéance</span><span className="font-bold text-stone-700">{item.dueDate}</span></div>}
-          <div className="flex justify-between text-[10px]"><span className="text-stone-500">Statut</span><span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${STATUS_COLORS[item.status] || STATUS_COLORS.DRAFT}`}>{item.status}</span></div>
+          <div className="flex justify-between text-[10px]"><span className="text-stone-500">{t('date')}</span><span className="font-bold text-stone-700">{item.date}</span></div>
+          {item.dueDate && <div className="flex justify-between text-[10px]"><span className="text-stone-500">{t('due_date')}</span><span className="font-bold text-stone-700">{item.dueDate}</span></div>}
+          <div className="flex justify-between text-[10px]"><span className="text-stone-500">{t('status')}</span><span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${STATUS_COLORS[item.status] || STATUS_COLORS.DRAFT}`}>{item.status}</span></div>
         </div>
       )}
     </div>
@@ -71,6 +75,8 @@ function DocumentCard({ item }: { item: any }) {
 }
 
 export default function PipelinePage() {
+  const t = useTranslations('Commercial.Pipeline')
+  const numLocale = `${useLocale()}-TN`
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const { tenantId } = useSession()
@@ -91,7 +97,7 @@ export default function PipelinePage() {
   }
 
   const handleConvert = async (id: string, targetType: string) => {
-    if (!confirm(`Convertir en ${targetType} ?`)) return
+    if (!confirm(t('convert_confirm', { type: targetType }))) return
     setConverting(id)
     try {
       const res = await fetch(`/api/commercial/documents/convert/${id}`, {
@@ -111,15 +117,15 @@ export default function PipelinePage() {
   const quoteItems = filtered.filter((i: any) => i.type === 'QUOTE')
   const orderItems = filtered.filter((i: any) => i.type === 'ORDER')
   const quoteColumns = [
-    { title: 'Brouillons', key: 'DRAFT', items: quoteItems.filter((i: any) => i.status === 'DRAFT'), color: 'border-stone-400 bg-stone-50', icon: FileText },
-    { title: 'Envoyés', key: 'SENT', items: quoteItems.filter((i: any) => i.status === 'SENT'), color: 'border-purple-400 bg-purple-50', icon: Clock },
-    { title: 'Confirmés', key: 'CONFIRMED', items: quoteItems.filter((i: any) => i.status === 'CONFIRMED'), color: 'border-teal-400 bg-teal-50', icon: CheckCircle },
-    { title: 'Expirés', key: 'EXPIRED', items: quoteItems.filter((i: any) => i.status === 'EXPIRED'), color: 'border-red-400 bg-red-50', icon: AlertTriangle },
+    { title: t('drafts'), key: 'DRAFT', items: quoteItems.filter((i: any) => i.status === 'DRAFT'), color: 'border-stone-400 bg-stone-50', icon: FileText },
+    { title: t('sent'), key: 'SENT', items: quoteItems.filter((i: any) => i.status === 'SENT'), color: 'border-purple-400 bg-purple-50', icon: Clock },
+    { title: t('confirmed'), key: 'CONFIRMED', items: quoteItems.filter((i: any) => i.status === 'CONFIRMED'), color: 'border-teal-400 bg-teal-50', icon: CheckCircle },
+    { title: t('expired'), key: 'EXPIRED', items: quoteItems.filter((i: any) => i.status === 'EXPIRED'), color: 'border-red-400 bg-red-50', icon: AlertTriangle },
   ]
   const orderColumns = [
-    { title: 'En attente', key: 'PENDING', items: orderItems.filter((i: any) => i.status === 'PENDING'), color: 'border-amber-400 bg-amber-50', icon: Clock },
-    { title: 'Confirmés', key: 'CONFIRMED', items: orderItems.filter((i: any) => i.status === 'CONFIRMED'), color: 'border-teal-400 bg-teal-50', icon: CheckCircle },
-    { title: 'Facturés', key: 'INVOICED', items: orderItems.filter((i: any) => i.status === 'INVOICED'), color: 'border-emerald-400 bg-emerald-50', icon: FileText },
+    { title: t('pending'), key: 'PENDING', items: orderItems.filter((i: any) => i.status === 'PENDING'), color: 'border-amber-400 bg-amber-50', icon: Clock },
+    { title: t('confirmed'), key: 'CONFIRMED', items: orderItems.filter((i: any) => i.status === 'CONFIRMED'), color: 'border-teal-400 bg-teal-50', icon: CheckCircle },
+    { title: t('invoiced'), key: 'INVOICED', items: orderItems.filter((i: any) => i.status === 'INVOICED'), color: 'border-emerald-400 bg-emerald-50', icon: FileText },
   ]
 
   return (
@@ -127,15 +133,15 @@ export default function PipelinePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-stone-900 tracking-tight">Pipeline Commercial 📋</h1>
-          <p className="text-stone-500 font-medium mt-1">Devis → Commandes → Factures — Conversion funnel</p>
+          <h1 className="text-3xl font-black text-stone-900 tracking-tight">{t('title')}</h1>
+          <p className="text-stone-500 font-medium mt-1">{t('subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex gap-1 bg-stone-100 p-1 rounded-xl">
             {(['ALL', 'QUOTE', 'ORDER'] as const).map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${filter === f ? 'bg-white shadow text-stone-900' : 'text-stone-500 hover:text-stone-700'}`}>
-                {f === 'ALL' ? 'Tout' : f === 'QUOTE' ? 'Devis' : 'Commandes'}
+                {f === 'ALL' ? t('all') : f === 'QUOTE' ? t('quotes') : t('orders')}
               </button>
             ))}
           </div>
@@ -149,11 +155,11 @@ export default function PipelinePage() {
       {data && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {[
-            { label: 'Total Devis', value: data.quoteStats.total, sub: `${data.quoteStats.totalValue.toLocaleString('fr-TN', { maximumFractionDigits: 0 })} DT` },
-            { label: 'Devis Confirmés', value: data.quoteStats.confirmed, sub: `${Math.round((data.quoteStats.confirmed / Math.max(data.quoteStats.total, 1)) * 100)}%` },
-            { label: 'Taux Conversion', value: `${data.conversionRate}%`, sub: 'devis → commande' },
-            { label: 'Total Commandes', value: data.orderStats.total, sub: `${data.orderStats.totalValue.toLocaleString('fr-TN', { maximumFractionDigits: 0 })} DT` },
-            { label: 'Commandes Facturées', value: data.orderStats.invoiced, sub: `${Math.round((data.orderStats.invoiced / Math.max(data.orderStats.total, 1)) * 100)}%` },
+            { label: t('total_quotes'), value: data.quoteStats.total, sub: `${data.quoteStats.totalValue.toLocaleString(numLocale, { maximumFractionDigits: 0 })} DT` },
+            { label: t('confirmed_quotes'), value: data.quoteStats.confirmed, sub: `${Math.round((data.quoteStats.confirmed / Math.max(data.quoteStats.total, 1)) * 100)}%` },
+            { label: t('conversion_rate'), value: `${data.conversionRate}%`, sub: t('quote_to_order') },
+            { label: t('total_orders'), value: data.orderStats.total, sub: `${data.orderStats.totalValue.toLocaleString(numLocale, { maximumFractionDigits: 0 })} DT` },
+            { label: t('invoiced_orders'), value: data.orderStats.invoiced, sub: `${Math.round((data.orderStats.invoiced / Math.max(data.orderStats.total, 1)) * 100)}%` },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-xl border border-stone-200 p-4">
               <p className="text-xs font-black text-stone-500 uppercase tracking-widest">{s.label}</p>
@@ -165,13 +171,13 @@ export default function PipelinePage() {
       )}
 
       {loading ? (
-        <div className="text-center py-20 text-stone-400 font-bold">Chargement du pipeline...</div>
+        <div className="text-center py-20 text-stone-400 font-bold">{t('loading')}</div>
       ) : data ? (
         <>
           {/* Devis Kanban */}
           <div className="space-y-2">
             <h2 className="text-sm font-black text-stone-500 uppercase tracking-widest flex items-center gap-2">
-              📋 Devis <span className="text-xs font-normal normal-case tracking-normal">({quoteItems.length})</span>
+              📋 {t('quotes')} <span className="text-xs font-normal normal-case tracking-normal">({quoteItems.length})</span>
             </h2>
             <div className="flex gap-4 overflow-x-auto pb-4">
               {quoteColumns.map(({ key, ...col }) => (
@@ -183,7 +189,7 @@ export default function PipelinePage() {
           {/* Commandes Kanban */}
           <div className="space-y-2">
             <h2 className="text-sm font-black text-stone-500 uppercase tracking-widest flex items-center gap-2">
-              📦 Commandes <span className="text-xs font-normal normal-case tracking-normal">({orderItems.length})</span>
+              📦 {t('orders')} <span className="text-xs font-normal normal-case tracking-normal">({orderItems.length})</span>
             </h2>
             <div className="flex gap-4 overflow-x-auto pb-4">
               {orderColumns.map(({ key, ...col }) => (
@@ -193,7 +199,7 @@ export default function PipelinePage() {
           </div>
         </>
       ) : (
-        <div className="text-center py-20 text-stone-400 font-bold">Aucune donnée disponible</div>
+        <div className="text-center py-20 text-stone-400 font-bold">{t('no_data')}</div>
       )}
     </div>
   )

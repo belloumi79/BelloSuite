@@ -7,10 +7,13 @@ import ReceiptModal from '@/components/pos/ReceiptModal'
 import SessionOpenModal from '@/components/pos/SessionOpenModal'
 import type { POSCartItem, POSProduct, POSSessionInfo } from '@/lib/pos-types'
 import { useSession } from '@/hooks/useSession'
+import { useTranslations, useLocale } from 'next-intl'
 
 const TIMBRE = 1
 
 export default function POSPage() {
+  const t = useTranslations('POS')
+  const locale = useLocale()
   const { tenantId, session: user } = useSession()
   const [session, setSession] = useState<any>(null)
   const [showSess, setShowSess] = useState<boolean>(false)
@@ -90,16 +93,16 @@ export default function POSPage() {
     if (r.ok) { const d = await r.json(); setSession({ id: d.id, tenantId, userId: user?.id || '', userName: user?.firstName || '', openingCash, status: 'OPEN', ordersCount: 0, totalSales: 0 }); setShowSess(false) }
   }
 
-  const fmt = (n: number) => n.toLocaleString('fr-TN', { style: 'currency', currency: 'TND', minimumFractionDigits: 3 })
+  const fmt = (n: number) => n.toLocaleString(`${locale}-TN`, { style: 'currency', currency: 'TND', minimumFractionDigits: 3 })
 
   if (!session && !showSess) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-stone-100'>
         <div className='text-center space-y-4'>
           <div className='w-20 h-20 bg-stone-200 rounded-full flex items-center justify-center mx-auto'><Lock className='w-10 h-10 text-stone-400' /></div>
-          <h2 className='text-2xl font-black text-stone-700'>Caisse Fermee</h2>
-          <p className='text-stone-500'>Ouvrez une session pour commencer</p>
-          <button onClick={() => setShowSess(true)} className='px-6 py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700'>Ouvrir la Caisse</button>
+          <h2 className='text-2xl font-black text-stone-700'>{t('closed')}</h2>
+          <p className='text-stone-500'>{t('open_hint')}</p>
+          <button onClick={() => setShowSess(true)} className='px-6 py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700'>{t('open_till')}</button>
         </div>
         {showSess && <SessionOpenModal onOpen={openSess} onClose={() => setShowSess(false)} />}
       </div>
@@ -112,20 +115,20 @@ export default function POSPage() {
         <div className='bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden'>
           <div className='p-4 border-b border-stone-100 flex flex-col sm:flex-row gap-3'>
             <div className='relative flex-1'>
-              <Search className='w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400' />
-              <input value={q} onChange={e => setQ(e.target.value)} placeholder='Rechercher un produit...' className='w-full pl-10 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none' />
+              <Search className='w-5 h-5 absolute start-3 top-1/2 -translate-y-1/2 text-stone-400' />
+              <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('search_product')} className='w-full ps-10 pe-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none' />
             </div>
             <button onClick={() => tenantId && loadProducts(tenantId)} className='px-4 py-2 border border-stone-200 rounded-xl text-stone-500 hover:bg-stone-50'><RefreshCw className='w-4 h-4' /></button>
           </div>
           <div className='grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 p-4 max-h-[calc(100vh-220px)] overflow-y-auto'>
             {filtered.length === 0 ? (
-              <div className='col-span-full text-center py-12 text-stone-400'><Package className='w-12 h-12 mx-auto mb-2' /><p className='font-medium'>Aucun produit</p></div>
+              <div className='col-span-full text-center py-12 text-stone-400'><Package className='w-12 h-12 mx-auto mb-2' /><p className='font-medium'>{t('no_product')}</p></div>
             ) : filtered.map(p => (
-              <button key={p.id} onClick={() => addToCart(p)} className='bg-stone-50 hover:bg-teal-50 border border-stone-200 hover:border-teal-300 rounded-xl p-3 text-left transition-all group'>
+              <button key={p.id} onClick={() => addToCart(p)} className='bg-stone-50 hover:bg-teal-50 border border-stone-200 hover:border-teal-300 rounded-xl p-3 text-start transition-all group'>
                 <div className='w-full h-16 bg-stone-100 group-hover:bg-teal-100 rounded-lg mb-2 flex items-center justify-center'><Package className='w-8 h-8 text-stone-400 group-hover:text-teal-500' /></div>
                 <p className='font-bold text-stone-800 text-xs truncate'>{p.name}</p>
                 <p className='text-teal-600 font-black text-sm'>{fmt(Number(p.salePrice))}</p>
-                <p className='text-stone-400 text-xs'>{p.currentStock} en stock</p>
+                <p className='text-stone-400 text-xs'>{t('in_stock', { count: p.currentStock })}</p>
               </button>
             ))}
           </div>
@@ -135,18 +138,18 @@ export default function POSPage() {
       <div className='lg:w-1/3 space-y-4'>
         <div className='bg-white rounded-2xl border border-stone-200 shadow-sm p-4 flex items-center justify-between'>
           <div className='flex items-center gap-2'><Clock className='w-4 h-4 text-stone-400' /><span className='text-xs font-bold text-stone-500'>{session?.userName}</span></div>
-          <button onClick={() => setShowSess(true)} className='text-xs font-bold text-stone-400 hover:text-red-500'>Fermer</button>
+          <button onClick={() => setShowSess(true)} className='text-xs font-bold text-stone-400 hover:text-red-500'>{t('close')}</button>
         </div>
 
         <div className='bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden flex flex-col' style={{ maxHeight: 'calc(100vh - 420px)' }}>
           <div className='p-4 border-b border-stone-100 flex items-center gap-2'>
             <ShoppingCart className='w-5 h-5 text-teal-600' />
-            <span className='font-bold text-stone-800'>Panier</span>
-            <span className='ml-auto bg-teal-100 text-teal-700 text-xs font-bold px-2 py-0.5 rounded-full'>{cart.length}</span>
+            <span className='font-bold text-stone-800'>{t('cart')}</span>
+            <span className='ms-auto bg-teal-100 text-teal-700 text-xs font-bold px-2 py-0.5 rounded-full'>{cart.length}</span>
           </div>
           <div className='flex-1 overflow-y-auto divide-y divide-stone-50'>
             {cart.length === 0 ? (
-              <div className='p-8 text-center'><ShoppingBag className='w-10 h-10 text-stone-200 mx-auto mb-2' /><p className='text-stone-400 text-sm font-medium'>Panier vide</p></div>
+              <div className='p-8 text-center'><ShoppingBag className='w-10 h-10 text-stone-200 mx-auto mb-2' /><p className='text-stone-400 text-sm font-medium'>{t('empty_cart')}</p></div>
             ) : cart.map(item => (
               <div key={item.productId} className='p-3 flex items-center gap-3'>
                 <div className='flex-1 min-w-0'>
@@ -165,22 +168,22 @@ export default function POSPage() {
         </div>
 
         <div className='bg-white rounded-2xl border border-stone-200 shadow-sm p-4 flex items-center gap-3'>
-          <span className='text-sm font-bold text-stone-600'>Remise %</span>
+          <span className='text-sm font-bold text-stone-600'>{t('discount_pct')}</span>
           <input type='number' min='0' max='100' value={discount} onChange={e => setDiscount(Number(e.target.value))} className='flex-1 px-3 py-2 border border-stone-200 rounded-xl text-sm font-bold text-center focus:ring-2 focus:ring-teal-500 outline-none' />
           <span className='text-sm text-teal-600 font-bold'>-{fmt(totals.discountAmount)}</span>
         </div>
 
         <div className='bg-white rounded-2xl border border-stone-200 shadow-sm p-4 space-y-2'>
-          <div className='flex justify-between text-sm'><span className='text-stone-500'>Total HT</span><span className='font-bold text-stone-700'>{fmt(totals.subtotalHT)}</span></div>
-          <div className='flex justify-between text-sm'><span className='text-stone-500'>TVA</span><span className='font-bold text-stone-700'>{fmt(totals.totalVAT)}</span></div>
-          {totals.discountAmount > 0 && <div className='flex justify-between text-sm'><span className='text-teal-500'>Remise</span><span className='font-bold text-teal-600'>-{fmt(totals.discountAmount)}</span></div>}
-          <div className='flex justify-between text-sm'><span className='text-stone-500'>Timbre</span><span className='font-bold text-stone-700'>{fmt(TIMBRE)}</span></div>
-          <div className='border-t border-stone-200 pt-2 flex justify-between'><span className='font-black text-stone-900'>Total TTC</span><span className='font-black text-xl text-teal-600'>{fmt(totals.totalTTC)}</span></div>
+          <div className='flex justify-between text-sm'><span className='text-stone-500'>{t('total_ht')}</span><span className='font-bold text-stone-700'>{fmt(totals.subtotalHT)}</span></div>
+          <div className='flex justify-between text-sm'><span className='text-stone-500'>{t('vat')}</span><span className='font-bold text-stone-700'>{fmt(totals.totalVAT)}</span></div>
+          {totals.discountAmount > 0 && <div className='flex justify-between text-sm'><span className='text-teal-500'>{t('discount')}</span><span className='font-bold text-teal-600'>-{fmt(totals.discountAmount)}</span></div>}
+          <div className='flex justify-between text-sm'><span className='text-stone-500'>{t('stamp')}</span><span className='font-bold text-stone-700'>{fmt(TIMBRE)}</span></div>
+          <div className='border-t border-stone-200 pt-2 flex justify-between'><span className='font-black text-stone-900'>{t('total_ttc')}</span><span className='font-black text-xl text-teal-600'>{fmt(totals.totalTTC)}</span></div>
         </div>
 
         <button onClick={() => setShowPay(true)} disabled={cart.length === 0 || loading} className='w-full py-4 bg-teal-600 hover:bg-teal-700 disabled:bg-stone-300 text-white rounded-2xl font-black text-lg shadow-lg shadow-teal-500/20 transition-all flex items-center justify-center gap-3'>
           {loading ? <RefreshCw className='w-5 h-5 animate-spin' /> : <CreditCard className='w-5 h-5' />}
-          Payer {cart.length > 0 && <span className='ml-1'>{fmt(totals.totalTTC)}</span>}
+          {t('pay')} {cart.length > 0 && <span className='ms-1'>{fmt(totals.totalTTC)}</span>}
         </button>
       </div>
 

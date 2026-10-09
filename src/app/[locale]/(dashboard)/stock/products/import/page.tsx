@@ -8,6 +8,7 @@ import { useSession } from '@/hooks/useSession'
 const TEMPLATE_COLS = ['code', 'name', 'barcode', 'description', 'category', 'unit', 'purchasePrice', 'salePrice', 'vatRate', 'fodec', 'minStock', 'initialStock']
 
 export default function ImportProductsPage() {
+  const ti = useTranslations('Import')
   const t = useTranslations('Stock')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<any[]>([])
@@ -32,7 +33,7 @@ export default function ImportProductsPage() {
           const json = XLSX.utils.sheet_to_json(ws, { defval: '' })
           setPreview(json.slice(0, 10))
         })
-      } catch { alert('Impossible de lire le fichier') }
+      } catch { alert(ti('unreadable')) }
     }
     reader.readAsArrayBuffer(f)
   }
@@ -166,7 +167,7 @@ export default function ImportProductsPage() {
         <div className="space-y-4">
           {results.error ? (
             <div className="bg-red-500/10 border border-red-500/20 rounded-[1.5rem] p-6">
-              <div className="flex items-center gap-3 text-red-400 font-bold mb-2"><AlertCircle className="w-5 h-5" /> Error</div>
+              <div className="flex items-center gap-3 text-red-400 font-bold mb-2"><AlertCircle className="w-5 h-5" /> {ti('error')}</div>
               <p className="text-red-300 text-sm font-mono">{results.error}</p>
             </div>
           ) : (
@@ -182,7 +183,7 @@ export default function ImportProductsPage() {
                 </div>
                 <div className="bg-zinc-800/50 rounded-2xl p-5 text-center border border-zinc-700/50">
                   <p className="text-3xl font-black text-zinc-400">{results.total}</p>
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">Total</p>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">{ti('total')}</p>
                 </div>
               </div>
 
@@ -204,7 +205,7 @@ export default function ImportProductsPage() {
 
               {results.errors?.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2 flex items-center gap-2"><AlertCircle className="w-3 h-3" /> {t('errors_label') || 'Errors'}</p>
+                  <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2 flex items-center gap-2"><AlertCircle className="w-3 h-3" /> {t('errors_label')}</p>
                   <div className="space-y-1">
                     {results.errors.map((e: any, i: number) => (
                       <div key={i} className="flex items-center gap-3 text-xs font-mono text-red-300 bg-red-500/5 rounded-lg px-3 py-2 border border-red-500/10">

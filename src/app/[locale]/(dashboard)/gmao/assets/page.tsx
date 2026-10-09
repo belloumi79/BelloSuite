@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { Plus, Settings, AlertTriangle, Wrench, Search, Loader2 } from "lucide-react";
 import { AssetFormModal } from "./components/AssetFormModal";
 import { useSession } from '@/hooks/useSession'
+import { useTranslations } from 'next-intl'
 
 interface Asset {
   id: string;
@@ -25,14 +26,9 @@ const statusColors = {
   RETIRED: "bg-stone-100 text-stone-500 border-stone-200",
 };
 
-const statusLabels = {
-  ACTIVE: "En Service",
-  IN_MAINTENANCE: "En Maintenance",
-  BROKEN: "En Panne",
-  RETIRED: "Hors Service",
-};
 
 export default function AssetsPage() {
+  const t = useTranslations('GMAO.assets')
   const { tenantId } = useSession()
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,29 +66,29 @@ export default function AssetsPage() {
         <div>
           <h1 className="text-3xl font-black text-stone-900 tracking-tight flex items-center gap-3">
             <Settings className="w-8 h-8 text-teal-600" />
-            Équipements & Machines
+            {t('title')}
           </h1>
-          <p className="text-stone-500 font-medium text-sm mt-1">Gérez le parc matériel de votre entreprise</p>
+          <p className="text-stone-500 font-medium text-sm mt-1">{t('subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-sm transition-all shadow-sm shadow-teal-500/20"
           >
-            <Plus className="w-4 h-4" /> Nouvel Équipement
+            <Plus className="w-4 h-4" /> {t('new')}
           </button>
         </div>
       </div>
 
       <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <input 
             type="text" 
-            placeholder="Rechercher par nom, code, emplacement..." 
+            placeholder={t('search')} 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all"
+            className="w-full ps-10 pe-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all"
           />
         </div>
       </div>
@@ -104,19 +100,19 @@ export default function AssetsPage() {
           </div>
         ) : filteredAssets.length === 0 ? (
           <div className="text-center py-24 px-4">
-            <p className="text-stone-500 font-medium">Aucun équipement trouvé.</p>
+            <p className="text-stone-500 font-medium">{t('empty')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-start">
               <thead>
                 <tr className="bg-stone-50 border-b border-stone-200">
-                  <th className="px-6 py-3 text-xs font-bold text-stone-500 uppercase tracking-wider">Code</th>
-                  <th className="px-6 py-3 text-xs font-bold text-stone-500 uppercase tracking-wider">Équipement</th>
-                  <th className="px-6 py-3 text-xs font-bold text-stone-500 uppercase tracking-wider">Emplacement</th>
-                  <th className="px-6 py-3 text-xs font-bold text-stone-500 uppercase tracking-wider">Statut</th>
-                  <th className="px-6 py-3 text-center text-xs font-bold text-stone-500 uppercase tracking-wider">Interventions</th>
-                  <th className="px-6 py-3 text-right text-xs font-bold text-stone-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-xs font-bold text-stone-500 uppercase tracking-wider">{t('code')}</th>
+                  <th className="px-6 py-3 text-xs font-bold text-stone-500 uppercase tracking-wider">{t('equipment')}</th>
+                  <th className="px-6 py-3 text-xs font-bold text-stone-500 uppercase tracking-wider">{t('location')}</th>
+                  <th className="px-6 py-3 text-xs font-bold text-stone-500 uppercase tracking-wider">{t('status')}</th>
+                  <th className="px-6 py-3 text-center text-xs font-bold text-stone-500 uppercase tracking-wider">{t('work_orders')}</th>
+                  <th className="px-6 py-3 text-end text-xs font-bold text-stone-500 uppercase tracking-wider">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
@@ -136,7 +132,7 @@ export default function AssetsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold border ${statusColors[asset.status]}`}>
-                        {statusLabels[asset.status]}
+                        {t.has(`statuses.${asset.status}`) ? t(`statuses.${asset.status}`) : asset.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -145,13 +141,13 @@ export default function AssetsPage() {
                         {asset._count?.workOrders || 0}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-end">
                       {/* Action buttons */}
                       <Link 
                         href={`/gmao/assets/${asset.id}`} 
-                        className="text-teal-600 hover:text-teal-700 font-semibold text-sm mr-4"
+                        className="text-teal-600 hover:text-teal-700 font-semibold text-sm me-4"
                       >
-                        Détails
+                        {t('details')}
                       </Link>
                     </td>
                   </tr>

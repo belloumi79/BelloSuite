@@ -1,6 +1,7 @@
 "use client";
 
 import { DollarSign, Users, FileText, TrendingUp, Building2 } from "lucide-react";
+import { useTranslations, useLocale } from 'next-intl'
 
 interface PayrollSummaryProps {
   summary: {
@@ -19,45 +20,47 @@ interface PayrollSummaryProps {
 }
 
 export function PayrollSummary({ summary }: PayrollSummaryProps) {
+  const t = useTranslations('HR.payroll.summary')
+  const locale = useLocale()
   const cards = [
     {
-      label: "Salaire Brut Total",
-      value: summary.totalGross.toLocaleString("fr-TN", { style: "currency", currency: "TND" }),
+      label: t('total_gross'),
+      value: summary.totalGross.toLocaleString(`${locale}-TN`, { style: "currency", currency: "TND" }),
       icon: DollarSign,
       color: "text-teal-600",
       bg: "bg-teal-50",
     },
     {
-      label: "Salaire Net Total",
-      value: summary.totalNet.toLocaleString("fr-TN", { style: "currency", currency: "TND" }),
+      label: t('total_net'),
+      value: summary.totalNet.toLocaleString(`${locale}-TN`, { style: "currency", currency: "TND" }),
       icon: TrendingUp,
       color: "text-green-600",
       bg: "bg-green-50",
     },
     {
-      label: "Employés",
+      label: t('employees'),
       value: summary.totalEmployees.toString(),
       icon: Users,
       color: "text-blue-600",
       bg: "bg-blue-50",
     },
     {
-      label: "Total CNSS (Employé)",
-      value: summary.totalCNSS.toLocaleString("fr-TN", { style: "currency", currency: "TND" }),
+      label: t('total_cnss'),
+      value: summary.totalCNSS.toLocaleString(`${locale}-TN`, { style: "currency", currency: "TND" }),
       icon: Building2,
       color: "text-purple-600",
       bg: "bg-purple-50",
     },
     {
-      label: "Total IRPP",
-      value: summary.totalIRPP.toLocaleString("fr-TN", { style: "currency", currency: "TND" }),
+      label: t('total_irpp'),
+      value: summary.totalIRPP.toLocaleString(`${locale}-TN`, { style: "currency", currency: "TND" }),
       icon: FileText,
       color: "text-red-600",
       bg: "bg-red-50",
     },
     {
-      label: "Heures Supp.",
-      value: summary.totalOvertime.toLocaleString("fr-TN", { style: "currency", currency: "TND" }),
+      label: t('overtime'),
+      value: summary.totalOvertime.toLocaleString(`${locale}-TN`, { style: "currency", currency: "TND" }),
       icon: Clock,
       color: "text-amber-600",
       bg: "bg-amber-50",

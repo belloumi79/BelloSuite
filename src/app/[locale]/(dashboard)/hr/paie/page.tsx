@@ -6,23 +6,26 @@ import { PaySlipTable } from "./components/PaySlipTable";
 import { PaySlipModal } from "./components/PaySlipModal";
 import { DollarSign, FileText, Users, Settings, Plus } from "lucide-react";
 import { useSession } from "@/hooks/useSession";
+import { useTranslations } from 'next-intl'
 
 const MONTHS = [
-  { value: 1, label: "Janvier" },
-  { value: 2, label: "Février" },
-  { value: 3, label: "Mars" },
-  { value: 4, label: "Avril" },
-  { value: 5, label: "Mai" },
-  { value: 6, label: "Juin" },
-  { value: 7, label: "Juillet" },
-  { value: 8, label: "Août" },
-  { value: 9, label: "Septembre" },
-  { value: 10, label: "Octobre" },
-  { value: 11, label: "Novembre" },
-  { value: 12, label: "Décembre" },
+  { value: 1 },
+  { value: 2 },
+  { value: 3 },
+  { value: 4 },
+  { value: 5 },
+  { value: 6 },
+  { value: 7 },
+  { value: 8 },
+  { value: 9 },
+  { value: 10 },
+  { value: 11 },
+  { value: 12 },
 ];
 
 export default function PaiePage() {
+  const t = useTranslations('HR.payroll')
+  const tm = useTranslations('Commercial.months')
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { tenantId } = useSession();
@@ -84,20 +87,20 @@ export default function PaiePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Paie</h1>
-          <p className="text-gray-500">Gestion des bulletins de salaire</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="text-gray-500">{t('subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <button className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg">
             <Settings className="w-4 h-4" />
-            Paramètres
+            {t('settings')}
           </button>
           <button
             onClick={handleGeneratePayslips}
             className="flex items-center gap-2 px-4 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded-lg"
           >
             <Plus className="w-4 h-4" />
-            Générer Bulletins
+            {t('generate')}
           </button>
         </div>
       </div>
@@ -105,14 +108,14 @@ export default function PaiePage() {
       {/* Period Selector */}
       <div className="flex items-center gap-4 p-4 bg-white rounded-xl border">
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Période:</label>
+          <label className="text-sm font-medium text-gray-700">{t('period')}</label>
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
             className="px-3 py-2 border rounded-lg text-sm"
           >
             {MONTHS.map((m) => (
-              <option key={m.value} value={m.value}>{m.label}</option>
+              <option key={m.value} value={m.value}>{tm(String(m.value))}</option>
             ))}
           </select>
           <select
@@ -129,15 +132,15 @@ export default function PaiePage() {
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded bg-yellow-400" />
-            <span className="text-gray-600">Brouillon ({summary?.statusBreakdown?.draft || 0})</span>
+            <span className="text-gray-600">{t('draft_count', { count: summary?.statusBreakdown?.draft || 0 })}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded bg-blue-400" />
-            <span className="text-gray-600">Validé ({summary?.statusBreakdown?.validated || 0})</span>
+            <span className="text-gray-600">{t('validated_count', { count: summary?.statusBreakdown?.validated || 0 })}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded bg-green-400" />
-            <span className="text-gray-600">Payé ({summary?.statusBreakdown?.paid || 0})</span>
+            <span className="text-gray-600">{t('paid_count', { count: summary?.statusBreakdown?.paid || 0 })}</span>
           </div>
         </div>
       </div>
@@ -148,7 +151,7 @@ export default function PaiePage() {
       {/* Payslips Table */}
       <div className="bg-white rounded-xl border">
         <div className="p-4 border-b">
-          <h2 className="font-semibold text-gray-900">Bulletins de Salaire</h2>
+          <h2 className="font-semibold text-gray-900">{t('payslips')}</h2>
         </div>
         <PaySlipTable
           payslips={payslips}

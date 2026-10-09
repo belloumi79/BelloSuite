@@ -7,18 +7,19 @@ import { useSession } from '@/hooks/useSession';
 import { ChevronLeft, Save, X, Info, Calculator, DollarSign, Calendar, User, FileText, RefreshCw, XCircle } from 'lucide-react';
 
 export default function NewRetenueSourcePage() {
+  const tc = useTranslations('Common.errors')
   const { tenantId } = useSession();
-  const t = useTranslations('Commercial.RetenueSourceEditor');
+  const t = useTranslations('Commercial.RetenueSource.RetenueSourceEditor');
   const locale = useLocale();
   const router = useRouter();
   
   const SERVICE_TYPES = [
-    { value: 'PRESTATION_SERVICE', label: t('service_types.PRESTATION_SERVICE'), taux: '15% (7.5% société)' },
-    { value: 'HONORAIRES', label: t('service_types.HONORAIRES'), taux: '15% (7.5% société)' },
-    { value: 'LOYERS', label: t('service_types.LOYERS'), taux: '5% (2.5% société)' },
+    { value: 'PRESTATION_SERVICE', label: t('service_types.PRESTATION_SERVICE'), taux: tc('rate_15_company') },
+    { value: 'HONORAIRES', label: t('service_types.HONORAIRES'), taux: tc('rate_15_company') },
+    { value: 'LOYERS', label: t('service_types.LOYERS'), taux: tc('rate_5_company') },
     { value: 'DIVIDENDES', label: t('service_types.DIVIDENDES'), taux: '5%' },
     { value: 'INTERETS', label: t('service_types.INTERETS'), taux: '20%' },
-    { value: 'ROYALTIES', label: t('service_types.ROYALTIES'), taux: '15% (7.5% société)' },
+    { value: 'ROYALTIES', label: t('service_types.ROYALTIES'), taux: tc('rate_15_company') },
     { value: 'REMUNERATION', label: t('service_types.REMUNERATION'), taux: '19%' },
     { value: 'AUTRE', label: t('service_types.AUTRE'), taux: '—' },
   ];
@@ -97,7 +98,7 @@ export default function NewRetenueSourcePage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Erreur lors de la création');
+        throw new Error(data.error || tc('create_failed'));
       }
       router.push('/commercial/retenue-source');
     } catch (err: any) {

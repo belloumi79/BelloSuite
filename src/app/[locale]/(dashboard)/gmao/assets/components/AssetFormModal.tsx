@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, Save, Settings, Tag, Calendar, DollarSign, Loader2, Calculator } from "lucide-react";
+import { useTranslations } from 'next-intl'
 
 interface AssetFormModalProps {
   onClose: () => void;
@@ -10,6 +11,7 @@ interface AssetFormModalProps {
 }
 
 export function AssetFormModal({ onClose, onSave, tenantId }: AssetFormModalProps) {
+  const t = useTranslations('GMAO.assets.form')
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +52,7 @@ export function AssetFormModal({ onClose, onSave, tenantId }: AssetFormModalProp
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Une erreur est survenue lors de la création.");
+        throw new Error(errorData.error || t('error'));
       }
 
       onSave();
@@ -68,8 +70,8 @@ export function AssetFormModal({ onClose, onSave, tenantId }: AssetFormModalProp
         {/* Header */}
         <div className="px-8 py-6 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
           <div>
-            <h2 className="text-2xl font-black text-stone-900">Nouvel Équipement</h2>
-            <p className="text-sm font-medium text-stone-500 mt-1">Ajouter une machine ou un équipement pour la maintenance</p>
+            <h2 className="text-2xl font-black text-stone-900">{t('title')}</h2>
+            <p className="text-sm font-medium text-stone-500 mt-1">{t('subtitle')}</p>
           </div>
           <button
             onClick={onClose}
@@ -91,28 +93,28 @@ export function AssetFormModal({ onClose, onSave, tenantId }: AssetFormModalProp
 
             <div className="space-y-6">
               <h3 className="text-sm font-bold text-teal-600 uppercase tracking-wider flex items-center gap-2">
-                <Settings className="w-4 h-4" /> Détails de l'équipement
+                <Settings className="w-4 h-4" /> {t('details')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Code/Référence <span className="text-red-500">*</span></label>
-                  <input required name="code" value={formData.code} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder="ex: MAC-001" />
+                  <label className="text-sm font-semibold text-stone-700">{t('code')} <span className="text-red-500">*</span></label>
+                  <input required name="code" value={formData.code} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder={t('code_placeholder')} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Nom complet <span className="text-red-500">*</span></label>
-                  <input required name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder="Presse hydraulique 50T" />
+                  <label className="text-sm font-semibold text-stone-700">{t('name')} <span className="text-red-500">*</span></label>
+                  <input required name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder={t('name_placeholder')} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-semibold text-stone-700">Description</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('description')}</label>
                   <textarea name="description" value={formData.description} onChange={handleChange} rows={2} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Catégorie</label>
-                  <input name="category" value={formData.category} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder="Électrique, Mécanique..." />
+                  <label className="text-sm font-semibold text-stone-700">{t('category')}</label>
+                  <input name="category" value={formData.category} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder={t('category_placeholder')} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Emplacement</label>
-                  <input name="location" value={formData.location} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder="Atelier A" />
+                  <label className="text-sm font-semibold text-stone-700">{t('location')}</label>
+                  <input name="location" value={formData.location} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder={t('location_placeholder')} />
                 </div>
               </div>
             </div>
@@ -121,43 +123,43 @@ export function AssetFormModal({ onClose, onSave, tenantId }: AssetFormModalProp
 
             <div className="space-y-6">
               <h3 className="text-sm font-bold text-teal-600 uppercase tracking-wider flex items-center gap-2">
-                <DollarSign className="w-4 h-4" /> Acquisition & Garantie
+                <DollarSign className="w-4 h-4" /> {t('acquisition')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Date d'achat</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('purchase_date')}</label>
                   <input type="date" name="purchaseDate" value={formData.purchaseDate} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Fin de Garantie</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('warranty_end')}</label>
                   <input type="date" name="warrantyEnd" value={formData.warrantyEnd} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
                 </div>
                  <div className="space-y-2">
-                   <label className="text-sm font-semibold text-stone-700">Valeur d'acquisition (TND)</label>
+                   <label className="text-sm font-semibold text-stone-700">{t('acquisition_value')}</label>
                    <input type="number" step="0.001" name="purchaseValue" value={formData.purchaseValue} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
                  </div>
                  <div className="space-y-2">
-                   <label className="text-sm font-semibold text-stone-700">Valeur résiduelle (TND)</label>
+                   <label className="text-sm font-semibold text-stone-700">{t('residual_value')}</label>
                    <input type="number" step="0.001" name="salvageValue" value={formData.salvageValue} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
                  </div>
                  <div className="space-y-2">
-                   <label className="text-sm font-semibold text-stone-700">Durée de vie (années)</label>
+                   <label className="text-sm font-semibold text-stone-700">{t('lifespan')}</label>
                    <input type="number" step="1" name="usefulLife" value={formData.usefulLife} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
                  </div>
                  <div className="space-y-2">
-                   <label className="text-sm font-semibold text-stone-700">Méthode d'amortissement</label>
+                   <label className="text-sm font-semibold text-stone-700">{t('depreciation')}</label>
                    <select name="amortizationMethod" value={formData.amortizationMethod} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all">
-                     <option value="LINEAR">Linéaire</option>
-                     <option value="DEGRESSIVE">Dégressive</option>
+                     <option value="LINEAR">{t('linear')}</option>
+                     <option value="DEGRESSIVE">{t('degressive')}</option>
                    </select>
                  </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Statut initial</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('initial_status')}</label>
                   <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all">
-                    <option value="ACTIVE">Actif / En Service</option>
-                    <option value="IN_MAINTENANCE">En Maintenance</option>
-                    <option value="BROKEN">En Panne</option>
-                    <option value="RETIRED">Hors Service</option>
+                    <option value="ACTIVE">{t('active')}</option>
+                    <option value="IN_MAINTENANCE">{t('in_maintenance')}</option>
+                    <option value="BROKEN">{t('broken')}</option>
+                    <option value="RETIRED">{t('retired')}</option>
                   </select>
                 </div>
               </div>
@@ -173,7 +175,7 @@ export function AssetFormModal({ onClose, onSave, tenantId }: AssetFormModalProp
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl font-bold text-sm text-stone-600 bg-white border border-stone-200 hover:bg-stone-50 transition-colors"
           >
-            Annuler
+            {t('cancel')}
           </button>
           <button
             type="submit"
@@ -182,7 +184,7 @@ export function AssetFormModal({ onClose, onSave, tenantId }: AssetFormModalProp
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 transition-colors"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Enregistrer
+            {t('save')}
           </button>
         </div>
       </div>

@@ -25,7 +25,7 @@ const MODULE_REGISTRY: Record<string, { tKey: string; icon: any; path: string; a
   commercial:  { tKey: 'Home.modules.commercial.title', icon: ShoppingCart, path: '/commercial' },
   accounting:  { tKey: 'Home.modules.accounting.title', icon: Wallet, path: '/accounting/chart' },
   hr:          { tKey: 'Home.modules.hr.title', icon: Users, path: '/hr' },
-  pos:         { tKey: 'Home.modules.commercial.title', icon: ShoppingCart, path: '/pos' },
+  pos:         { tKey: 'Sidebar.pos', icon: ShoppingCart, path: '/pos' },
   gmao:        { tKey: 'Home.modules.maintenance.title', icon: Wrench, path: '/gmao' },
   gpao:        { tKey: 'Home.modules.production.title', icon: Factory, path: '/gpao' },
 }
@@ -78,10 +78,10 @@ export default function Sidebar() {
     .map(key => MODULE_REGISTRY[key])
 
   return (
-    <aside className={`bg-zinc-950 border-inline-end border-zinc-800/50 flex flex-col transition-all duration-500 ease-in-out h-screen sticky top-0 z-[60] ${isCollapsed ? 'w-20' : 'w-72'}`}>
+    <aside className={`bg-zinc-950 border-e border-zinc-800/50 flex flex-col transition-all duration-500 ease-in-out h-screen sticky top-0 z-[60] ${isCollapsed ? 'w-20' : 'w-72'}`}>
       <div className="p-6 flex items-center justify-between shrink-0">
         {!isCollapsed && (
-          <div className="flex items-center gap-3 animate-in fade-in slide-in-from-inline-start duration-500">
+          <div className="flex items-center gap-3 animate-in fade-in slide-in-from-start duration-500">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
               <span className="text-white font-black text-xl">B</span>
             </div>
@@ -96,7 +96,7 @@ export default function Sidebar() {
             <span className="text-white font-black text-xl">B</span>
           </div>
         )}
-        <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 hover:bg-zinc-900 rounded-xl text-zinc-400 transition-colors hidden sm:block margin-inline-start-2">
+        <button onClick={() => setIsCollapsed(!isCollapsed)} aria-label={t('Sidebar.toggle')} className="p-2 hover:bg-zinc-900 rounded-xl text-zinc-400 transition-colors hidden sm:block ms-2">
           {isCollapsed ? (isRtl ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />) : (isRtl ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />)}
         </button>
       </div>
@@ -112,9 +112,9 @@ export default function Sidebar() {
               const isActive = pathname === module.path || (module.path !== '/dashboard' && pathname.startsWith(module.path))
               return (
                 <Link key={module.key} href={module.path} className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all group relative overflow-hidden ${isActive ? 'bg-teal-500/10 text-teal-400 shadow-[inset_0_0_12px_rgba(20,184,166,0.1)]' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900/50'}`}>
-                  {isActive && <div className="absolute inset-inline-start-0 w-1.5 h-6 bg-teal-500 rounded-inline-end-full transition-all" />}
+                  {isActive && <div className="absolute start-0 w-1.5 h-6 bg-teal-500 rounded-e-full transition-all" />}
                   <module.icon className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-teal-400' : ''}`} />
-                  {!isCollapsed && <span className="font-semibold text-sm tracking-wide grow animate-in fade-in slide-in-from-inline-start duration-300">{t(module.tKey as any)}</span>}
+                  {!isCollapsed && <span className="font-semibold text-sm tracking-wide grow animate-in fade-in slide-in-from-start duration-300">{t(module.tKey as any)}</span>}
                 </Link>
               )
             })}
@@ -150,7 +150,7 @@ export default function Sidebar() {
           <div className="bg-zinc-900/50 rounded-2xl p-4 animate-in fade-in slide-in-from-bottom duration-500">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-teal-500/30 flex items-center justify-center overflow-hidden flex-shrink-0">
-                <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.email}`} alt="Avatar" />
+                <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.email}`} alt={t('Sidebar.avatar_alt')} />
               </div>
               <div className="overflow-hidden">
                 <p className="text-sm font-bold text-white truncate">{user.firstName || user.email?.split('@')[0]}</p>

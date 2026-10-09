@@ -3,15 +3,18 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { Plus, X, GripVertical, MessageSquare, Calendar, Clock, CheckCircle, ChevronLeft, Tag, Users } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
 
-const PRIORITY_META: Record<string, { label: string; cls: string }> = {
-  low:      { label: 'Basse',     cls: 'bg-zinc-700 text-zinc-400' },
-  medium:   { label: 'Moyenne',   cls: 'bg-amber-500/20 text-amber-400' },
-  high:     { label: 'Haute',     cls: 'bg-red-500/20 text-red-400' },
-  critical: { label: 'Critique',  cls: 'bg-violet-500/20 text-violet-400' },
+const PRIORITY_META: Record<string, { cls: string }> = {
+  low:      { cls: 'bg-zinc-700 text-zinc-400' },
+  medium:   { cls: 'bg-amber-500/20 text-amber-400' },
+  high:     { cls: 'bg-red-500/20 text-red-400' },
+  critical: { cls: 'bg-violet-500/20 text-violet-400' },
 }
 
 export default function ProjectKanbanPage() {
+  const t = useTranslations('Projects.kanban')
+  const locale = useLocale()
   const [columns, setColumns] = useState<any[]>([])
   const [tasks, setTasks] = useState<any[]>([])
   const [members, setMembers] = useState<any[]>([])
@@ -64,15 +67,15 @@ export default function ProjectKanbanPage() {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div>
-            <h2 className="text-xl font-black text-white">Tableau Kanban</h2>
-            <p className="text-xs text-zinc-500">{tasks.length} tâches · {columns.length} colonnes</p>
+            <h2 className="text-xl font-black text-white">{t('title')}</h2>
+            <p className="text-xs text-zinc-500">{t('summary', { tasks: tasks.length, columns: columns.length })}</p>
           </div>
         </div>
         <button
           onClick={() => { setEditingTask({ columnId: columns[0]?.id }); setShowModal(true) }}
           className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-sm transition-colors"
         >
-          <Plus className="w-4 h-4" /> Nouvelle tâche
+          <Plus className="w-4 h-4" /> {t('new_task')}
         </button>
       </div>
 
@@ -123,17 +126,17 @@ export default function ProjectKanbanPage() {
                     <div className="flex items-center gap-3 text-zinc-500">
                       {task.priority && (
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${PRIORITY_META[task.priority]?.cls}`}>
-                          {PRIORITY_META[task.priority]?.label}
+                          {PRIORITY_META[task.priority] ? t(`priorities.${task.priority}`) : task.priority}
                         </span>
                       )}
                       {task.dueDate && (
                         <span className={`text-[10px] font-bold flex items-center gap-1 ${new Date(task.dueDate) < new Date() ? 'text-red-400' : 'text-zinc-500'}`}>
                           <Clock className="w-3 h-3" />
-                          {new Date(task.dueDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          {new Date(task.dueDate).toLocaleDateString(`${locale}-TN`, { day: 'numeric', month: 'short' })}
                         </span>
                       )}
                       {task.assignee && (
-                        <div className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center text-[9px] font-black text-white ml-auto"
+                        <div className="w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center text-[9px] font-black text-white ms-auto"
                           title={task.assignee.email}>
                           {task.assignee.firstName?.[0] || '?'}
                         </div>
@@ -151,7 +154,7 @@ export default function ProjectKanbanPage() {
                           <MessageSquare className="w-3 h-3" />{task.comments.length}
                         </span>
                       )}
-                      <GripVertical className="w-3 h-3 text-zinc-600 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <GripVertical className="w-3 h-3 text-zinc-600 ms-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
                 ))}
@@ -162,7 +165,7 @@ export default function ProjectKanbanPage() {
                 onClick={() => { setEditingTask({ _type: 'add_task', columnId: col.id }); setShowModal(true) }}
                 className="m-3 mt-0 flex items-center justify-center gap-2 py-2.5 bg-zinc-800/30 hover:bg-zinc-800/60 text-zinc-500 hover:text-zinc-300 rounded-xl text-xs font-bold transition-all border border-dashed border-zinc-700/50"
               >
-                <Plus className="w-3.5 h-3.5" /> Ajouter
+                <Plus className="w-3.5 h-3.5" /> {t('add')}
               </button>
             </div>
           )
@@ -173,7 +176,7 @@ export default function ProjectKanbanPage() {
           onClick={() => { setEditingTask({ _type: 'add_column' }); setShowModal(true) }}
           className="flex-shrink-0 w-72 h-12 flex items-center justify-center gap-2 bg-zinc-900/30 hover:bg-zinc-900/60 text-zinc-600 hover:text-zinc-400 rounded-2xl text-sm font-bold transition-all border border-dashed border-zinc-800"
         >
-          <Plus className="w-4 h-4" /> Nouvelle colonne
+          <Plus className="w-4 h-4" /> {t('new_column')}
         </button>
       </div>
 
@@ -193,6 +196,7 @@ export default function ProjectKanbanPage() {
 }
 
 function KanbanModal({ task, columns, members, projectId, onClose, onSave }: any) {
+  const t = useTranslations('Projects.kanban')
   const isNew = !task?.id
   const [form, setForm] = useState({
     title: task?.title || '',
@@ -230,7 +234,7 @@ function KanbanModal({ task, columns, members, projectId, onClose, onSave }: any
       <div className="bg-zinc-900 rounded-3xl w-full max-w-lg border border-zinc-700 shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-6 border-b border-zinc-800">
           <span className="text-xs font-black text-zinc-500 uppercase tracking-widest">
-            {form._type === 'add_column' ? 'Nouvelle colonne' : isNew ? 'Nouvelle tâche' : 'Modifier la tâche'}
+            {form._type === 'add_column' ? t('new_column') : isNew ? t('new_task') : t('edit_task')}
           </span>
           <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-xl"><X className="w-5 h-5 text-zinc-400" /></button>
         </div>
@@ -239,56 +243,56 @@ function KanbanModal({ task, columns, members, projectId, onClose, onSave }: any
           <input
             value={form.title}
             onChange={e => setForm({ ...form, title: e.target.value })}
-            placeholder={form._type === 'add_column' ? 'Nom de la colonne...' : 'Titre de la tâche...'}
+            placeholder={form._type === 'add_column' ? t('column_name') : t('task_title')}
             className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white font-bold placeholder-zinc-600 focus:outline-none focus:border-teal-500"
           />
           {form._type !== 'add_column' && (
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1.5 block">Colonne</label>
+                  <label className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1.5 block">{t('column')}</label>
                   <select value={form.columnId} onChange={e => setForm({ ...form, columnId: e.target.value })}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-teal-500">
                     {columns.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1.5 block">Priorité</label>
+                  <label className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1.5 block">{t('priority')}</label>
                   <select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-teal-500">
-                    <option value="low">🟢 Basse</option><option value="medium">🟡 Moyenne</option>
-                    <option value="high">🔴 Haute</option><option value="critical">🟣 Critique</option>
+                    <option value="low">{t('priority_low')}</option><option value="medium">{t('priority_medium')}</option>
+                    <option value="high">{t('priority_high')}</option><option value="critical">{t('priority_critical')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1.5 block">Assigné</label>
+                  <label className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1.5 block">{t('assignee')}</label>
                   <select value={form.assigneeId} onChange={e => setForm({ ...form, assigneeId: e.target.value })}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-teal-500">
-                    <option value="">Non assigné</option>
+                    <option value="">{t('unassigned')}</option>
                     {members.map((m: any) => <option key={m.id} value={m.id}>{m.firstName || m.email}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1.5 block">Échéance</label>
+                  <label className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1.5 block">{t('due')}</label>
                   <input type="date" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-teal-500" />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1.5 block">Description</label>
+                <label className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1.5 block">{t('description')}</label>
                 <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3}
-                  placeholder="Détails..." className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-3 text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-teal-500 resize-none" />
+                  placeholder={t('details')} className="w-full bg-zinc-800/50 border border-zinc-700 rounded-xl px-4 py-3 text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-teal-500 resize-none" />
               </div>
             </>
           )}
         </div>
 
         <div className="flex justify-end gap-3 p-6 border-t border-zinc-800">
-          <button onClick={onClose} className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold text-sm">Annuler</button>
+          <button onClick={onClose} className="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold text-sm">{t('cancel')}</button>
           <button onClick={handleSave}
             disabled={!form.title.trim()}
             className="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 disabled:bg-zinc-700 text-white rounded-xl font-black text-sm">
-            {isNew || form._type === 'add_column' ? 'Créer' : 'Enregistrer'}
+            {isNew || form._type === 'add_column' ? t('create') : t('save')}
           </button>
         </div>
       </div>
