@@ -192,7 +192,7 @@ export default function CommercialDashboard() {
         <div className="px-8 py-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-black text-zinc-900 dark:text-white text-start">{t('recent_docs')}</h2>
-            <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">Dernières transactions éditées</p>
+            <p className="text-xs text-zinc-400 font-bold uppercase tracking-widest mt-1">{t('recent_docs_subtitle')}</p>
           </div>
           <Link href="/commercial/documents" className="group/link text-xs font-black text-teal-600 dark:text-teal-400 uppercase tracking-widest border-b-2 border-transparent hover:border-teal-500 transition-all pb-1 flex items-center gap-2">
             {t('view_all')} <ArrowRight className={`w-4 h-4 transition-transform group-hover/link:translate-x-1 ${isRTL ? 'rotate-180 group-hover/link:-translate-x-1' : ''}`} />
@@ -208,7 +208,7 @@ export default function CommercialDashboard() {
           <div className="p-24 flex flex-col items-center text-center">
             <p className="text-zinc-400 dark:text-zinc-500 font-black text-lg uppercase tracking-widest">{t('no_doc')}</p>
             <Link href="/commercial/documents/new" className="mt-4 px-6 py-3 bg-teal-600 text-white rounded-2xl font-black text-sm transition-transform active:scale-95 shadow-lg shadow-teal-500/20">
-              {t('new_document', { label: '' }).replace('{label}', '') || 'Créer une facture'}
+              {t('create_invoice')}
             </Link>
           </div>
         ) : (

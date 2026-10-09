@@ -95,7 +95,22 @@
     "avatar_alt": "Avatar"
   },
   "Common": {
-    "dashboard": "Tableau de Bord"
+    "dashboard": "Tableau de Bord",
+    "errors": {
+      "save_failed": "Erreur lors de l'enregistrement",
+      "delete_failed": "Erreur lors de la suppression",
+      "create_failed": "Erreur lors de la création",
+      "export_failed": "Erreur lors de l'export",
+      "generic": "Une erreur est survenue",
+      "load_failed": "Erreur de chargement",
+      "connection_error": "Erreur de connexion",
+      "rate_15_company": "15% (7.5% société)",
+      "rate_5_company": "5% (2.5% société)",
+      "error_prefix": "Erreur : {error}",
+      "server": "Erreur serveur",
+      "failed": "Échec",
+      "submit_failed": "Échec de la soumission"
+    }
   },
   "Auth": {
     "login_title": "Bon retour sur BelloSuite",
@@ -520,7 +535,8 @@
         "city_placeholder": "Sfax",
         "saving": "Enregistrement...",
         "save": "Enregistrer le Fournisseur",
-        "cancel": "Annuler"
+        "cancel": "Annuler",
+        "phone_placeholder": "+216 -- --- ---"
       }
     },
     "Invoices": {
@@ -591,7 +607,9 @@
         "ACCEPTED": "Accepté",
         "REJECTED": "Rejeté",
         "CANCELLED": "Annulé"
-      }
+      },
+      "due_date": "Échéance",
+      "date": "Date"
     },
     "DocumentList": {
       "ttc_total": "Total TTC",
@@ -830,8 +848,12 @@
           "sms": "Notification rapide",
           "whatsapp": "Message direct"
         }
-      }
-    }
+      },
+      "empty_desc": "Aucune facture impayée à traiter.",
+      "empty_title": "Perfecto!"
+    },
+    "recent_docs_subtitle": "Dernières transactions éditées",
+    "create_invoice": "Créer une facture"
   },
   "Landing": {
     "nav": {
@@ -968,5 +990,48 @@
     "marketing": "Marketing",
     "accept": "Accepter",
     "reject": "Refuser"
+  },
+  "Import": {
+    "formats": "Formats acceptés: .csv, .xlsx, .xls",
+    "preview_first_rows": "Aperçu ({count} premières lignes)",
+    "from_file": "Depuis un fichier CSV ou Excel",
+    "unsupported_format": "Format de fichier non supporté",
+    "unreadable": "Impossible de lire le fichier",
+    "drop_here": "Glissez votre fichier ici",
+    "clients": {
+      "import_n": "Importer {count} clients",
+      "title": "Import Clients"
+    },
+    "preview_rows": "Aperçu ({count} lignes)",
+    "and_more": "...et {count} autres",
+    "importing": "Import en cours...",
+    "template_xlsx": "Template XLSX",
+    "template": "Template",
+    "imported": "Importés",
+    "errors": "Erreurs",
+    "error": "Erreur",
+    "failures": "Échecs",
+    "total": "Total",
+    "created": "Créés",
+    "suppliers": {
+      "import_n": "Importer {count} fournisseurs",
+      "title": "Import Fournisseurs"
+    },
+    "employees": {
+      "browse": "cliquez pour parcourir — formats: .csv, .xlsx, .xls",
+      "drop_here": "Glissez votre fichier CSV ou Excel ici",
+      "subtitle": "Mass import depuis Excel / CSV",
+      "import_n": "Importer {count} employés",
+      "title": "Import Employés",
+      "created": "Employés créés"
+    },
+    "chart": {
+      "formats": "Formats: .csv, .xlsx, .xls — Colonnes: accountNumber, name, type, parentAccountNumber",
+      "drop_here": "Glissez votre plan comptable ici",
+      "import_n": "Importer {count} comptes",
+      "title": "Import Plan Comptable",
+      "created": "Comptes créés"
+    },
+    "unsupported_short": "Format non supporté"
   }
 }

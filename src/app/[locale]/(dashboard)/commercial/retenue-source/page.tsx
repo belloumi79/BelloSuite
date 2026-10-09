@@ -12,6 +12,7 @@ import {
 import { useSession } from '@/hooks/useSession'
 
 export default function RetenueSourcePage() {
+  const tc = useTranslations('Common.errors')
   const t = useTranslations('Commercial.RetenueSource');
   const locale = useLocale();
   const router = useRouter();
@@ -102,9 +103,9 @@ export default function RetenueSourcePage() {
         fetchRecords();
         fetchResume();
       } else {
-        alert(result.error || 'Erreur export');
+        alert(result.error || tc('export_failed'));
       }
-    } catch (e) { alert('Erreur de connexion'); }
+    } catch (e) { alert(tc('connection_error')); }
     finally { setExportLoading(false); }
   };
 

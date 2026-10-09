@@ -95,7 +95,22 @@
     "avatar_alt": "الصورة الرمزية"
   },
   "Common": {
-    "dashboard": "لوحة القيادة"
+    "dashboard": "لوحة القيادة",
+    "errors": {
+      "save_failed": "خطأ أثناء الحفظ",
+      "delete_failed": "خطأ أثناء الحذف",
+      "create_failed": "خطأ أثناء الإنشاء",
+      "export_failed": "خطأ أثناء التصدير",
+      "generic": "حدث خطأ",
+      "load_failed": "خطأ في التحميل",
+      "connection_error": "خطأ في الاتصال",
+      "rate_15_company": "15% (7.5% للشركات)",
+      "rate_5_company": "5% (2.5% للشركات)",
+      "error_prefix": "خطأ: {error}",
+      "server": "خطأ في الخادم",
+      "failed": "فشل",
+      "submit_failed": "فشل الإرسال"
+    }
   },
   "Auth": {
     "login_title": "مرحبًا بك مجددًا في BelloSuite",
@@ -520,7 +535,8 @@
         "city_placeholder": "صفاقس",
         "saving": "جاري الحفظ...",
         "save": "حفظ المزود",
-        "cancel": "إلغاء"
+        "cancel": "إلغاء",
+        "phone_placeholder": "+216 -- --- ---"
       }
     },
     "Invoices": {
@@ -591,7 +607,9 @@
         "ACCEPTED": "مقبول",
         "REJECTED": "مرفوض",
         "CANCELLED": "ملغى"
-      }
+      },
+      "due_date": "تاريخ الاستحقاق",
+      "date": "التاريخ"
     },
     "DocumentList": {
       "ttc_total": "إجمالي مع الأداءات",
@@ -830,8 +848,12 @@
           "sms": "إشعار سريع",
           "whatsapp": "رسالة مباشرة"
         }
-      }
-    }
+      },
+      "empty_desc": "لا توجد فواتير غير مدفوعة للمعالجة.",
+      "empty_title": "كل شيء على ما يرام!"
+    },
+    "recent_docs_subtitle": "آخر المعاملات المحرّرة",
+    "create_invoice": "إنشاء فاتورة"
   },
   "Landing": {
     "nav": {
@@ -968,5 +990,48 @@
     "marketing": "تسويقية",
     "accept": "قبول",
     "reject": "رفض"
+  },
+  "Import": {
+    "formats": "الصيغ المقبولة: ‎.csv و‎.xlsx و‎.xls",
+    "preview_first_rows": "معاينة (أول {count} سطرًا)",
+    "from_file": "من ملف CSV أو Excel",
+    "unsupported_format": "صيغة الملف غير مدعومة",
+    "unreadable": "تعذّرت قراءة الملف",
+    "drop_here": "اسحب ملفك إلى هنا",
+    "clients": {
+      "import_n": "استيراد {count} عميل",
+      "title": "استيراد العملاء"
+    },
+    "preview_rows": "معاينة ({count} سطرًا)",
+    "and_more": "...و{count} أخرى",
+    "importing": "جارٍ الاستيراد...",
+    "template_xlsx": "نموذج XLSX",
+    "template": "نموذج",
+    "imported": "المستوردة",
+    "errors": "الأخطاء",
+    "error": "خطأ",
+    "failures": "الإخفاقات",
+    "total": "المجموع",
+    "created": "المنشأة",
+    "suppliers": {
+      "import_n": "استيراد {count} مورد",
+      "title": "استيراد الموردين"
+    },
+    "employees": {
+      "browse": "انقر للتصفح — الصيغ: ‎.csv و‎.xlsx و‎.xls",
+      "drop_here": "اسحب ملف CSV أو Excel إلى هنا",
+      "subtitle": "استيراد جماعي من Excel / CSV",
+      "import_n": "استيراد {count} موظف",
+      "title": "استيراد الموظفين",
+      "created": "الموظفون المنشؤون"
+    },
+    "chart": {
+      "formats": "الصيغ: ‎.csv و‎.xlsx و‎.xls — الأعمدة: accountNumber وname وtype وparentAccountNumber",
+      "drop_here": "اسحب دليل الحسابات إلى هنا",
+      "import_n": "استيراد {count} حساب",
+      "title": "استيراد دليل الحسابات",
+      "created": "الحسابات المنشأة"
+    },
+    "unsupported_short": "صيغة غير مدعومة"
   }
 }

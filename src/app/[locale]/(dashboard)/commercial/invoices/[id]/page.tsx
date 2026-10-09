@@ -23,6 +23,7 @@ const TTN_STATUS_COLORS: Record<string, string> = {
 }
 
 export default function InvoiceDetailPage() {
+  const tc = useTranslations('Common.errors')
   const t = useTranslations('Commercial.InvoiceDetail')
   const ti = useTranslations('Commercial.Invoices')
   const locale = useLocale()
@@ -82,9 +83,9 @@ export default function InvoiceDetailPage() {
         a.click();
       } else {
         const err = await res.json();
-        alert('Erreur: ' + (err.error || 'Échec'));
+        alert(tc('error_prefix', { error: err.error || tc('failed') }));
       }
-    } catch (e) { alert('Erreur de connexion'); }
+    } catch (e) { alert(tc('connection_error')); }
     finally { setSubmitting(false); }
   };
 
@@ -102,9 +103,9 @@ export default function InvoiceDetailPage() {
       if (res.ok) {
         setWithholdingTax(result)
       } else {
-        alert('Erreur: ' + (result.error || 'Échec'))
+        alert(tc('error_prefix', { error: result.error || tc('failed') }))
       }
-    } catch (e) { alert('Erreur de connexion') }
+    } catch (e) { alert(tc('connection_error')) }
     finally { setGeneratingRS(false) }
   }
 
@@ -122,10 +123,10 @@ export default function InvoiceDetailPage() {
       if (res.ok) {
         setInvoice(result)
       } else {
-        alert('Erreur: ' + (result.error || 'Échec de la soumission'))
+        alert(tc('error_prefix', { error: result.error || tc('submit_failed') }))
       }
     } catch (e) {
-      alert('Erreur de connexion')
+      alert(tc('connection_error'))
     } finally {
       setSubmitting(false)
     }

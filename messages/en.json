@@ -95,7 +95,22 @@
     "avatar_alt": "Avatar"
   },
   "Common": {
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "errors": {
+      "save_failed": "Error while saving",
+      "delete_failed": "Error while deleting",
+      "create_failed": "Error while creating",
+      "export_failed": "Export error",
+      "generic": "An error occurred",
+      "load_failed": "Loading error",
+      "connection_error": "Connection error",
+      "rate_15_company": "15% (7.5% company)",
+      "rate_5_company": "5% (2.5% company)",
+      "error_prefix": "Error: {error}",
+      "server": "Server error",
+      "failed": "Failed",
+      "submit_failed": "Submission failed"
+    }
   },
   "Auth": {
     "login_title": "Login to your space",
@@ -520,7 +535,8 @@
         "city_placeholder": "Sfax",
         "saving": "Saving...",
         "save": "Save Supplier",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "phone_placeholder": "+216 -- --- ---"
       }
     },
     "Invoices": {
@@ -591,7 +607,9 @@
         "ACCEPTED": "Accepted",
         "REJECTED": "Rejected",
         "CANCELLED": "Cancelled"
-      }
+      },
+      "due_date": "Due date",
+      "date": "Date"
     },
     "DocumentList": {
       "ttc_total": "Total TTC",
@@ -830,8 +848,12 @@
           "sms": "Quick notification",
           "whatsapp": "Direct message"
         }
-      }
-    }
+      },
+      "empty_desc": "No unpaid invoices to process.",
+      "empty_title": "All clear!"
+    },
+    "recent_docs_subtitle": "Latest edited transactions",
+    "create_invoice": "Create an invoice"
   },
   "Landing": {
     "nav": {
@@ -968,5 +990,48 @@
     "marketing": "Marketing",
     "accept": "Accept",
     "reject": "Decline"
+  },
+  "Import": {
+    "formats": "Accepted formats: .csv, .xlsx, .xls",
+    "preview_first_rows": "Preview (first {count} rows)",
+    "from_file": "From a CSV or Excel file",
+    "unsupported_format": "Unsupported file format",
+    "unreadable": "Unable to read the file",
+    "drop_here": "Drop your file here",
+    "clients": {
+      "import_n": "Import {count} customers",
+      "title": "Import customers"
+    },
+    "preview_rows": "Preview ({count} rows)",
+    "and_more": "...and {count} more",
+    "importing": "Importing...",
+    "template_xlsx": "XLSX template",
+    "template": "Template",
+    "imported": "Imported",
+    "errors": "Errors",
+    "error": "Error",
+    "failures": "Failed",
+    "total": "Total",
+    "created": "Created",
+    "suppliers": {
+      "import_n": "Import {count} suppliers",
+      "title": "Import suppliers"
+    },
+    "employees": {
+      "browse": "click to browse — formats: .csv, .xlsx, .xls",
+      "drop_here": "Drop your CSV or Excel file here",
+      "subtitle": "Bulk import from Excel / CSV",
+      "import_n": "Import {count} employees",
+      "title": "Import employees",
+      "created": "Employees created"
+    },
+    "chart": {
+      "formats": "Formats: .csv, .xlsx, .xls — Columns: accountNumber, name, type, parentAccountNumber",
+      "drop_here": "Drop your chart of accounts here",
+      "import_n": "Import {count} accounts",
+      "title": "Import chart of accounts",
+      "created": "Accounts created"
+    },
+    "unsupported_short": "Unsupported format"
   }
 }

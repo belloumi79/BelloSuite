@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X, Download, Table, BookOpen } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 const TEMPLATE_FIELDS = [
   'accountNumber', 'name', 'type',
@@ -22,6 +23,7 @@ const SAMPLE_CHILD = {
 }
 
 export default function ImportChartPage() {
+  const ti = useTranslations('Import')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<any[]>([])
   const [results, setResults] = useState<any>(null)
@@ -43,7 +45,7 @@ export default function ImportChartPage() {
           setPreview(json.slice(0, 10))
         })
       } catch {
-        alert('Format non supporté')
+        alert(ti('unsupported_short'))
       }
     }
     reader.readAsArrayBuffer(f)
@@ -89,15 +91,15 @@ export default function ImportChartPage() {
             <BookOpen className="w-6 h-6 text-violet-400" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-white tracking-tight">Import Plan Comptable</h1>
-            <p className="text-zinc-500 font-medium text-sm mt-1">Depuis un fichier CSV ou Excel</p>
+            <h1 className="text-3xl font-black text-white tracking-tight">{ti('chart.title')}</h1>
+            <p className="text-zinc-500 font-medium text-sm mt-1">{ti('from_file')}</p>
           </div>
         </div>
         <button
           onClick={downloadTemplate}
           className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold text-sm border border-zinc-700"
         >
-          <Download className="w-4 h-4" /> Template XLSX
+          <Download className="w-4 h-4" /> {ti('template_xlsx')}
         </button>
       </div>
 
@@ -112,17 +114,17 @@ export default function ImportChartPage() {
         {file ? (
           <div className="flex items-center justify-center gap-3">
             <FileSpreadsheet className="w-8 h-8 text-violet-400" />
-            <div className="text-left">
+            <div className="text-start">
               <p className="font-bold text-white">{file.name}</p>
               <p className="text-xs text-zinc-500">{(file.size / 1024).toFixed(1)} KB</p>
             </div>
-            <button onClick={(e) => { e.stopPropagation(); setFile(null); setPreview([]); setResults(null) }} className="ml-4 p-2 hover:bg-zinc-700 rounded-lg"><X className="w-4 h-4 text-zinc-400" /></button>
+            <button onClick={(e) => { e.stopPropagation(); setFile(null); setPreview([]); setResults(null) }} className="ms-4 p-2 hover:bg-zinc-700 rounded-lg"><X className="w-4 h-4 text-zinc-400" /></button>
           </div>
         ) : (
           <>
             <Upload className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-            <p className="text-zinc-400 font-medium">Glissez votre plan comptable ici</p>
-            <p className="text-zinc-600 text-xs mt-2">Formats: .csv, .xlsx, .xls — Colonnes: accountNumber, name, type, parentAccountNumber</p>
+            <p className="text-zinc-400 font-medium">{ti('chart.drop_here')}</p>
+            <p className="text-zinc-600 text-xs mt-2">{ti('chart.formats')}</p>
           </>
         )}
       </div>
@@ -131,10 +133,10 @@ export default function ImportChartPage() {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Table className="w-4 h-4 text-zinc-500" />
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Aperçu ({preview.length} lignes)</p>
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{ti('preview_rows', { count: preview.length })}</p>
           </div>
           <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[1.5rem] overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-start text-xs">
               <thead>
                 <tr className="border-b border-zinc-800/50 bg-zinc-800/20">
                   {Object.keys(preview[0]).map(h => (
@@ -163,9 +165,9 @@ export default function ImportChartPage() {
           className="w-full py-4 bg-violet-600 hover:bg-violet-500 disabled:bg-zinc-700 text-white rounded-2xl font-black text-base transition-all flex items-center justify-center gap-3"
         >
           {loading ? (
-            <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Import en cours...</>
+            <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {ti('importing')}</>
           ) : (
-            <><Upload className="w-5 h-5" /> Importer {preview.length} comptes</>
+            <><Upload className="w-5 h-5" /> {ti('chart.import_n', { count: preview.length })}</>
           )}
         </button>
       )}
@@ -174,7 +176,7 @@ export default function ImportChartPage() {
         <div className="space-y-4">
           {results.error ? (
             <div className="bg-red-500/10 border border-red-500/20 rounded-[1.5rem] p-6">
-              <div className="flex items-center gap-3 text-red-400 font-bold mb-2"><AlertCircle className="w-5 h-5" /> Erreur</div>
+              <div className="flex items-center gap-3 text-red-400 font-bold mb-2"><AlertCircle className="w-5 h-5" /> {ti('error')}</div>
               <p className="text-red-300 text-sm font-mono">{results.error}</p>
             </div>
           ) : (
@@ -182,20 +184,20 @@ export default function ImportChartPage() {
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-emerald-500/10 rounded-2xl p-5 text-center">
                   <p className="text-3xl font-black text-emerald-400">{results.imported}</p>
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">Créés</p>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">{ti('created')}</p>
                 </div>
                 <div className="bg-red-500/10 rounded-2xl p-5 text-center">
                   <p className="text-3xl font-black text-red-400">{results.failed}</p>
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">Échecs</p>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">{ti('failures')}</p>
                 </div>
                 <div className="bg-zinc-800/50 rounded-2xl p-5 text-center">
                   <p className="text-3xl font-black text-zinc-400">{results.total}</p>
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">Total</p>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">{ti('total')}</p>
                 </div>
               </div>
               {results.log?.length > 0 && (
                 <div className="mb-4">
-                  <p className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-2 flex items-center gap-2"><CheckCircle className="w-3 h-3" /> Comptes créés</p>
+                  <p className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-2 flex items-center gap-2"><CheckCircle className="w-3 h-3" /> {ti('chart.created')}</p>
                   <div className="space-y-1">
                     {results.log.slice(0, 15).map((l: any, i: number) => (
                       <div key={i} className="flex items-center gap-3 text-xs font-mono text-zinc-400 bg-zinc-800/30 rounded-lg px-3 py-2">
@@ -205,13 +207,13 @@ export default function ImportChartPage() {
                         <span className="text-[10px] bg-zinc-700 text-zinc-400 px-2 py-0.5 rounded">{l.type}</span>
                       </div>
                     ))}
-                    {results.log.length > 15 && <p className="text-zinc-600 text-xs text-center">...et {results.log.length - 15} autres</p>}
+                    {results.log.length > 15 && <p className="text-zinc-600 text-xs text-center">{ti('and_more', { count: results.log.length - 15 })}</p>}
                   </div>
                 </div>
               )}
               {results.errors?.length > 0 && (
                 <div>
-                  <p className="text-xs font-black text-red-400 uppercase tracking-widest mb-2 flex items-center gap-2"><AlertCircle className="w-3 h-3" /> Erreurs</p>
+                  <p className="text-xs font-black text-red-400 uppercase tracking-widest mb-2 flex items-center gap-2"><AlertCircle className="w-3 h-3" /> {ti('errors')}</p>
                   <div className="space-y-1">
                     {results.errors.map((e: any, i: number) => (
                       <div key={i} className="flex items-center gap-3 text-xs font-mono text-red-300 bg-red-500/5 rounded-lg px-3 py-2">

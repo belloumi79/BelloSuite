@@ -218,8 +218,8 @@ export default function PaymentsPage() {
                         <CheckCircle className="w-10 h-10 text-emerald-500" />
                       </div>
                       <div>
-                        <p className="text-zinc-900 dark:text-white font-black text-xl">Perfecto!</p>
-                        <p className="text-zinc-400 font-medium">Aucune facture impayée à traiter.</p>
+                        <p className="text-zinc-900 dark:text-white font-black text-xl">{t('empty_title')}</p>
+                        <p className="text-zinc-400 font-medium">{t('empty_desc')}</p>
                       </div>
                     </div>
                   </td>

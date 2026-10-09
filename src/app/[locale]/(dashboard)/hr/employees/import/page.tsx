@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, X, Download, Table } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
+import { useTranslations } from 'next-intl'
 
 const TEMPLATE_FIELDS = [
   'employeeNumber', 'firstName', 'lastName', 'hireDate',
@@ -44,6 +45,7 @@ const SAMPLE = {
 }
 
 export default function ImportEmployeesPage() {
+  const ti = useTranslations('Import')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<any[]>([])
   const [results, setResults] = useState<any>(null)
@@ -66,7 +68,7 @@ export default function ImportEmployeesPage() {
           const json = XLSX.utils.sheet_to_json(ws, { defval: '' })
           setPreview(json.slice(0, 10))
         })
-      } catch { alert('Impossible de lire le fichier') }
+      } catch { alert(ti('unreadable')) }
     }
     reader.readAsArrayBuffer(f)
   }
@@ -107,14 +109,14 @@ export default function ImportEmployeesPage() {
     <div className="p-8 space-y-8 max-w-5xl mx-auto min-h-screen bg-transparent pt-0">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Import Employés</h1>
-          <p className="text-zinc-500 font-medium text-sm mt-1">Mass import depuis Excel / CSV</p>
+          <h1 className="text-3xl font-black text-white tracking-tight">{ti('employees.title')}</h1>
+          <p className="text-zinc-500 font-medium text-sm mt-1">{ti('employees.subtitle')}</p>
         </div>
         <button
           onClick={downloadTemplate}
           className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-bold text-sm"
         >
-          <Download className="w-4 h-4" /> Template
+          <Download className="w-4 h-4" /> {ti('template')}
         </button>
       </div>
 
@@ -133,19 +135,19 @@ export default function ImportEmployeesPage() {
         {file ? (
           <div className="flex items-center justify-center gap-3">
             <FileSpreadsheet className="w-8 h-8 text-teal-400" />
-            <div className="text-left">
+            <div className="text-start">
               <p className="font-bold text-white">{file.name}</p>
               <p className="text-xs text-zinc-500">{(file.size / 1024).toFixed(1)} KB</p>
             </div>
-            <button onClick={e => { e.stopPropagation(); setFile(null); setPreview([]) }} className="ml-4 p-2 hover:bg-zinc-700 rounded-lg">
+            <button onClick={e => { e.stopPropagation(); setFile(null); setPreview([]) }} className="ms-4 p-2 hover:bg-zinc-700 rounded-lg">
               <X className="w-4 h-4 text-zinc-400" />
             </button>
           </div>
         ) : (
           <>
             <Upload className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-            <p className="text-zinc-400 font-medium">Glissez votre fichier CSV ou Excel ici</p>
-            <p className="text-zinc-600 text-xs mt-2">cliquez pour parcourir — formats: .csv, .xlsx, .xls</p>
+            <p className="text-zinc-400 font-medium">{ti('employees.drop_here')}</p>
+            <p className="text-zinc-600 text-xs mt-2">{ti('employees.browse')}</p>
           </>
         )}
       </div>
@@ -155,10 +157,10 @@ export default function ImportEmployeesPage() {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Table className="w-4 h-4 text-zinc-500" />
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Aperçu ({preview.length} premières lignes)</p>
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{ti('preview_first_rows', { count: preview.length })}</p>
           </div>
           <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-[1.5rem] overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-start text-xs">
               <thead>
                 <tr className="border-b border-zinc-800/50 bg-zinc-800/20">
                   {Object.keys(preview[0]).map(h => (
@@ -188,9 +190,9 @@ export default function ImportEmployeesPage() {
           className="w-full py-4 bg-teal-600 hover:bg-teal-500 disabled:bg-zinc-700 text-white rounded-2xl font-black text-base transition-all flex items-center justify-center gap-3"
         >
           {loading ? (
-            <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Import en cours...</>
+            <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {ti('importing')}</>
           ) : (
-            <><Upload className="w-5 h-5" /> Importer {preview.length} employés</>
+            <><Upload className="w-5 h-5" /> {ti('employees.import_n', { count: preview.length })}</>
           )}
         </button>
       )}
@@ -201,7 +203,7 @@ export default function ImportEmployeesPage() {
           {results.error ? (
             <div className="bg-red-500/10 border border-red-500/20 rounded-[1.5rem] p-6">
               <div className="flex items-center gap-3 text-red-400 font-bold mb-2">
-                <AlertCircle className="w-5 h-5" /> Erreur
+                <AlertCircle className="w-5 h-5" /> {ti('error')}
               </div>
               <p className="text-red-300 text-sm font-mono">{results.error}</p>
             </div>
@@ -210,22 +212,22 @@ export default function ImportEmployeesPage() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-emerald-500/10 rounded-2xl p-5 text-center">
                   <p className="text-3xl font-black text-emerald-400">{results.imported}</p>
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">Importés</p>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">{ti('imported')}</p>
                 </div>
                 <div className="bg-red-500/10 rounded-2xl p-5 text-center">
                   <p className="text-3xl font-black text-red-400">{results.failed}</p>
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">Échecs</p>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">{ti('failures')}</p>
                 </div>
                 <div className="bg-zinc-800/50 rounded-2xl p-5 text-center">
                   <p className="text-3xl font-black text-zinc-400">{results.total}</p>
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">Total</p>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-1">{ti('total')}</p>
                 </div>
               </div>
 
               {results.log?.length > 0 && (
                 <div>
                   <p className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <CheckCircle className="w-3 h-3" /> Employés créés
+                    <CheckCircle className="w-3 h-3" /> {ti('employees.created')}
                   </p>
                   <div className="space-y-1">
                     {results.log.slice(0, 20).map((l: any, i: number) => (
@@ -235,7 +237,7 @@ export default function ImportEmployeesPage() {
                         <span className="text-zinc-500 truncate">{l.name}</span>
                       </div>
                     ))}
-                    {results.log.length > 20 && <p className="text-zinc-600 text-xs text-center">...et {results.log.length - 20} autres</p>}
+                    {results.log.length > 20 && <p className="text-zinc-600 text-xs text-center">{ti('and_more', { count: results.log.length - 20 })}</p>}
                   </div>
                 </div>
               )}
@@ -243,7 +245,7 @@ export default function ImportEmployeesPage() {
               {results.errors?.length > 0 && (
                 <div>
                   <p className="text-xs font-black text-red-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <AlertCircle className="w-3 h-3" /> Erreurs
+                    <AlertCircle className="w-3 h-3" /> {ti('errors')}
                   </p>
                   <div className="space-y-1">
                     {results.errors.map((e: any, i: number) => (
