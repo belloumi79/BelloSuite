@@ -110,7 +110,18 @@
       "server": "خطأ في الخادم",
       "failed": "فشل",
       "submit_failed": "فشل الإرسال"
-    }
+    },
+    "saving": "جارٍ الحفظ...",
+    "loading": "جارٍ التحميل...",
+    "search": "بحث...",
+    "save": "حفظ",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "cancel": "إلغاء",
+    "actions": "الإجراءات",
+    "close": "إغلاق",
+    "back": "رجوع",
+    "error": "خطأ"
   },
   "Auth": {
     "login_title": "مرحبًا بك مجددًا في BelloSuite",
@@ -381,7 +392,54 @@
     "or": "أو",
     "lines_count": "{count} أسطر",
     "and_more": "و {count} آخرين",
-    "errors_label": "الأخطاء"
+    "errors_label": "الأخطاء",
+    "edit": {
+      "required": "الرمز والاسم مطلوبان",
+      "saving": "جارٍ الحفظ...",
+      "title": "تعديل المنتج",
+      "add_variant": "إضافة متغير",
+      "purchase_price": "سعر الشراء (دون احتساب الأداء)",
+      "sale_price": "سعر البيع (دون احتساب الأداء)",
+      "image_url": "رابط الصورة",
+      "loading": "جارٍ التحميل...",
+      "active": "منتج نشط",
+      "min_stock": "الحد الأدنى للمخزون",
+      "info": "المعلومات",
+      "code_sku": "الرمز / SKU *",
+      "barcode": "الرمز الشريطي",
+      "description": "الوصف",
+      "supplier": "المورد",
+      "save": "حفظ",
+      "unit_kg": "كيلوغرام",
+      "category": "الفئة",
+      "none": "— لا شيء —",
+      "variants": "المتغيرات",
+      "vat": "الأداء على القيمة المضافة (%)",
+      "variant_color": "اللون",
+      "cancel": "إلغاء",
+      "error": "خطأ",
+      "images": "الصور",
+      "variant_size": "المقاس",
+      "name": "الاسم *",
+      "unit": "الوحدة",
+      "unit_l": "لتر",
+      "unit_m": "متر",
+      "unit_piece": "قطعة",
+      "unit_box": "علبة",
+      "variant_stock": "المخزون",
+      "pricing": "الأسعار",
+      "variant_price": "السعر",
+      "variant_name": "الاسم"
+    },
+    "ref_code": "المرجع: {code}",
+    "import_desc": "استورد منتجاتك دفعة واحدة من ملف CSV أو Excel.",
+    "import_success": "تم استيراد {created} منتج، {errors} خطأ",
+    "drop_here": "اسحب ملفك إلى هنا",
+    "click_to_browse": "أو انقر للتصفح",
+    "download_template": "تنزيل النموذج",
+    "import_in_progress": "جارٍ الاستيراد...",
+    "max_size": "5 ميغابايت كحد أقصى",
+    "close": "إغلاق"
   },
   "Commercial": {
     "module_title": "التصرف التجاري 🇹🇳",
@@ -1177,5 +1235,8 @@
       "created": "الحسابات المنشأة"
     },
     "unsupported_short": "صيغة غير مدعومة"
+  },
+  "Search": {
+    "placeholder": "ابحث عن منتج..."
   }
 }

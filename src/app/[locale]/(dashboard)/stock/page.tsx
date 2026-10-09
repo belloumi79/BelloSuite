@@ -161,7 +161,7 @@ export default function StockManagementPage() {
                     )}
                   </div>
                   <h3 className="font-black text-white text-lg mt-4">{wh.name}</h3>
-                  <p className="text-zinc-500 text-xs font-mono font-bold mt-1">Réf: {wh.code}</p>
+                  <p className="text-zinc-500 text-xs font-mono font-bold mt-1">{t('Stock.ref_code', { code: wh.code })}</p>
                   {wh.address && <p className="text-zinc-600 text-xs mt-1">{wh.address}</p>}
                   <div className="mt-4 pt-4 border-t border-zinc-800/50 flex items-center justify-between">
                     <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('Stock.value')}</p>

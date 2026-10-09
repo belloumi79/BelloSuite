@@ -110,7 +110,18 @@
       "server": "Server error",
       "failed": "Failed",
       "submit_failed": "Submission failed"
-    }
+    },
+    "saving": "Saving...",
+    "loading": "Loading...",
+    "search": "Search...",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "actions": "Actions",
+    "close": "Close",
+    "back": "Back",
+    "error": "Error"
   },
   "Auth": {
     "login_title": "Login to your space",
@@ -381,7 +392,54 @@
     "or": "or",
     "lines_count": "{count} lines",
     "and_more": "{count} more",
-    "errors_label": "Errors"
+    "errors_label": "Errors",
+    "edit": {
+      "required": "Code and name are required",
+      "saving": "Saving...",
+      "title": "Edit product",
+      "add_variant": "Add variant",
+      "purchase_price": "Purchase price (excl. VAT)",
+      "sale_price": "Sale price (excl. VAT)",
+      "image_url": "Image URL",
+      "loading": "Loading...",
+      "active": "Active product",
+      "min_stock": "Minimum stock",
+      "info": "Details",
+      "code_sku": "Code / SKU *",
+      "barcode": "Barcode",
+      "description": "Description",
+      "supplier": "Supplier",
+      "save": "Save",
+      "unit_kg": "Kilogram",
+      "category": "Category",
+      "none": "— None —",
+      "variants": "Variants",
+      "vat": "VAT (%)",
+      "variant_color": "Colour",
+      "cancel": "Cancel",
+      "error": "Error",
+      "images": "Images",
+      "variant_size": "Size",
+      "name": "Name *",
+      "unit": "Unit",
+      "unit_l": "Litre",
+      "unit_m": "Metre",
+      "unit_piece": "Piece",
+      "unit_box": "Box",
+      "variant_stock": "Stock",
+      "pricing": "Pricing",
+      "variant_price": "Price",
+      "variant_name": "Name"
+    },
+    "ref_code": "Ref: {code}",
+    "import_desc": "Bulk-import your products from a CSV or Excel file.",
+    "import_success": "{created} product(s) imported, {errors} error(s)",
+    "drop_here": "Drop your file here",
+    "click_to_browse": "or click to browse",
+    "download_template": "Download template",
+    "import_in_progress": "Importing...",
+    "max_size": "5 MB max.",
+    "close": "Close"
   },
   "Commercial": {
     "module_title": "Commercial Management 🇹🇳",
@@ -1177,5 +1235,8 @@
       "created": "Accounts created"
     },
     "unsupported_short": "Unsupported format"
+  },
+  "Search": {
+    "placeholder": "Search for a product..."
   }
 }

@@ -110,7 +110,18 @@
       "server": "Erreur serveur",
       "failed": "Échec",
       "submit_failed": "Échec de la soumission"
-    }
+    },
+    "saving": "Enregistrement...",
+    "loading": "Chargement...",
+    "search": "Rechercher...",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "cancel": "Annuler",
+    "actions": "Actions",
+    "close": "Fermer",
+    "back": "Retour",
+    "error": "Erreur"
   },
   "Auth": {
     "login_title": "Bon retour sur BelloSuite",
@@ -381,7 +392,54 @@
     "or": "ou",
     "lines_count": "{count} lignes",
     "and_more": "{count} autres",
-    "errors_label": "Erreurs"
+    "errors_label": "Erreurs",
+    "edit": {
+      "required": "Code et Nom sont requis",
+      "saving": "Enregistrement...",
+      "title": "Modifier Produit",
+      "add_variant": "Ajouter Variante",
+      "purchase_price": "Prix Achat (HT)",
+      "sale_price": "Prix Vente (HT)",
+      "image_url": "URL de l'image",
+      "loading": "Chargement...",
+      "active": "Produit actif",
+      "min_stock": "Stock Minimum",
+      "info": "Informations",
+      "code_sku": "Code / SKU *",
+      "barcode": "Code Barres",
+      "description": "Description",
+      "supplier": "Fournisseur",
+      "save": "Enregistrer",
+      "unit_kg": "Kilogramme",
+      "category": "Catégorie",
+      "none": "— Aucun —",
+      "variants": "Variantes",
+      "vat": "TVA (%)",
+      "variant_color": "Couleur",
+      "cancel": "Annuler",
+      "error": "Erreur",
+      "images": "Images",
+      "variant_size": "Taille",
+      "name": "Nom *",
+      "unit": "Unité",
+      "unit_l": "Litre",
+      "unit_m": "Mètre",
+      "unit_piece": "Pièce",
+      "unit_box": "Boîte",
+      "variant_stock": "Stock",
+      "pricing": "Prix",
+      "variant_price": "Prix",
+      "variant_name": "Nom"
+    },
+    "ref_code": "Réf : {code}",
+    "import_desc": "Importez vos produits en masse depuis un fichier CSV ou Excel.",
+    "import_success": "{created} produit(s) importé(s), {errors} erreur(s)",
+    "drop_here": "Glissez votre fichier ici",
+    "click_to_browse": "ou cliquez pour parcourir",
+    "download_template": "Télécharger le modèle",
+    "import_in_progress": "Import en cours...",
+    "max_size": "5 Mo max.",
+    "close": "Fermer"
   },
   "Commercial": {
     "module_title": "Gestion Commerciale 🇹🇳",
@@ -1177,5 +1235,8 @@
       "created": "Comptes créés"
     },
     "unsupported_short": "Format non supporté"
+  },
+  "Search": {
+    "placeholder": "Rechercher un produit..."
   }
 }
