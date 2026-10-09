@@ -21,8 +21,6 @@ model Client {
 
   invoices        Invoice[]
   purchaseOrders  PurchaseOrder[]
-  goodsReceipts   GoodsReceipt[]
-  supplierReturns SupplierReturn[]
 
   @@unique([tenantId, code])
 }
@@ -213,8 +211,6 @@ model GoodsReceipt {
 
   items    GoodsReceiptItem[]
   returns  SupplierReturn[]
-  Client   Client?            @relation(fields: [clientId], references: [id])
-  clientId String?
 
   @@unique([tenantId, number])
   @@index([tenantId, status])
@@ -260,8 +256,6 @@ model SupplierReturn {
   updatedAt   DateTime     @default(now()) @updatedAt
 
   items    SupplierReturnItem[]
-  Client   Client?              @relation(fields: [clientId], references: [id])
-  clientId String?
 
   @@unique([tenantId, number])
   @@index([receiptId])
