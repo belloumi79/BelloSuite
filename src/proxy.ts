@@ -65,7 +65,8 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const isPublicPage = PUBLIC_AUTH.some(p => cleanPath === p || cleanPath.startsWith(`${p}/`))
+  // La page d'accueil (landing) est publique : /, /fr, /en, /ar
+  const isPublicPage = cleanPath === '/' || PUBLIC_AUTH.some(p => cleanPath === p || cleanPath.startsWith(`${p}/`))
   const isPublicApi = PUBLIC_API_PATTERNS.some(p => cleanPath.startsWith(p))
   const sessionCookie = request.cookies.get('bello_session')?.value
 
