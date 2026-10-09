@@ -187,7 +187,38 @@
     "realtime_view": "عرض فوري",
     "active_modules": "وحداتك النشطة",
     "manage_modules": "إدارة وحداتي",
-    "soon": "قريباً"
+    "soon": "قريباً",
+    "summary": {
+      "top_selling": "المنتجات الأكثر مبيعًا (6 أشهر)",
+      "pending_invoices": "{count} فواتير في الانتظار",
+      "revenue_trend": "تطور رقم المعاملات (6 أشهر)",
+      "top_current": "أفضل المنتجات حاليًا",
+      "revenue": "رقم المعاملات",
+      "critical_items": "أصناف حرجة",
+      "revenue_change": "{change}% هذا الشهر",
+      "unpaid_invoices": "فواتير غير مدفوعة",
+      "receivables": "مستحقات العملاء",
+      "products_count": "{count} منتجات",
+      "invoices_this_month": "فواتير هذا الشهر",
+      "quantity_sold": "الكمية المباعة",
+      "active_clients": "العملاء النشطون",
+      "units_count": "{count} وحدة",
+      "stock_alerts": "تنبيهات المخزون",
+      "stock_value": "قيمة المخزون",
+      "dso": "متوسط أجل التحصيل (أيام)",
+      "employees": "الموظفون",
+      "summary": "ملخص",
+      "units": "وحدات"
+    },
+    "quick_actions": {
+      "new_invoice": "فاتورة جديدة",
+      "new_product": "منتج جديد",
+      "title": "إجراءات سريعة",
+      "new_client": "عميل جديد",
+      "new_employee": "موظف جديد",
+      "import": "استيراد",
+      "estimate": "عرض سعر"
+    }
   },
   "Stock": {
     "title": "إدارة المخزون",

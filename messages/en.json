@@ -187,7 +187,38 @@
     "realtime_view": "Real-Time View",
     "active_modules": "Your Active Modules",
     "manage_modules": "Manage my modules",
-    "soon": "Soon"
+    "soon": "Soon",
+    "summary": {
+      "top_selling": "Best-selling products (6 months)",
+      "pending_invoices": "{count} pending invoices",
+      "revenue_trend": "Revenue trend (6 months)",
+      "top_current": "Current top products",
+      "revenue": "Revenue",
+      "critical_items": "critical items",
+      "revenue_change": "{change}% this month",
+      "unpaid_invoices": "Unpaid invoices",
+      "receivables": "Customer receivables",
+      "products_count": "{count} products",
+      "invoices_this_month": "Invoices this month",
+      "quantity_sold": "Quantity sold",
+      "active_clients": "Active customers",
+      "units_count": "{count} units",
+      "stock_alerts": "Stock alerts",
+      "stock_value": "Stock value",
+      "dso": "DSO (days)",
+      "employees": "Employees",
+      "summary": "Summary",
+      "units": "units"
+    },
+    "quick_actions": {
+      "new_invoice": "New invoice",
+      "new_product": "New product",
+      "title": "Quick actions",
+      "new_client": "New customer",
+      "new_employee": "New employee",
+      "import": "Import",
+      "estimate": "Quote"
+    }
   },
   "Stock": {
     "title": "Stock Management",

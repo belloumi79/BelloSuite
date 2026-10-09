@@ -187,7 +187,38 @@
     "realtime_view": "Vue en Temps Réel",
     "active_modules": "Vos Modules Actifs",
     "manage_modules": "Gérer mes modules",
-    "soon": "Bientôt"
+    "soon": "Bientôt",
+    "summary": {
+      "top_selling": "Produits les plus vendus (6 mois)",
+      "pending_invoices": "{count} factures en attente",
+      "revenue_trend": "Évolution du CA (6 mois)",
+      "top_current": "Top produits actuels",
+      "revenue": "Chiffre d'affaires",
+      "critical_items": "articles critiques",
+      "revenue_change": "{change}% ce mois",
+      "unpaid_invoices": "Factures impayées",
+      "receivables": "Créances clients",
+      "products_count": "{count} produits",
+      "invoices_this_month": "Factures ce mois",
+      "quantity_sold": "Quantité vendue",
+      "active_clients": "Clients actifs",
+      "units_count": "{count} unités",
+      "stock_alerts": "Alertes stock",
+      "stock_value": "Valeur stock",
+      "dso": "DSO (jours)",
+      "employees": "Employés",
+      "summary": "Résumé",
+      "units": "unités"
+    },
+    "quick_actions": {
+      "new_invoice": "Nouvelle facture",
+      "new_product": "Nouveau produit",
+      "title": "Actions rapides",
+      "new_client": "Nouveau client",
+      "new_employee": "Nouvel employé",
+      "import": "Importer",
+      "estimate": "Devis"
+    }
   },
   "Stock": {
     "title": "Gestion de Stock",
