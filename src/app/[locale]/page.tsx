@@ -4,12 +4,15 @@ import {
   ArrowRight,
   Boxes,
   CalendarCheck,
+  ClipboardList,
   Check,
   FileText,
   FileSpreadsheet,
   Layers,
+  PackageSearch,
   Play,
   ShieldCheck,
+  Sparkles,
   Users,
   Wallet,
   X,
@@ -30,6 +33,23 @@ export default function Home() {
   const painItems = [0, 1, 2, 3].map(i => t(`pain.items.${i}`))
   const localItems = [0, 1, 2, 3, 4, 5].map(i => t(`local.items.${i}`))
   const benefits = [FileSpreadsheet, ShieldCheck, Boxes, Wallet, FileText, Users]
+
+  // Vidéo de démo : derja pour l'arabe, français sinon (l'anglais affiche la version française + une note).
+  const videoLang = locale === 'ar' ? 'ar' : 'fr'
+  const videoSrc = `/videos/bellosuite-${videoLang}.mp4`
+  const videoPoster = `/videos/bellosuite-${videoLang}-poster.jpg`
+
+  // Scénarios : la connexion démo redirige vers la page indiquée (liste blanche dans src/lib/demo-redirect.ts).
+  const scenarios = [
+    { icon: ClipboardList, next: '/commercial/documents/estimates' },
+    { icon: PackageSearch, next: '/stock/products' },
+    { icon: Wallet, next: '/commercial/treasury' },
+  ].map((s, i) => ({
+    ...s,
+    title: t(`scenarios.items.${i}.title`),
+    text: t(`scenarios.items.${i}.text`),
+    href: `/api/auth/demo?locale=${locale}&next=${encodeURIComponent(s.next)}`,
+  }))
 
   const btnPrimary =
     'inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-amber-500 text-zinc-950 font-bold text-lg shadow-lg shadow-amber-500/30 hover:bg-amber-400 transition-colors group'
@@ -92,6 +112,70 @@ export default function Home() {
             </a>
           </div>
           <p className="mt-8 text-sm text-zinc-400">{t('hero.note')}</p>
+        </div>
+      </section>
+
+      {/* Vidéo de démo */}
+      <section id="video" className="py-20 px-4 sm:px-6 lg:px-8 bg-zinc-900 text-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="inline-block mb-4 px-4 py-1.5 rounded-full border border-amber-500/40 text-amber-400 text-sm font-semibold tracking-wide uppercase">
+              {t('video.kicker')}
+            </p>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">{t('video.title')}</h2>
+            <p className="text-xl text-zinc-300 max-w-3xl mx-auto">{t('video.subtitle')}</p>
+          </div>
+          <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50 bg-black">
+            <video
+              key={videoSrc}
+              className="w-full aspect-video"
+              controls
+              playsInline
+              preload="metadata"
+              poster={videoPoster}
+              aria-label={t('video.caption')}
+            >
+              <source src={videoSrc} type="video/mp4" />
+            </video>
+          </div>
+          <p className="mt-4 text-center text-sm text-zinc-400">{t('video.note')}</p>
+          <p className="mt-6 text-center text-lg font-semibold text-amber-400">
+            <Sparkles className="inline w-5 h-5 me-2 -mt-1" />
+            {t('pilot')}
+          </p>
+        </div>
+      </section>
+
+      {/* 3 scénarios de démo */}
+      <section id="scenarios" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">{t('scenarios.title')}</h2>
+            <p className="text-xl text-zinc-600 max-w-2xl mx-auto">{t('scenarios.subtitle')}</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {scenarios.map(({ icon: Icon, title, text, href }, i) => (
+              <div key={href} className="flex flex-col p-8 rounded-2xl border-2 border-zinc-100 hover:border-amber-400 transition-colors">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-12 h-12 rounded-xl bg-zinc-950 text-amber-400 flex items-center justify-center">
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <span className="text-sm font-bold text-zinc-400">{i + 1}/3</span>
+                </div>
+                <h3 className="text-2xl font-bold mb-2">{title}</h3>
+                <p className="text-zinc-600 text-lg mb-8 flex-1">{text}</p>
+                {/* <a> classique : la route API pose le cookie démo puis redirige vers l'écran du scénario */}
+                <a
+                  href={href}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-zinc-950 text-white font-bold hover:bg-zinc-800 transition-colors group"
+                >
+                  <Play className="w-4 h-4" />
+                  {t('scenarios.try')}
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 rtl:rotate-180 transition-transform" />
+                </a>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

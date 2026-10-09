@@ -10,6 +10,7 @@
  *  - Google OAuth passe par une redirection de page (pas d'iframe) : rien à autoriser côté CSP
  *    hormis form-action vers Supabase/Google par précaution.
  *  - Polices : next/font les auto-héberge (font-src 'self').
+ *  - Vidéos de la landing servies depuis /videos (media-src 'self').
  */
 export function supabaseOrigin(url: string | undefined = process.env.NEXT_PUBLIC_SUPABASE_URL): string | null {
   if (!url) return null
@@ -32,6 +33,8 @@ export function buildContentSecurityPolicy(opts: { supabaseUrl?: string; isDev?:
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', 'blob:', 'https:'],
     'font-src': ["'self'", 'data:'],
+    // Vidéos de démo auto-hébergées (public/videos)
+    'media-src': ["'self'"],
     'connect-src': ["'self'", supaHttp, supaWs, ...(isDev ? ['ws:', 'http://localhost:*'] : [])],
     'frame-src': ["'self'", 'blob:'],
     'worker-src': ["'self'", 'blob:'],

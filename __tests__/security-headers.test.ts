@@ -9,6 +9,7 @@ describe('security headers', () => {
     expect(csp).toContain("frame-ancestors 'none'")
     expect(csp).toContain("object-src 'none'")
     expect(csp).toContain('upgrade-insecure-requests')
+    expect(csp).toContain("media-src 'self'")
   })
   it('CSP dev : unsafe-eval (Fast Refresh) et websockets locaux', () => {
     const csp = buildContentSecurityPolicy({ supabaseUrl: 'https://abc.supabase.co', isDev: true })

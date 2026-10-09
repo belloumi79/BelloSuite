@@ -1078,6 +1078,33 @@
       "meeting": "Demander une présentation",
       "note": "Démo ouverte sans inscription · Données d'exemple · Aucun engagement"
     },
+    "video": {
+      "kicker": "Vidéo de 2 minutes",
+      "title": "Voyez BelloSuite en action",
+      "subtitle": "Devis, facture, stock et impayés : trois situations de tous les jours, sur de vrais écrans.",
+      "note": "Version française, sous-titres incrustés. Une version en derja tunisienne est disponible sur la page arabe.",
+      "caption": "Vidéo de démonstration de BelloSuite"
+    },
+    "scenarios": {
+      "title": "3 scénarios de démo",
+      "subtitle": "Choisissez une situation : la démo s'ouvre directement sur le bon écran, sans compte à créer.",
+      "try": "Essayer ce scénario",
+      "items": {
+        "0": {
+          "title": "Un devis, puis une facture, en 1 minute",
+          "text": "Client, articles, TVA et timbre calculés pour vous : le document est prêt à imprimer."
+        },
+        "1": {
+          "title": "Voir son stock et ce qui manque",
+          "text": "La valeur du stock et les articles en alerte, pour commander avant la rupture."
+        },
+        "2": {
+          "title": "Savoir qui vous doit de l'argent",
+          "text": "Ce qu'il reste à encaisser et vos plus gros débiteurs, client par client."
+        }
+      }
+    },
+    "pilot": "On cherche 10 entreprises pilotes : essai gratuit, installation et accompagnement offerts.",
     "pain": {
       "title": "Combien vous coûtent vos fichiers Excel ?",
       "items": [
