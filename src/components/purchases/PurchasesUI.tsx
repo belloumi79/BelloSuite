@@ -7,7 +7,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname, useRouter } from '@/i18n/routing'
-import { Plus, Trash2, CheckCircle2, XCircle, PackageCheck, Undo2, FileText, Printer, Banknote } from 'lucide-react'
+import { Plus, Trash2, CheckCircle2, XCircle, PackageCheck, Undo2, FileText, Printer, Banknote, Pencil, Lock, Save } from 'lucide-react'
 import { StockPage, PageHeader, Card, Loading, EmptyState, Badge, Alert, Modal, Field, KpiCard, cls, useStockFormat, api } from '@/components/stock/ui'
 
 // ─── Types ──────────────────────────────────────────────────
@@ -20,10 +20,11 @@ type DocRow = {
   subtotal: string; total: string; supplier: Ref | null; warehouse: Ref | null; linkedOrder: { id: string; number: string } | null
   _count?: { receipts: number }
 }
-type Line = { id: string; productId: string | null; product: { code: string; name: string; unit: string } | null; description: string; quantity: number; unitPrice: number; total: number; received: number; returned: number; remaining: number }
+type Line = { id: string; productId: string | null; product: { code: string; name: string; unit: string } | null; description: string; quantity: number; unitPrice: number; total: number; received: number; returned: number; remaining: number; hasReceipts?: boolean }
 type DocDetail = DocRow & {
-  supplierRef: string | null; notes: string | null; taxAmount: string
+  supplierRef: string | null; notes: string | null; taxAmount: string; taxRate?: string
   lines: Line[]
+  editMode?: 'full' | 'received' | 'locked'; lockReason?: string | null
   receipts: Array<{ id: string; number: string; status: string; date: string; total: string; warehouse: Ref }>
   linkedInvoices: Array<{ id: string; number: string; status: string; subtotal: string; total: string; date: string }>
   summary: { ordered: number; received: number; invoiced: number; toInvoice: number; overInvoiced: number; status: string } | null
@@ -161,7 +162,8 @@ export function PurchaseDocsList({ docType }: { docType: 'ORDER' | 'INVOICE' }) 
 
 // ─── Création commande / facture ────────────────────────────
 
-type EditLine = { productId: string; description: string; quantity: string; unitPrice: string }
+/** `id` = ligne existante ; `minQty` = déjà reçu (net) ; `fixed` = ligne réceptionnée (ni suppression ni changement d'article). */
+type EditLine = { id?: string; productId: string; description: string; quantity: string; unitPrice: string; minQty?: number; fixed?: boolean }
 
 function LinesEditor({ lines, setLines, products, priceLabel }: { lines: EditLine[]; setLines: (l: EditLine[]) => void; products: Product[]; priceLabel: string }) {
   const t = useTranslations('Purchases')
@@ -182,18 +184,24 @@ function LinesEditor({ lines, setLines, products, priceLabel }: { lines: EditLin
             {lines.map((l, i) => (
               <tr key={i}>
                 <td className="px-2 py-1.5">
-                  <select className={cls.input} value={l.productId} onChange={e => {
+                  <select className={cls.input} value={l.productId} disabled={l.fixed} onChange={e => {
                     const p = products.find(x => x.id === e.target.value)
                     upd(i, { productId: e.target.value, description: p ? `${p.code} — ${p.name}` : '', unitPrice: p ? String(n(p.purchasePrice) || n(p.averageCost)) : l.unitPrice })
                   }}>
                     <option value="">{t('choose_product')}</option>
                     {products.map(p => <option key={p.id} value={p.id}>{p.code} — {p.name}</option>)}
+                    {l.productId && !products.some(p => p.id === l.productId) && <option value={l.productId}>{l.description}</option>}
                   </select>
                 </td>
-                <td className="px-2 py-1.5"><input type="number" min="0" step="any" className={`${cls.input} text-end`} value={l.quantity} onChange={e => upd(i, { quantity: e.target.value })} /></td>
+                <td className="px-2 py-1.5">
+                  <input type="number" min={l.minQty ?? 0} step="any" className={`${cls.input} text-end ${l.minQty && n(l.quantity) < l.minQty ? 'border-red-500' : ''}`} value={l.quantity} onChange={e => upd(i, { quantity: e.target.value })} />
+                  {!!l.minQty && <div className="mt-0.5 text-[11px] text-zinc-500 text-end">{t('min_received', { min: l.minQty })}</div>}
+                </td>
                 <td className="px-2 py-1.5"><input type="number" min="0" step="any" className={`${cls.input} text-end`} value={l.unitPrice} onChange={e => upd(i, { unitPrice: e.target.value })} /></td>
                 <td className={cls.tdNum}>{f.money(n(l.quantity) * n(l.unitPrice))}</td>
-                <td className="px-1"><button type="button" className={cls.btnGhost} onClick={() => setLines(lines.filter((_, j) => j !== i))} aria-label={t('remove_line')}><Trash2 className="w-4 h-4" /></button></td>
+                <td className="px-1">{l.fixed
+                  ? <span className="inline-flex p-2 text-zinc-400" title={t('line_received_locked')} aria-label={t('line_received_locked')}><Lock className="w-4 h-4" /></span>
+                  : <button type="button" className={cls.btnGhost} onClick={() => setLines(lines.filter((_, j) => j !== i))} aria-label={t('remove_line')}><Trash2 className="w-4 h-4" /></button>}</td>
               </tr>
             ))}
           </tbody>
@@ -285,6 +293,7 @@ export function PurchaseDocDetail({ id }: { id: string }) {
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [receiving, setReceiving] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
@@ -324,6 +333,7 @@ export function PurchaseDocDetail({ id }: { id: string }) {
   const isOrder = doc.type === 'ORDER'
   const st = doc.status
   const canReceive = isOrder && (st === 'CONFIRMED' || st === 'PARTIALLY_RECEIVED')
+  const editable = !!doc.editMode && doc.editMode !== 'locked'
 
   return (
     <StockPage>
@@ -331,6 +341,7 @@ export function PurchaseDocDetail({ id }: { id: string }) {
         description={`${doc.supplier?.name ?? '—'} · ${f.date(doc.date)}`}
         actions={<>
           <button onClick={() => window.print()} className={cls.btnSecondary}><Printer className="w-4 h-4" /> {t('print')}</button>
+          {editable && !editing && <button disabled={busy} onClick={() => setEditing(true)} className={cls.btnSecondary}><Pencil className="w-4 h-4" /> {t('edit')}</button>}
           {st === 'DRAFT' && <button disabled={busy} onClick={remove} className={cls.btnSecondary}><Trash2 className="w-4 h-4" /> {t('delete')}</button>}
           {isOrder && st === 'DRAFT' && <button disabled={busy} onClick={() => act('confirm')} className={cls.btnPrimary}><CheckCircle2 className="w-4 h-4" /> {t('confirm_order')}</button>}
           {!isOrder && st === 'DRAFT' && <button disabled={busy} onClick={() => act('validate')} className={cls.btnPrimary}><CheckCircle2 className="w-4 h-4" /> {t('validate_invoice')}</button>}
@@ -343,6 +354,12 @@ export function PurchaseDocDetail({ id }: { id: string }) {
       <PurchaseNav />
       {error && <Alert onClose={() => setError('')}>{error}</Alert>}
       {info && <Alert tone="green" onClose={() => setInfo('')}>{info}</Alert>}
+      {doc.editMode === 'locked' && doc.lockReason && (
+        <div className="no-print mb-4 flex items-start gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600 text-start">
+          <Lock className="w-4 h-4 mt-0.5 shrink-0" /> <span>{t(`lock_${doc.lockReason}` as 'lock_ORDER_RECEIVED')}</span>
+        </div>
+      )}
+      {editing && <EditDocForm doc={doc} onCancel={() => setEditing(false)} onSaved={() => { setEditing(false); setInfo(t('changes_saved')); load() }} />}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <KpiCard label={t('status')} value={<PurchaseStatus status={st} />} />
@@ -425,6 +442,95 @@ export function PurchaseDocDetail({ id }: { id: string }) {
 
       {receiving && <ReceiveModal doc={doc} onClose={() => setReceiving(false)} onDone={(num) => { setReceiving(false); setInfo(t('receipt_done', { number: num })); load() }} />}
     </StockPage>
+  )
+}
+
+// ─── Modification commande / facture ───────────────────────
+
+function EditDocForm({ doc, onCancel, onSaved }: { doc: DocDetail; onCancel: () => void; onSaved: () => void }) {
+  const t = useTranslations('Purchases')
+  const f = useStockFormat()
+  const { suppliers, warehouses, products } = useRefs()
+  const isOrder = doc.type === 'ORDER'
+  const constrained = doc.editMode === 'received'
+  const day = (d: string | null) => (d ? d.slice(0, 10) : '')
+  const initialVat = n(doc.subtotal) > 0 ? Math.round(n(doc.taxAmount) / n(doc.subtotal) * 100000) / 1000 : n(doc.taxRate)
+  const [supplierId, setSupplierId] = useState(doc.supplier?.id ?? '')
+  const [warehouseId, setWarehouseId] = useState(doc.warehouse?.id ?? '')
+  const [date, setDate] = useState(day(doc.date))
+  const [expectedDate, setExpectedDate] = useState(day(doc.expectedDate))
+  const [supplierRef, setSupplierRef] = useState(doc.supplierRef ?? '')
+  const [notes, setNotes] = useState(doc.notes ?? '')
+  const [vat, setVat] = useState(String(initialVat))
+  const [lines, setLines] = useState<EditLine[]>(() => doc.lines.map(l => {
+    const net = Math.max(0, Math.round((l.received - l.returned) * 1000) / 1000)
+    return {
+      id: l.id, productId: l.productId ?? '', description: l.description, quantity: String(l.quantity), unitPrice: String(l.unitPrice),
+      minQty: isOrder && net > 0 ? net : undefined, fixed: isOrder && !!l.hasReceipts,
+    }
+  }))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const valid = lines.filter(l => (l.productId || l.description) && n(l.quantity) > 0)
+  const belowMin = lines.some(l => l.minQty && n(l.quantity) < l.minQty)
+  const subtotal = valid.reduce((s, l) => s + n(l.quantity) * n(l.unitPrice), 0)
+  const tax = Math.round(subtotal * n(vat) * 10) / 1000
+
+  async function save() {
+    setBusy(true); setError('')
+    const r = await api(`/api/commercial/suppliers/orders/${doc.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        action: 'update', supplierId: supplierId || null, warehouseId: isOrder ? (warehouseId || null) : null,
+        date: date || null, expectedDate: isOrder ? (expectedDate || null) : null, supplierRef: supplierRef || null, notes: notes || null,
+        vatRate: n(vat),
+        items: valid.map(l => ({ id: l.id ?? null, productId: l.productId || null, description: l.description, quantity: n(l.quantity), unitPrice: n(l.unitPrice) })),
+      }),
+    })
+    setBusy(false)
+    if (!r.ok) setError(r.error || t('error_generic')); else onSaved()
+  }
+
+  return (
+    <Card title={t(isOrder ? 'edit_order' : 'edit_invoice')} className="no-print mb-6">
+      {error && <Alert onClose={() => setError('')}>{error}</Alert>}
+      {constrained && <Alert tone="amber">{t('edit_received_hint')}</Alert>}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <Field label={t('supplier')}>
+          <select className={cls.input} value={supplierId} disabled={constrained} title={constrained ? t('supplier_locked_received') : undefined} onChange={e => setSupplierId(e.target.value)}>
+            <option value="">{t('choose_supplier')}</option>
+            {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {doc.supplier && !suppliers.some(s => s.id === doc.supplier?.id) && <option value={doc.supplier.id}>{doc.supplier.name}</option>}
+          </select>
+        </Field>
+        {isOrder && (
+          <Field label={t('delivery_warehouse')}>
+            <select className={cls.input} value={warehouseId} onChange={e => setWarehouseId(e.target.value)}>
+              <option value="">—</option>
+              {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+              {doc.warehouse && !warehouses.some(w => w.id === doc.warehouse?.id) && <option value={doc.warehouse.id}>{doc.warehouse.name}</option>}
+            </select>
+          </Field>
+        )}
+        <Field label={t('doc_date')}><input type="date" className={cls.input} value={date} onChange={e => setDate(e.target.value)} /></Field>
+        {isOrder && <Field label={t('expected_date')}><input type="date" className={cls.input} value={expectedDate} onChange={e => setExpectedDate(e.target.value)} /></Field>}
+        <Field label={t(isOrder ? 'supplier_ref' : 'supplier_invoice_ref')}><input className={cls.input} value={supplierRef} onChange={e => setSupplierRef(e.target.value)} /></Field>
+        <Field label={t('vat_rate')}><input type="number" min="0" max="100" step="any" className={cls.input} value={vat} onChange={e => setVat(e.target.value)} /></Field>
+      </div>
+      <LinesEditor lines={lines} setLines={setLines} products={products} priceLabel={t('unit_price')} />
+      <div className="mt-3"><Field label={t('notes')}><textarea rows={2} className={cls.input} value={notes} onChange={e => setNotes(e.target.value)} /></Field></div>
+      <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+        <div className="flex gap-2">
+          <button className={cls.btnSecondary} disabled={busy} onClick={onCancel}>{t('cancel')}</button>
+          <button className={cls.btnPrimary} disabled={busy || !valid.length || belowMin || (isOrder && !supplierId)} onClick={save}><Save className="w-4 h-4" /> {t('save_changes')}</button>
+        </div>
+        <div className="flex flex-col items-end gap-1 text-sm">
+          <div>{t('subtotal')} : <span className="font-semibold tabular-nums">{f.money(subtotal)}</span></div>
+          <div>{t('vat')} : <span className="tabular-nums">{f.money(tax)}</span></div>
+          <div className="text-base">{t('total_ttc')} : <span className="font-bold tabular-nums">{f.money(subtotal + tax)}</span></div>
+        </div>
+      </div>
+    </Card>
   )
 }
 

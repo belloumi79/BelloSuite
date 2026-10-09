@@ -2363,6 +2363,23 @@
     "status_NOT_INVOICED": "Non facturée",
     "status_PARTIALLY_INVOICED": "Partiellement facturée",
     "status_INVOICED": "Facturée",
-    "status_OVER_INVOICED": "Sur-facturée"
+    "status_OVER_INVOICED": "Sur-facturée",
+    "edit": "Modifier",
+    "edit_order": "Modifier la commande",
+    "edit_invoice": "Modifier la facture",
+    "save_changes": "Enregistrer les modifications",
+    "changes_saved": "Modifications enregistrées",
+    "doc_date": "Date du document",
+    "notes": "Notes",
+    "supplier_ref": "Référence fournisseur",
+    "edit_received_hint": "Commande déjà partiellement réceptionnée : les lignes reçues ne peuvent être ni supprimées ni changées d'article, et leur quantité ne peut pas descendre sous le déjà reçu (net des retours). Vous pouvez ajouter de nouvelles lignes.",
+    "min_received": "Min. {min} (déjà reçu)",
+    "line_received_locked": "Ligne réceptionnée : suppression impossible",
+    "supplier_locked_received": "Fournisseur non modifiable après réception",
+    "lock_ORDER_RECEIVED": "Commande entièrement réceptionnée : elle n'est plus modifiable. Utilisez un retour fournisseur pour corriger les quantités.",
+    "lock_ORDER_CANCELLED": "Commande annulée : lecture seule.",
+    "lock_INVOICE_VALIDATED": "Facture validée : elle n'est plus modifiable. Pour la corriger, établissez un avoir fournisseur.",
+    "lock_INVOICE_PAID": "Facture payée : elle n'est plus modifiable. Pour la corriger, établissez un avoir fournisseur.",
+    "lock_INVOICE_CANCELLED": "Facture annulée : lecture seule."
   }
 }

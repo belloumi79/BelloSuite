@@ -2363,6 +2363,23 @@
     "status_NOT_INVOICED": "Not invoiced",
     "status_PARTIALLY_INVOICED": "Partially invoiced",
     "status_INVOICED": "Invoiced",
-    "status_OVER_INVOICED": "Over-invoiced"
+    "status_OVER_INVOICED": "Over-invoiced",
+    "edit": "Edit",
+    "edit_order": "Edit order",
+    "edit_invoice": "Edit invoice",
+    "save_changes": "Save changes",
+    "changes_saved": "Changes saved",
+    "doc_date": "Document date",
+    "notes": "Notes",
+    "supplier_ref": "Supplier reference",
+    "edit_received_hint": "This order has already been partly received: received lines cannot be deleted or switched to another item, and their quantity cannot go below the quantity already received (net of returns). You can add new lines.",
+    "min_received": "Min. {min} (already received)",
+    "line_received_locked": "Received line: cannot be deleted",
+    "supplier_locked_received": "Supplier cannot be changed after a receipt",
+    "lock_ORDER_RECEIVED": "Order fully received: it can no longer be edited. Use a supplier return to correct quantities.",
+    "lock_ORDER_CANCELLED": "Order cancelled: read-only.",
+    "lock_INVOICE_VALIDATED": "Invoice validated: it can no longer be edited. To correct it, issue a supplier credit note.",
+    "lock_INVOICE_PAID": "Invoice paid: it can no longer be edited. To correct it, issue a supplier credit note.",
+    "lock_INVOICE_CANCELLED": "Invoice cancelled: read-only."
   }
 }
