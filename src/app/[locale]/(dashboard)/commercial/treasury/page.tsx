@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { RefreshCw, TrendingUp, Clock, AlertTriangle, DollarSign, Users, BarChart2 } from 'lucide-react'
 import { useSession } from '@/hooks/useSession'
+import { useTranslations, useLocale } from 'next-intl'
 
 function StatCard({ label, value, sub, icon: Icon, color }: { label: string; value: string; sub: string; icon: any; color: string }) {
   const colorMap: Record<string, string> = {
@@ -34,6 +35,8 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 }
 
 export default function TreasuryPage() {
+  const t = useTranslations('Commercial.Treasury')
+  const locale = useLocale()
   const { tenantId } = useSession()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -52,7 +55,7 @@ export default function TreasuryPage() {
     finally { setLoading(false) }
   }
 
-  const fmt = (n: number) => n.toLocaleString('fr-TN', { maximumFractionDigits: 0 }) + ' DT'
+  const fmt = (n: number) => n.toLocaleString(`${locale}-TN`, { maximumFractionDigits: 0 }) + ' DT'
   const fmtK = (n: number) => {
     if (n >= 1000) return (n / 1000).toFixed(1) + ' K DT'
     return fmt(n)
@@ -61,7 +64,7 @@ export default function TreasuryPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center text-stone-500 font-bold">Chargement du dashboard trésorerie...</div>
+        <div className="text-center text-stone-500 font-bold">{t('loading')}</div>
       </div>
     )
   }
@@ -75,9 +78,9 @@ export default function TreasuryPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black text-stone-900 tracking-tight flex items-center gap-3">
-            💰 Dashboard Trésorerie
+            {t('title')}
           </h1>
-          <p className="text-stone-500 font-medium mt-1">Vue consolidée des encaissements et santé financière client</p>
+          <p className="text-stone-500 font-medium mt-1">{t('subtitle')}</p>
         </div>
         <button onClick={() => fetchTreasury(tenantId)} className="p-2.5 border border-stone-200 rounded-xl hover:bg-stone-50 text-stone-500">
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -86,27 +89,27 @@ export default function TreasuryPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard label="Total à Recevoir" value={fmtK(kpis.totalReceivable)} sub={`${kpis.totalReceivableCount || 0} factures`} icon={DollarSign} color="teal" />
-        <StatCard label="En Retard" value={fmtK(kpis.totalOverdue)} sub={`${kpis.overdueCount || 0} factures échues`} icon={AlertTriangle} color="red" />
-        <StatCard label="À Échoir" value={fmtK(kpis.totalDue)} sub="Échéance proche" icon={Clock} color="blue" />
-        <StatCard label="DMP" value={`${kpis.dmp || 0}j`} sub="Délai moyen de paiement" icon={TrendingUp} color="emerald" />
-        <StatCard label="Taux Encaissement" value={`${kpis.collectionRate || 0}%`} sub="Ce mois" icon={BarChart2} color="amber" />
+        <StatCard label={t('total_receivable')} value={fmtK(kpis.totalReceivable)} sub={t('invoices_count', { count: kpis.totalReceivableCount || 0 })} icon={DollarSign} color="teal" />
+        <StatCard label={t('overdue')} value={fmtK(kpis.totalOverdue)} sub={t('overdue_invoices', { count: kpis.overdueCount || 0 })} icon={AlertTriangle} color="red" />
+        <StatCard label={t('due_soon')} value={fmtK(kpis.totalDue)} sub={t('due_soon_sub')} icon={Clock} color="blue" />
+        <StatCard label={t('dmp')} value={t('days_short', { count: kpis.dmp || 0 })} sub={t('dmp_sub')} icon={TrendingUp} color="emerald" />
+        <StatCard label={t('collection_rate')} value={`${kpis.collectionRate || 0}%`} sub={t('this_month')} icon={BarChart2} color="amber" />
       </div>
 
       {/* Sub KPIs - overdue breakdown */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-orange-50 rounded-2xl border border-orange-200 p-4">
-          <p className="text-xs font-black text-orange-600 uppercase tracking-widest">1–30j de retard</p>
+          <p className="text-xs font-black text-orange-600 uppercase tracking-widest">{t('overdue_1_30')}</p>
           <p className="text-xl font-black text-orange-700 mt-1">{fmtK(kpis.overdue30 || 0)}</p>
           <MiniBar value={kpis.overdue30 || 0} max={maxDebt} color="bg-orange-400" />
         </div>
         <div className="bg-red-50 rounded-2xl border border-red-200 p-4">
-          <p className="text-xs font-black text-red-600 uppercase tracking-widest">31–60j de retard</p>
+          <p className="text-xs font-black text-red-600 uppercase tracking-widest">{t('overdue_31_60')}</p>
           <p className="text-xl font-black text-red-700 mt-1">{fmtK(kpis.overdue60 || 0)}</p>
           <MiniBar value={kpis.overdue60 || 0} max={maxDebt} color="bg-red-500" />
         </div>
         <div className="bg-red-100 rounded-2xl border border-red-300 p-4">
-          <p className="text-xs font-black text-red-800 uppercase tracking-widest">90j+ de retard</p>
+          <p className="text-xs font-black text-red-800 uppercase tracking-widest">{t('overdue_90')}</p>
           <p className="text-xl font-black text-red-900 mt-1">{fmtK(kpis.overdue90plus || 0)}</p>
           <MiniBar value={kpis.overdue90plus || 0} max={maxDebt} color="bg-red-700" />
         </div>
@@ -116,12 +119,12 @@ export default function TreasuryPage() {
         {/* Top 10 Debtors */}
         <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between">
-            <h2 className="font-black text-stone-900 flex items-center gap-2"><Users className="w-5 h-5" /> Top 10 Débiteurs</h2>
-            <span className="text-xs font-bold text-stone-400">{data?.topDebtors?.length || 0} clients</span>
+            <h2 className="font-black text-stone-900 flex items-center gap-2"><Users className="w-5 h-5" /> {t('top_debtors')}</h2>
+            <span className="text-xs font-bold text-stone-400">{t('clients_count', { count: data?.topDebtors?.length || 0 })}</span>
           </div>
           <div className="divide-y divide-stone-100">
             {(data?.topDebtors || []).length === 0 ? (
-              <div className="px-6 py-12 text-center text-stone-400 font-bold text-sm">Aucun impayé 🎉</div>
+              <div className="px-6 py-12 text-center text-stone-400 font-bold text-sm">{t('no_unpaid')}</div>
             ) : (
               data.topDebtors.map((d: any, i: number) => (
                 <div key={d.clientId} className="px-6 py-4 flex items-center gap-4 hover:bg-stone-50/60 transition-colors">
@@ -130,11 +133,11 @@ export default function TreasuryPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-stone-900 text-sm truncate">{d.clientName}</p>
-                    <p className="text-[10px] text-stone-400">{d.invoiceCount} facture{d.invoiceCount > 1 ? 's' : ''}</p>
+                    <p className="text-[10px] text-stone-400">{t('invoice_count_plural', { count: d.invoiceCount })}</p>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="text-end shrink-0">
                     <p className="font-black text-stone-900 font-mono text-sm">{fmt(d.totalDue)}</p>
-                    {d.daysOverdue > 0 && <p className="text-[10px] text-red-500 font-black">-{d.daysOverdue}j</p>}
+                    {d.daysOverdue > 0 && <p className="text-[10px] text-red-500 font-black">-{t('days_short', { count: d.daysOverdue })}</p>}
                   </div>
                   <div className="w-20 shrink-0">
                     <MiniBar value={d.totalDue} max={maxDebt} color={i === 0 ? 'bg-red-500' : 'bg-teal-500'} />
@@ -148,11 +151,11 @@ export default function TreasuryPage() {
         {/* Cash Flow Projection */}
         <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-stone-100">
-            <h2 className="font-black text-stone-900 flex items-center gap-2"><BarChart2 className="w-5 h-5" /> Projection Trésorerie (3 mois)</h2>
+            <h2 className="font-black text-stone-900 flex items-center gap-2"><BarChart2 className="w-5 h-5" /> {t('projection')}</h2>
           </div>
           <div className="p-6 space-y-6">
             {(data?.cashFlowProjection || []).length === 0 ? (
-              <div className="text-center text-stone-400 font-bold py-12">Pas de données</div>
+              <div className="text-center text-stone-400 font-bold py-12">{t('no_data')}</div>
             ) : (
               data.cashFlowProjection.map((cf: any, i: number) => {
                 const maxR = Math.max(...data.cashFlowProjection.map((c: any) => c.receivables), 1)
@@ -180,17 +183,17 @@ export default function TreasuryPage() {
       {/* Monthly Trend */}
       <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-stone-100">
-          <h2 className="font-black text-stone-900 flex items-center gap-2"><TrendingUp className="w-5 h-5" /> Tendance Mensuelle (6 mois)</h2>
+          <h2 className="font-black text-stone-900 flex items-center gap-2"><TrendingUp className="w-5 h-5" /> {t('monthly_trend')}</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-start">
             <thead>
               <tr className="bg-stone-50 text-[10px] font-black text-stone-500 uppercase tracking-widest">
-                <th className="px-6 py-4">Mois</th>
-                <th className="px-6 py-4 text-right">Facturé (DT)</th>
-                <th className="px-6 py-4 text-right">Encaissé (DT)</th>
-                <th className="px-6 py-4 text-right">En Retard (DT)</th>
-                <th className="px-6 py-4 text-right">Taux encaissement</th>
+                <th className="px-6 py-4">{t('month')}</th>
+                <th className="px-6 py-4 text-end">{t('invoiced_dt')}</th>
+                <th className="px-6 py-4 text-end">{t('collected_dt')}</th>
+                <th className="px-6 py-4 text-end">{t('overdue_dt')}</th>
+                <th className="px-6 py-4 text-end">{t('collection_rate_col')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -199,10 +202,10 @@ export default function TreasuryPage() {
                 return (
                   <tr key={mt.month} className="hover:bg-stone-50/60 transition-colors">
                     <td className="px-6 py-4 font-bold text-stone-700">{mt.month}</td>
-                    <td className="px-6 py-4 text-right font-mono font-bold text-stone-600">{fmt(mt.invoiced)}</td>
-                    <td className="px-6 py-4 text-right font-mono font-bold text-emerald-600">{fmt(mt.collected)}</td>
-                    <td className="px-6 py-4 text-right font-mono font-bold text-red-600">{fmt(mt.overdue)}</td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-end font-mono font-bold text-stone-600">{fmt(mt.invoiced)}</td>
+                    <td className="px-6 py-4 text-end font-mono font-bold text-emerald-600">{fmt(mt.collected)}</td>
+                    <td className="px-6 py-4 text-end font-mono font-bold text-red-600">{fmt(mt.overdue)}</td>
+                    <td className="px-6 py-4 text-end">
                       <div className="flex items-center justify-end gap-2">
                         <div className="w-20 bg-stone-100 rounded-full h-2">
                           <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${rate}%` }} />

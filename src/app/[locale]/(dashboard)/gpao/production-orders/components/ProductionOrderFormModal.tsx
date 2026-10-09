@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Save, Calendar, FileText, Settings, Flag, Loader2 } from "lucide-react";
+import { useTranslations } from 'next-intl'
 
 interface ProductionOrderFormModalProps {
   onClose: () => void;
@@ -10,6 +11,7 @@ interface ProductionOrderFormModalProps {
 }
 
 export function ProductionOrderFormModal({ onClose, onSave, tenantId }: ProductionOrderFormModalProps) {
+  const t = useTranslations('GPAO.orders.form')
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +65,7 @@ export function ProductionOrderFormModal({ onClose, onSave, tenantId }: Producti
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Erreur création OF");
+        throw new Error(errorData.error || t('error'));
       }
 
       onSave();
@@ -81,8 +83,8 @@ export function ProductionOrderFormModal({ onClose, onSave, tenantId }: Producti
         {/* Header */}
         <div className="px-8 py-6 border-b border-stone-100 flex items-center justify-between bg-emerald-50/50">
           <div>
-            <h2 className="text-2xl font-black text-stone-900">Nouvel Ordre de Fabrication (OF)</h2>
-            <p className="text-sm font-medium text-emerald-800 mt-1">Planifier une production sur poste</p>
+            <h2 className="text-2xl font-black text-stone-900">{t('title')}</h2>
+            <p className="text-sm font-medium text-emerald-800 mt-1">{t('subtitle')}</p>
           </div>
           <button onClick={onClose} className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full transition-colors">
             <X className="w-5 h-5" />
@@ -102,9 +104,9 @@ export function ProductionOrderFormModal({ onClose, onSave, tenantId }: Producti
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               
               <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-semibold text-stone-700">Produit à Fabriquer <span className="text-red-500">*</span></label>
+                <label className="text-sm font-semibold text-stone-700">{t('product')} <span className="text-red-500">*</span></label>
                 <select required name="productId" value={formData.productId} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
-                  <option value="">Sélectionner un produit...</option>
+                  <option value="">{t('select_product')}</option>
                   {products.map(p => (
                     <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
                   ))}
@@ -112,14 +114,14 @@ export function ProductionOrderFormModal({ onClose, onSave, tenantId }: Producti
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-stone-700">Quantité Cible <span className="text-red-500">*</span></label>
+                <label className="text-sm font-semibold text-stone-700">{t('qty')} <span className="text-red-500">*</span></label>
                 <input required type="number" step="0.1" name="quantity" value={formData.quantity} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-stone-700">Poste de Charge (Optionnel)</label>
+                <label className="text-sm font-semibold text-stone-700">{t('station')}</label>
                 <select name="workStationId" value={formData.workStationId} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
-                  <option value="">(Non assigné)</option>
+                  <option value="">{t('unassigned')}</option>
                   {workstations.map(ws => (
                     <option key={ws.id} value={ws.id}>{ws.name} ({ws.code})</option>
                   ))}
@@ -127,18 +129,18 @@ export function ProductionOrderFormModal({ onClose, onSave, tenantId }: Producti
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-stone-700 flex items-center gap-1"><Calendar className="w-3.5 h-3.5"/> Début Planifié</label>
+                <label className="text-sm font-semibold text-stone-700 flex items-center gap-1"><Calendar className="w-3.5 h-3.5"/> {t('start')}</label>
                 <input type="datetime-local" name="plannedStartDate" value={formData.plannedStartDate} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-stone-700 flex items-center gap-1"><Flag className="w-3.5 h-3.5"/> Fin Planifiée</label>
+                <label className="text-sm font-semibold text-stone-700 flex items-center gap-1"><Flag className="w-3.5 h-3.5"/> {t('end')}</label>
                 <input type="datetime-local" name="plannedEndDate" value={formData.plannedEndDate} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all" />
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-semibold text-stone-700 flex items-center gap-1"><FileText className="w-3.5 h-3.5"/> Notes et Instructions</label>
-                <textarea name="notes" value={formData.notes} onChange={handleChange} rows={3} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all" placeholder="Détails de production..."/>
+                <label className="text-sm font-semibold text-stone-700 flex items-center gap-1"><FileText className="w-3.5 h-3.5"/> {t('notes')}</label>
+                <textarea name="notes" value={formData.notes} onChange={handleChange} rows={3} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all" placeholder={t('notes_placeholder')}/>
               </div>
 
             </div>
@@ -153,7 +155,7 @@ export function ProductionOrderFormModal({ onClose, onSave, tenantId }: Producti
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl font-bold text-sm text-stone-600 bg-white border border-stone-200 hover:bg-stone-50 transition-colors"
           >
-            Annuler
+            {t('cancel')}
           </button>
           <button
             type="submit"
@@ -162,7 +164,7 @@ export function ProductionOrderFormModal({ onClose, onSave, tenantId }: Producti
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-colors"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Lancer l'OF
+            {t('submit')}
           </button>
         </div>
       </div>

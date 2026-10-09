@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, Save, User as UserIcon, Briefcase, Loader2 } from "lucide-react";
+import { useTranslations } from 'next-intl'
 
 interface EmployeeFormModalProps {
   onClose: () => void;
@@ -10,6 +11,7 @@ interface EmployeeFormModalProps {
 }
 
 export function EmployeeFormModal({ onClose, onSave, tenantId }: EmployeeFormModalProps) {
+  const t = useTranslations('HR.employees.form')
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +54,7 @@ export function EmployeeFormModal({ onClose, onSave, tenantId }: EmployeeFormMod
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Une erreur est survenue.");
+        throw new Error(errorData.error || t('error'));
       }
 
       onSave();
@@ -70,8 +72,8 @@ export function EmployeeFormModal({ onClose, onSave, tenantId }: EmployeeFormMod
         {/* Header */}
         <div className="px-8 py-6 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
           <div>
-            <h2 className="text-2xl font-black text-stone-900">Nouvel Employé</h2>
-            <p className="text-sm font-medium text-stone-500 mt-1">Ajouter un collaborateur à votre organisation</p>
+            <h2 className="text-2xl font-black text-stone-900">{t('title')}</h2>
+            <p className="text-sm font-medium text-stone-500 mt-1">{t('subtitle')}</p>
           </div>
           <button
             onClick={onClose}
@@ -93,31 +95,31 @@ export function EmployeeFormModal({ onClose, onSave, tenantId }: EmployeeFormMod
 
             <div className="space-y-6">
               <h3 className="text-sm font-bold text-teal-600 uppercase tracking-wider flex items-center gap-2">
-                <UserIcon className="w-4 h-4" /> Informations Personnelles
+                <UserIcon className="w-4 h-4" /> {t('personal')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Matricule <span className="text-red-500">*</span></label>
-                  <input required name="employeeNumber" value={formData.employeeNumber} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" placeholder="ex: MAT-001" />
+                  <label className="text-sm font-semibold text-stone-700">{t('id_number')} <span className="text-red-500">*</span></label>
+                  <input required name="employeeNumber" value={formData.employeeNumber} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" placeholder={t('id_placeholder')} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">CIN</label>
-                  <input name="cin" value={formData.cin} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" placeholder="N° de carte d'identité" />
+                  <label className="text-sm font-semibold text-stone-700">{t('cin')}</label>
+                  <input name="cin" value={formData.cin} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" placeholder={t('cin_placeholder')} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Prénom <span className="text-red-500">*</span></label>
+                  <label className="text-sm font-semibold text-stone-700">{t('first_name')} <span className="text-red-500">*</span></label>
                   <input required name="firstName" value={formData.firstName} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Nom <span className="text-red-500">*</span></label>
+                  <label className="text-sm font-semibold text-stone-700">{t('last_name')} <span className="text-red-500">*</span></label>
                   <input required name="lastName" value={formData.lastName} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Email</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('email')}</label>
                   <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Téléphone</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('phone')}</label>
                   <input name="phone" value={formData.phone} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
                 </div>
               </div>
@@ -127,19 +129,19 @@ export function EmployeeFormModal({ onClose, onSave, tenantId }: EmployeeFormMod
 
             <div className="space-y-6">
               <h3 className="text-sm font-bold text-teal-600 uppercase tracking-wider flex items-center gap-2">
-                <Briefcase className="w-4 h-4" /> Informations Professionnelles & Paie
+                <Briefcase className="w-4 h-4" /> {t('professional')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Poste</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('position')}</label>
                   <input name="poste" value={formData.poste} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Département</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('department')}</label>
                   <input name="departement" value={formData.departement} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Type de contrat</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('contract_type')}</label>
                   <select name="typeContrat" value={formData.typeContrat} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all">
                     <option value="CDI">CDI</option>
                     <option value="CDD">CDD</option>
@@ -149,15 +151,15 @@ export function EmployeeFormModal({ onClose, onSave, tenantId }: EmployeeFormMod
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Date d'embauche</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('hire_date')}</label>
                   <input type="date" name="hireDate" value={formData.hireDate} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">Salaire de Base (Brut TND)</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('base_salary')}</label>
                   <input type="number" step="0.001" name="salary" value={formData.salary} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-stone-700">N° CNSS</label>
+                  <label className="text-sm font-semibold text-stone-700">{t('cnss')}</label>
                   <input name="cnssNumber" value={formData.cnssNumber} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all" />
                 </div>
               </div>
@@ -173,7 +175,7 @@ export function EmployeeFormModal({ onClose, onSave, tenantId }: EmployeeFormMod
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl font-bold text-sm text-stone-600 bg-white border border-stone-200 hover:bg-stone-50 transition-colors"
           >
-            Annuler
+            {t('cancel')}
           </button>
           <button
             type="submit"
@@ -182,7 +184,7 @@ export function EmployeeFormModal({ onClose, onSave, tenantId }: EmployeeFormMod
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-50 transition-colors"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Enregistrer
+            {t('save')}
           </button>
         </div>
       </div>

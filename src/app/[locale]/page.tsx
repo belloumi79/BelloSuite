@@ -1,4 +1,4 @@
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import {
   ArrowRight,
@@ -21,6 +21,10 @@ const SALES_EMAIL = process.env.NEXT_PUBLIC_SALES_EMAIL || 'belloumi.karim.profe
 
 export default function Home() {
   const t = useTranslations('Landing')
+  const locale = useLocale()
+  // Lien démo en <a> classique : la route API pose le cookie puis redirige vers le tableau de bord.
+  // (Un <Link> client ne suit pas proprement une redirection vers une route API.)
+  const demoHref = `/api/auth/demo?locale=${locale}`
 
   const mailto = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent(t('mail.subject'))}&body=${encodeURIComponent(t('mail.body'))}`
   const painItems = [0, 1, 2, 3].map(i => t(`pain.items.${i}`))
@@ -47,9 +51,9 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-3 sm:gap-5">
             <LanguageSwitcher />
-            <Link href="/demo" className="hidden sm:inline text-sm font-semibold text-white/80 hover:text-white">
+            <a href={demoHref} className="hidden sm:inline text-sm font-semibold text-white/80 hover:text-white">
               {t('nav.demo')}
-            </Link>
+            </a>
             <Link href="/login" className="text-sm font-semibold text-white/80 hover:text-white">
               {t('nav.login')}
             </Link>
@@ -78,10 +82,10 @@ export default function Home() {
               {t('hero.trial')}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 rtl:rotate-180 transition-transform" />
             </Link>
-            <Link href="/demo" className={btnDemo}>
+            <a href={demoHref} className={btnDemo}>
               <Play className="w-5 h-5" />
               {t('hero.demo')}
-            </Link>
+            </a>
             <a href={mailto} className={btnGhost}>
               <CalendarCheck className="w-5 h-5" />
               {t('hero.meeting')}
@@ -155,10 +159,10 @@ export default function Home() {
         <div className="max-w-4xl mx-auto text-center text-zinc-950">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">{t('demo.title')}</h2>
           <p className="text-xl mb-10 max-w-2xl mx-auto">{t('demo.text')}</p>
-          <Link href="/demo" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-zinc-950 text-white font-bold text-lg hover:bg-zinc-800 transition-colors">
+          <a href={demoHref} className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-zinc-950 text-white font-bold text-lg hover:bg-zinc-800 transition-colors">
             <Play className="w-5 h-5" />
             {t('demo.button')}
-          </Link>
+          </a>
         </div>
       </section>
 

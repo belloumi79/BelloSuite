@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Plus, Wrench, AlertCircle, Clock, CheckCircle2, Search, Loader2 } from "lucide-react";
 import { WorkOrderFormModal } from "./components/WorkOrderFormModal";
 import { useSession } from '@/hooks/useSession'
+import { useTranslations, useLocale } from 'next-intl'
 
 interface WorkOrder {
   id: string;
@@ -31,13 +32,10 @@ const priorityIcons = {
   CRITICAL: <AlertCircle className="w-4 h-4 text-red-600" />,
 };
 
-const typeLabels = {
-  PREVENTIVE: "Préventive",
-  CORRECTIVE: "Corrective",
-  EMERGENCY: "Urgence",
-};
 
 export default function WorkOrdersPage() {
+  const t = useTranslations('GMAO.work_orders')
+  const locale = useLocale()
   const { tenantId } = useSession()
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,27 +73,27 @@ export default function WorkOrdersPage() {
         <div>
           <h1 className="text-3xl font-black text-stone-900 tracking-tight flex items-center gap-3">
             <Wrench className="w-8 h-8 text-teal-600" />
-            Ordres de Travail
+            {t('title')}
           </h1>
-          <p className="text-stone-500 font-medium text-sm mt-1">Gérez et suivez les interventions de maintenance.</p>
+          <p className="text-stone-500 font-medium text-sm mt-1">{t('subtitle')}</p>
         </div>
         <button 
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-sm transition-all shadow-sm shadow-teal-500/20"
         >
-          <Plus className="w-4 h-4" /> Nouvelle Intervention
+          <Plus className="w-4 h-4" /> {t('new')}
         </button>
       </div>
 
       <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <input 
             type="text" 
-            placeholder="Rechercher par titre, machine, technicien..." 
+            placeholder={t('search')} 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all"
+            className="w-full ps-10 pe-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 outline-none transition-all"
           />
         </div>
       </div>
@@ -107,12 +105,12 @@ export default function WorkOrdersPage() {
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="text-center py-24 px-4">
-            <p className="text-stone-500 font-medium">Aucun ordre de travail trouvé.</p>
+            <p className="text-stone-500 font-medium">{t('empty')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 bg-stone-50/50">
             {filteredOrders.map((wo) => (
-              <div key={wo.id} className="bg-white border text-left border-stone-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+              <div key={wo.id} className="bg-white border text-start border-stone-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                 <div className={`absolute top-0 left-0 w-1 h-full ${
                   wo.priority === 'CRITICAL' ? 'bg-red-500' :
                   wo.priority === 'HIGH' ? 'bg-amber-500' :
@@ -123,11 +121,11 @@ export default function WorkOrdersPage() {
                   <div className="flex items-center gap-2">
                     {priorityIcons[wo.priority]}
                     <span className={`text-xs font-bold px-2 py-1 rounded border ${statusColors[wo.status]}`}>
-                      {wo.status}
+                      {t.has(`statuses.${wo.status}`) ? t(`statuses.${wo.status}`) : wo.status}
                     </span>
                   </div>
                   <span className="text-xs font-bold text-stone-400 bg-stone-100 px-2 py-1 rounded">
-                    {typeLabels[wo.type]}
+                    {t.has(`types.${wo.type}`) ? t(`types.${wo.type}`) : wo.type}
                   </span>
                 </div>
                 
@@ -137,12 +135,12 @@ export default function WorkOrdersPage() {
                 <div className="flex items-center justify-between text-xs font-medium text-stone-500 mt-4 pt-4 border-t border-stone-100">
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>{wo.assignedTo || "Non assigné"}</span>
+                    <span>{wo.assignedTo || t('unassigned')}</span>
                   </div>
                   {wo.scheduledDate && (
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5" />
-                      <span>{new Date(wo.scheduledDate).toLocaleDateString('fr-TN')}</span>
+                      <span>{new Date(wo.scheduledDate).toLocaleDateString(`${locale}-TN`)}</span>
                     </div>
                   )}
                 </div>

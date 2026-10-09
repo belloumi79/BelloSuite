@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { Upload, Plus } from 'lucide-react'
 import { EmployeesTable } from './components/EmployeesTable'
 import { EmployeeFormModal } from './components/EmployeeFormModal'
 import { useSession } from '@/hooks/useSession'
+import { useTranslations } from 'next-intl'
 
 export default function EmployeesPage() {
+  const t = useTranslations('HR.employees')
   const { tenantId } = useSession()
   const [employees, setEmployees] = useState([])
   const [loading, setLoading] = useState(true)
@@ -41,21 +43,21 @@ export default function EmployeesPage() {
     <div className="p-8 space-y-8 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-stone-900 tracking-tight">Employés</h1>
-          <p className="text-stone-500 font-medium text-sm mt-1">Gérez vos employés et leur dossier RH</p>
+          <h1 className="text-3xl font-black text-stone-900 tracking-tight">{t('title')}</h1>
+          <p className="text-stone-500 font-medium text-sm mt-1">{t('subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href="/hr/employees/import"
             className="flex items-center gap-2 px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl font-bold text-sm transition-all shadow-sm"
           >
-            <Upload className="w-4 h-4" /> Import CSV
+            <Upload className="w-4 h-4" /> {t('import_csv')}
           </Link>
           <button 
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-sm transition-all shadow-sm shadow-teal-500/20"
           >
-            <Plus className="w-4 h-4" /> Nouvel Employé
+            <Plus className="w-4 h-4" /> {t('new')}
           </button>
         </div>
       </div>

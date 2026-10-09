@@ -74,7 +74,7 @@ export default function NewProductPage() {
       router.push('/stock/products')
     } else {
       const d = await res.json()
-      setError(d.error || 'Erreur')
+      setError(d.error || t('Common.error'))
       setLoading(false)
     }
   }

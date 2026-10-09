@@ -73,6 +73,7 @@ function KPICard({
 }
 
 export default function DashboardSummary() {
+  const td = useTranslations('Dashboard.summary')
   const t = useTranslations()
   const locale = useLocale()
   // Session fournie par le layout serveur (cookie httpOnly) — plus de localStorage.
@@ -88,7 +89,7 @@ export default function DashboardSummary() {
       icon: Package, 
       path: '/stock', 
       color: 'emerald', 
-      description: t('Home.modules.stock.desc'),
+      description: t('Home.modules.stock.description'),
       stats: '150 ' + t('Dashboard.items')
     },
     { 
@@ -96,7 +97,7 @@ export default function DashboardSummary() {
       icon: ShoppingCart, 
       path: '/commercial', 
       color: 'amber', 
-      description: t('Home.modules.commercial.desc'),
+      description: t('Home.modules.commercial.description'),
       stats: t('Dashboard.soon'),
       disabled: true
     },
@@ -105,7 +106,7 @@ export default function DashboardSummary() {
       icon: Wallet, 
       path: '/accounting', 
       color: 'purple', 
-      description: t('Home.modules.accounting.desc'),
+      description: t('Home.modules.accounting.description'),
       stats: t('Dashboard.soon'),
       disabled: true
     },
@@ -114,7 +115,7 @@ export default function DashboardSummary() {
       icon: Users, 
       path: '/hr', 
       color: 'blue', 
-      description: t('Home.modules.hr.desc'),
+      description: t('Home.modules.hr.description'),
       stats: t('Dashboard.soon'),
       disabled: true 
     },
@@ -123,7 +124,7 @@ export default function DashboardSummary() {
       icon: Wrench, 
       path: '/gmao', 
       color: 'red', 
-      description: t('Home.modules.maintenance.desc'),
+      description: t('Home.modules.maintenance.description'),
       stats: t('Dashboard.soon'),
       disabled: true
     },
@@ -132,7 +133,7 @@ export default function DashboardSummary() {
       icon: Factory, 
       path: '/gpao', 
       color: 'zinc', 
-      description: t('Home.modules.production.desc'),
+      description: t('Home.modules.production.description'),
       stats: t('Dashboard.soon'),
       disabled: true
     },
@@ -160,32 +161,32 @@ export default function DashboardSummary() {
       {/* KPI Cards with real data */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Chiffre d'affaires"
+          title={td('revenue')}
           value={loading ? '...' : formatCurrency(kpis?.totalRevenue || 0)}
-          subtitle={kpis ? `${kpis.revenueChange > 0 ? '+' : ''}${kpis.revenueChange}% ce mois` : undefined}
+          subtitle={kpis ? td('revenue_change', { change: `${kpis.revenueChange > 0 ? '+' : ''}${kpis.revenueChange}` }) : undefined}
           icon={DollarSign}
           trend={kpis?.revenueChange ? (kpis.revenueChange > 0 ? 'up' : 'down') : 'neutral'}
           color="emerald"
         />
         <KPICard
-          title="Créances clients"
+          title={td('receivables')}
           value={loading ? '...' : formatCurrency(kpis?.pendingRevenue || 0)}
-          subtitle={`${kpis?.pendingInvoices || 0} factures en attente`}
+          subtitle={td('pending_invoices', { count: kpis?.pendingInvoices || 0 })}
           icon={CreditCard}
           trend={kpis?.pendingInvoices ? 'down' : 'neutral'}
           color="amber"
         />
         <KPICard
-          title="Valeur stock"
+          title={td('stock_value')}
           value={loading ? '...' : formatCurrency(kpis?.totalStockValue || 0)}
-          subtitle={`${kpis?.totalProducts || 0} produits`}
+          subtitle={td('products_count', { count: kpis?.totalProducts || 0 })}
           icon={Package}
           color="blue"
         />
         <KPICard
-          title="Alertes stock"
+          title={td('stock_alerts')}
           value={loading ? '...' : (kpis?.lowStockProducts || 0) + (kpis?.outOfStock || 0)}
-          subtitle={kpis?.lowStockProducts ? 'articles critiques' : undefined}
+          subtitle={kpis?.lowStockProducts ? td('critical_items') : undefined}
           icon={AlertTriangle}
           trend={kpis?.lowStockProducts ? 'down' : 'neutral'}
           color={kpis?.lowStockProducts ? 'red' : 'emerald'}
@@ -198,26 +199,26 @@ export default function DashboardSummary() {
           <QuickActions userRole={user?.role} />
         </div>
         <div className="bg-white rounded-[2rem] p-6 border border-stone-200 shadow-sm">
-          <h3 className="font-black text-stone-900 mb-4">Résumé</h3>
+          <h3 className="font-black text-stone-900 mb-4">{td('summary')}</h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-stone-500 font-medium">Clients actifs</span>
+              <span className="text-stone-500 font-medium">{td('active_clients')}</span>
               <span className="font-black text-stone-900">{loading ? '...' : kpis?.totalClients || 0}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-stone-500 font-medium">Employés</span>
+              <span className="text-stone-500 font-medium">{td('employees')}</span>
               <span className="font-black text-stone-900">{loading ? '...' : kpis?.totalEmployees || 0}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-stone-500 font-medium">Factures ce mois</span>
+              <span className="text-stone-500 font-medium">{td('invoices_this_month')}</span>
               <span className="font-black text-stone-900">{loading ? '...' : kpis?.invoicesThisMonth || 0}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-stone-500 font-medium">DSO (jours)</span>
+              <span className="text-stone-500 font-medium">{td('dso')}</span>
               <span className="font-black text-stone-900">{loading ? '...' : kpis?.dso || 0}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-stone-100">
-              <span className="text-stone-500 font-medium">Factures impayées</span>
+              <span className="text-stone-500 font-medium">{td('unpaid_invoices')}</span>
               <span className="font-black text-red-600">{loading ? '...' : kpis?.overdueInvoices || 0}</span>
             </div>
           </div>
@@ -228,7 +229,7 @@ export default function DashboardSummary() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {trends?.monthlyData && trends.monthlyData.length > 0 && (
           <div className="bg-white rounded-[2rem] p-6 border border-stone-200 shadow-sm">
-            <h3 className="font-black text-stone-900 mb-4">Évolution du CA (6 mois)</h3>
+            <h3 className="font-black text-stone-900 mb-4">{td('revenue_trend')}</h3>
             <div className="h-64">
               <LineChartWrapper
                 data={trends.monthlyData.map(d => ({
@@ -236,7 +237,7 @@ export default function DashboardSummary() {
                   value: d.revenue
                 }))}
                 dataKey="value"
-                name="Chiffre d'affaires"
+                name={td('revenue')}
                 unit="TND"
                 height={250}
               />
@@ -246,7 +247,7 @@ export default function DashboardSummary() {
 
         {trends?.topProducts && trends.topProducts.length > 0 && (
           <div className="bg-white rounded-[2rem] p-6 border border-stone-200 shadow-sm">
-            <h3 className="font-black text-stone-900 mb-4">Produits les plus vendus (6 mois)</h3>
+            <h3 className="font-black text-stone-900 mb-4">{td('top_selling')}</h3>
             <div className="h-64">
               <BarChartWrapper
                 data={trends.topProducts.map(p => ({
@@ -254,8 +255,8 @@ export default function DashboardSummary() {
                   value: p.quantity
                 }))}
                 dataKey="value"
-                name="Quantité vendue"
-                unit="unités"
+                name={td('quantity_sold')}
+                unit={td('units')}
                 height={250}
               />
             </div>
@@ -266,7 +267,7 @@ export default function DashboardSummary() {
       {/* Top Products (list view) */}
       {kpis && kpis.topProducts.length > 0 && (
         <div className="bg-white rounded-[2rem] p-6 border border-stone-200 shadow-sm">
-          <h3 className="font-black text-stone-900 mb-4">Top produits actuels</h3>
+          <h3 className="font-black text-stone-900 mb-4">{td('top_current')}</h3>
           <div className="space-y-3">
             {kpis.topProducts.map((product, idx) => (
               <div key={product.productId} className="flex items-center gap-4 p-3 bg-stone-50 rounded-xl">
@@ -274,7 +275,7 @@ export default function DashboardSummary() {
                   {idx + 1}
                 </span>
                 <span className="flex-1 font-medium text-stone-700">{product.name}</span>
-                <span className="font-black text-emerald-600">{product.quantity} unités</span>
+                <span className="font-black text-emerald-600">{td('units_count', { count: product.quantity })}</span>
               </div>
             ))}
           </div>
@@ -320,7 +321,7 @@ export default function DashboardSummary() {
               </div>
               
               {mod.disabled && (
-                <div className="absolute top-4 inset-inline-end-4 text-[10px] font-black uppercase tracking-widest bg-stone-900 text-white px-3 py-1 rounded-full">
+                <div className="absolute top-4 end-4 text-[10px] font-black uppercase tracking-widest bg-stone-900 text-white px-3 py-1 rounded-full">
                   {t('Dashboard.soon')}
                 </div>
               )}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, Save, Settings, MapPin, Activity, Loader2 } from "lucide-react";
+import { useTranslations } from 'next-intl'
 
 interface WorkstationFormModalProps {
   onClose: () => void;
@@ -10,6 +11,7 @@ interface WorkstationFormModalProps {
 }
 
 export function WorkstationFormModal({ onClose, onSave, tenantId }: WorkstationFormModalProps) {
+  const t = useTranslations('GPAO.workstations.form')
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +51,7 @@ export function WorkstationFormModal({ onClose, onSave, tenantId }: WorkstationF
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Une erreur est survenue lors de la création.");
+        throw new Error(errorData.error || t('error'));
       }
 
       onSave();
@@ -67,8 +69,8 @@ export function WorkstationFormModal({ onClose, onSave, tenantId }: WorkstationF
         {/* Header */}
         <div className="px-8 py-6 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
           <div>
-            <h2 className="text-2xl font-black text-stone-900">Nouveau Poste de Charge</h2>
-            <p className="text-sm font-medium text-stone-500 mt-1">Centre de frais ou Ligne de production</p>
+            <h2 className="text-2xl font-black text-stone-900">{t('title')}</h2>
+            <p className="text-sm font-medium text-stone-500 mt-1">{t('subtitle')}</p>
           </div>
           <button
             onClick={onClose}
@@ -90,26 +92,26 @@ export function WorkstationFormModal({ onClose, onSave, tenantId }: WorkstationF
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-stone-700">Code <span className="text-red-500">*</span></label>
-                <input required name="code" value={formData.code} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-slate-500 outline-none transition-all" placeholder="ex: PC-001" />
+                <label className="text-sm font-semibold text-stone-700">{t('code')} <span className="text-red-500">*</span></label>
+                <input required name="code" value={formData.code} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-slate-500 outline-none transition-all" placeholder={t('code_placeholder')} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-stone-700">Nom <span className="text-red-500">*</span></label>
-                <input required name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-slate-500 outline-none transition-all" placeholder="Ligne d'assemblage A" />
+                <label className="text-sm font-semibold text-stone-700">{t('name')} <span className="text-red-500">*</span></label>
+                <input required name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-slate-500 outline-none transition-all" placeholder={t('name_placeholder')} />
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-semibold text-stone-700">Description</label>
+                <label className="text-sm font-semibold text-stone-700">{t('description')}</label>
                 <textarea name="description" value={formData.description} onChange={handleChange} rows={2} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-slate-500 outline-none transition-all" />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-stone-700 flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/> Localisation</label>
-                <input name="location" value={formData.location} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-slate-500 outline-none transition-all" placeholder="Atelier principal" />
+                <label className="text-sm font-semibold text-stone-700 flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/> {t('location')}</label>
+                <input name="location" value={formData.location} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-slate-500 outline-none transition-all" placeholder={t('location_placeholder')} />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-stone-700 flex items-center gap-1"><Activity className="w-3.5 h-3.5"/> Capacité (unités/h)</label>
+                <label className="text-sm font-semibold text-stone-700 flex items-center gap-1"><Activity className="w-3.5 h-3.5"/> {t('capacity')}</label>
                 <input type="number" step="0.1" name="capacity" value={formData.capacity} onChange={handleChange} className="w-full px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-slate-500 outline-none transition-all" />
               </div>
             </div>
@@ -117,7 +119,7 @@ export function WorkstationFormModal({ onClose, onSave, tenantId }: WorkstationF
             <div className="pt-4 border-t border-stone-100 flex items-center gap-3">
               <input type="checkbox" id="isActive" name="isActive" checked={formData.isActive} onChange={handleChange} className="w-5 h-5 accent-slate-600 rounded" />
               <label htmlFor="isActive" className="text-sm font-semibold text-stone-700 cursor-pointer">
-                Poste opérationnel / Actif
+                {t('active')}
               </label>
             </div>
 
@@ -131,7 +133,7 @@ export function WorkstationFormModal({ onClose, onSave, tenantId }: WorkstationF
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl font-bold text-sm text-stone-600 bg-white border border-stone-200 hover:bg-stone-50 transition-colors"
           >
-            Annuler
+            {t('cancel')}
           </button>
           <button
             type="submit"
@@ -140,7 +142,7 @@ export function WorkstationFormModal({ onClose, onSave, tenantId }: WorkstationF
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-slate-700 hover:bg-slate-600 disabled:opacity-50 transition-colors"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Enregistrer
+            {t('save')}
           </button>
         </div>
       </div>

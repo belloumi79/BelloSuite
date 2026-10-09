@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { Plus, Boxes, Search, Loader2, Layers } from "lucide-react";
 import { BOMFormModal } from "./components/BOMFormModal";
 import { useSession } from '@/hooks/useSession'
+import { useTranslations } from 'next-intl'
 
 interface Product {
   id: string;
@@ -30,6 +31,7 @@ interface BOM {
 }
 
 export default function BOMsPage() {
+  const t = useTranslations('GPAO.boms')
   const { tenantId } = useSession()
   const [boms, setBoms] = useState<BOM[]>([]);
   const [productsMap, setProductsMap] = useState<Record<string, Product>>({});
@@ -82,15 +84,15 @@ export default function BOMsPage() {
         <div>
           <h1 className="text-3xl font-black text-stone-900 tracking-tight flex items-center gap-3">
             <Boxes className="w-8 h-8 text-indigo-700" />
-            Nomenclatures (BOM)
+            {t('title')}
           </h1>
-          <p className="text-stone-500 font-medium text-sm mt-1">Gérez les recettes de fabrication et les assemblages.</p>
+          <p className="text-stone-500 font-medium text-sm mt-1">{t('subtitle')}</p>
         </div>
         <button 
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-all shadow-sm shadow-indigo-900/20"
         >
-          <Plus className="w-4 h-4" /> Nouvelle BOM
+          <Plus className="w-4 h-4" /> {t('new')}
         </button>
       </div>
 
@@ -99,7 +101,7 @@ export default function BOMsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <input 
             type="text" 
-            placeholder="Rechercher par produit..." 
+            placeholder={t('search')} 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
@@ -114,7 +116,7 @@ export default function BOMsPage() {
           </div>
         ) : filteredBoms.length === 0 ? (
           <div className="text-center py-24 px-4">
-            <p className="text-stone-500 font-medium">Aucune nomenclature trouvée.</p>
+            <p className="text-stone-500 font-medium">{t('empty')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6 bg-stone-50/50">
@@ -132,15 +134,15 @@ export default function BOMsPage() {
                     </span>
                   </div>
                   
-                  <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-1">Produit de base</p>
-                  <h3 className="font-bold text-stone-900 text-lg mb-4 line-clamp-2" title={product?.name || "Produit inconnu"}>
-                    {product?.name || "Produit Inconnu"}
+                  <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-1">{t('base_product')}</p>
+                  <h3 className="font-bold text-stone-900 text-lg mb-4 line-clamp-2" title={product?.name || t('unknown_product')}>
+                    {product?.name || t('unknown_product_title')}
                   </h3>
 
                   <div className="p-4 bg-stone-50 rounded-xl border border-stone-100">
                     <div className="flex justify-between items-end">
                       <div>
-                        <p className="text-xs text-stone-500 font-semibold mb-1">COMPOSANTS INCLUS</p>
+                        <p className="text-xs text-stone-500 font-semibold mb-1">{t('components')}</p>
                         <p className="font-black text-2xl text-stone-800">{bom._count?.items || 0}</p>
                       </div>
                       <Layers className="w-8 h-8 text-stone-200" />
@@ -149,7 +151,7 @@ export default function BOMsPage() {
 
                   <div className="mt-5 pt-4 border-t border-stone-100 flex items-center justify-end">
                     <Link href={`/gpao/boms/${bom.id}`} className="text-sm font-bold text-indigo-600 hover:text-indigo-800">
-                      Voir détails &rarr;
+                      {t('details')}
                     </Link>
                   </div>
                 </div>

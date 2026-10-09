@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { Factory, Boxes, Settings, Activity, ArrowRight, Loader2, PlayCircle, CheckCircle2 } from "lucide-react";
 import { useSession } from '@/hooks/useSession'
+import { useTranslations } from 'next-intl'
 
 interface DashboardData {
   metrics: {
@@ -16,6 +17,7 @@ interface DashboardData {
 }
 
 export default function GPAODashboardPage() {
+  const t = useTranslations('GPAO.home')
   const { tenantId } = useSession()
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,10 +50,10 @@ export default function GPAODashboardPage() {
       {/* HEADER SECTION */}
       <div>
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-bold mb-3 border border-purple-200">
-          <Activity className="w-4 h-4" /> Systèmes de Production
+          <Activity className="w-4 h-4" /> {t('badge')}
         </div>
-        <h1 className="text-4xl font-black text-stone-900 tracking-tight">GPAO Dashboard</h1>
-        <p className="text-stone-500 font-medium text-lg mt-2">Vue d'ensemble sur vos capacités de production et ordres de fabrication (OF).</p>
+        <h1 className="text-4xl font-black text-stone-900 tracking-tight">{t('title')}</h1>
+        <p className="text-stone-500 font-medium text-lg mt-2">{t('subtitle')}</p>
       </div>
 
       {/* METRICS */}
@@ -60,7 +62,7 @@ export default function GPAODashboardPage() {
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 mb-4">
             <Factory className="w-6 h-6" />
           </div>
-          <p className="text-stone-500 font-medium text-sm">Postes de Charge (Actifs)</p>
+          <p className="text-stone-500 font-medium text-sm">{t('workstations_active')}</p>
           <div className="flex items-end gap-3 mt-1">
             <span className="text-4xl font-black text-stone-900">{m?.totalWorkstations || 0}</span>
           </div>
@@ -70,7 +72,7 @@ export default function GPAODashboardPage() {
           <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 mb-4">
             <Boxes className="w-6 h-6" />
           </div>
-          <p className="text-stone-500 font-medium text-sm">Nomenclatures (BOMs)</p>
+          <p className="text-stone-500 font-medium text-sm">{t('boms_count')}</p>
           <div className="flex items-end gap-3 mt-1">
             <span className="text-4xl font-black text-stone-900">{m?.totalBoms || 0}</span>
           </div>
@@ -80,10 +82,10 @@ export default function GPAODashboardPage() {
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4">
             <PlayCircle className="w-6 h-6" />
           </div>
-          <p className="text-stone-500 font-medium text-sm">Ordres en cours</p>
+          <p className="text-stone-500 font-medium text-sm">{t('orders_active')}</p>
           <div className="flex items-end gap-3 mt-1">
             <span className="text-4xl font-black text-stone-900">{m?.activeOrders || 0}</span>
-            <span className="text-sm font-bold text-emerald-600 mb-1">En Prod</span>
+            <span className="text-sm font-bold text-emerald-600 mb-1">{t('in_prod')}</span>
           </div>
         </div>
 
@@ -91,7 +93,7 @@ export default function GPAODashboardPage() {
           <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 mb-4">
             <Settings className="w-6 h-6" />
           </div>
-          <p className="text-stone-500 font-medium text-sm">Total des OFs Historisé</p>
+          <p className="text-stone-500 font-medium text-sm">{t('orders_total')}</p>
           <div className="flex items-end gap-3 mt-1">
             <span className="text-4xl font-black text-stone-900">{m?.productionOrdersCount || 0}</span>
           </div>
@@ -105,28 +107,28 @@ export default function GPAODashboardPage() {
         <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
           <Link href="/gpao/workstations" className="group bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-8 text-white relative overflow-hidden transition-all hover:shadow-xl hover:shadow-indigo-900/20 hover:-translate-y-1">
             <Factory className="w-12 h-12 text-indigo-400 mb-6 opacity-80 group-hover:scale-110 transition-transform duration-500" />
-            <h3 className="text-2xl font-black mb-2">Postes de Charge</h3>
-            <p className="text-indigo-200 text-sm font-medium pr-12">Configurez la capacité de vos lignes de production et ateliers matériels.</p>
-            <div className="absolute bottom-8 right-8 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md">
-              <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-1 transition-transform" />
+            <h3 className="text-2xl font-black mb-2">{t('workstations')}</h3>
+            <p className="text-indigo-200 text-sm font-medium pe-12">{t('workstations_desc')}</p>
+            <div className="absolute bottom-8 end-8 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md">
+              <ArrowRight className="w-5 h-5 text-white rtl:rotate-180 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
             </div>
           </Link>
 
           <Link href="/gpao/boms" className="group bg-gradient-to-br from-emerald-800 to-teal-900 rounded-3xl p-8 text-white relative overflow-hidden transition-all hover:shadow-xl hover:shadow-emerald-900/20 hover:-translate-y-1">
             <Boxes className="w-12 h-12 text-emerald-400 mb-6 opacity-80 group-hover:scale-110 transition-transform duration-500" />
-            <h3 className="text-2xl font-black mb-2">Nomenclatures (BOM)</h3>
-            <p className="text-emerald-200 text-sm font-medium pr-12">Saisissez les recettes et les quantités de matériaux pour vos produits.</p>
-            <div className="absolute bottom-8 right-8 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md">
-              <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-1 transition-transform" />
+            <h3 className="text-2xl font-black mb-2">{t('boms')}</h3>
+            <p className="text-emerald-200 text-sm font-medium pe-12">{t('boms_desc')}</p>
+            <div className="absolute bottom-8 end-8 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md">
+              <ArrowRight className="w-5 h-5 text-white rtl:rotate-180 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
             </div>
           </Link>
           
           <Link href="/gpao/production-orders" className="md:col-span-2 group bg-stone-50 border border-stone-200 rounded-3xl p-8 relative overflow-hidden transition-all hover:shadow-xl hover:border-stone-300 hover:-translate-y-1">
             <Settings className="w-12 h-12 text-slate-700 mb-6 opacity-80 group-hover:rotate-90 transition-transform duration-500" />
-            <h3 className="text-2xl font-black text-stone-900 mb-2">Ordres de Fabrication</h3>
-            <p className="text-stone-500 text-sm font-medium pr-12 max-w-lg">Planifiez, allouez sur vos postes de charge et suivez l'avancement "Temps Réel" de vos productions (OFs).</p>
-            <div className="absolute bottom-8 right-8 w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center">
-              <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-1 transition-transform" />
+            <h3 className="text-2xl font-black text-stone-900 mb-2">{t('orders')}</h3>
+            <p className="text-stone-500 text-sm font-medium pe-12 max-w-lg">{t('orders_desc')}</p>
+            <div className="absolute bottom-8 end-8 w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center">
+              <ArrowRight className="w-5 h-5 text-white rtl:rotate-180 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
             </div>
           </Link>
         </div>
@@ -134,8 +136,8 @@ export default function GPAODashboardPage() {
         {/* Recent Activity List */}
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-stone-200 flex flex-col">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-black text-stone-900">Récents OFs</h2>
-            <Link href="/gpao/production-orders" className="text-sm font-bold text-purple-600 hover:text-purple-700">Voir tout</Link>
+            <h2 className="text-lg font-black text-stone-900">{t('recent')}</h2>
+            <Link href="/gpao/production-orders" className="text-sm font-bold text-purple-600 hover:text-purple-700">{t('see_all')}</Link>
           </div>
           
           <div className="flex-1 space-y-4">
@@ -146,14 +148,14 @@ export default function GPAODashboardPage() {
                     {order.status === 'COMPLETED' ? <CheckCircle2 className="w-5 h-5" /> : order.status === 'IN_PROGRESS' ? <PlayCircle className="w-5 h-5" /> : <Settings className="w-5 h-5" />}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-stone-900 line-clamp-1">QTE Cible: {order.quantity}</p>
-                    <p className="text-xs font-medium text-stone-500 mt-0.5">{order.workStation?.name || "Sans poste assigné"}</p>
+                    <p className="text-sm font-bold text-stone-900 line-clamp-1">{t('target_qty', { qty: order.quantity })}</p>
+                    <p className="text-xs font-medium text-stone-500 mt-0.5">{order.workStation?.name || t('no_station')}</p>
                   </div>
                 </div>
               ))
             ) : (
               <div className="text-center py-10">
-                <p className="text-sm font-medium text-stone-400">Aucun historique d'ordre.</p>
+                <p className="text-sm font-medium text-stone-400">{t('no_history')}</p>
               </div>
             )}
           </div>

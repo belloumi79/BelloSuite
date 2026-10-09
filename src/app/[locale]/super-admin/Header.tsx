@@ -1,12 +1,13 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import Link from 'next/link'
+import { Link, useRouter, usePathname } from '@/i18n/routing'
 import { Plus, Search, Activity, Users, Building2, LayoutGrid, LogOut, ChevronLeft, ArrowLeft } from 'lucide-react'
 import gsap from 'gsap'
+import { useTranslations } from 'next-intl'
 
 export default function Header({ title, subtitle }: { title: string, subtitle: string }) {
+  const t = useTranslations('SuperAdmin.header')
   const headerRef = useRef(null)
   const router = useRouter()
   const pathname = usePathname()
@@ -25,10 +26,10 @@ export default function Header({ title, subtitle }: { title: string, subtitle: s
   }
 
   const navItems = [
-    { label: 'Vue d\'ensemble', path: '/super-admin', icon: Activity },
-    { label: 'Clients', path: '/super-admin', icon: Building2 }, // Multiple paths pointing to same page for now
-    { label: 'Utilisateurs', path: '/super-admin/users', icon: Users },
-    { label: 'Modules', path: '/super-admin', icon: LayoutGrid },
+    { label: t('overview'), path: '/super-admin', icon: Activity },
+    { label: t('clients'), path: '/super-admin', icon: Building2 }, // Multiple paths pointing to same page for now
+    { label: t('users'), path: '/super-admin/users', icon: Users },
+    { label: t('modules'), path: '/super-admin', icon: LayoutGrid },
   ]
 
   return (
@@ -42,8 +43,8 @@ export default function Header({ title, subtitle }: { title: string, subtitle: s
           <div>
             <div className="flex items-center gap-2">
                {pathname !== '/super-admin' && (
-                  <button onClick={() => router.back()} className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white transition-all mr-1">
-                     <ArrowLeft className="w-4 h-4" />
+                  <button onClick={() => router.back()} className="p-1 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white transition-all me-1">
+                     <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
                   </button>
                )}
                <h1 className="text-2xl font-black text-white tracking-tight">{title}</h1>
@@ -59,7 +60,7 @@ export default function Header({ title, subtitle }: { title: string, subtitle: s
                 const isActive = pathname === item.path
                 return (
                   <Link 
-                    key={item.label}
+                    key={item.label + item.path}
                     href={item.path}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                        isActive 
@@ -80,7 +81,7 @@ export default function Header({ title, subtitle }: { title: string, subtitle: s
               <button 
                 onClick={handleLogout}
                 className="p-3 bg-zinc-900 hover:bg-red-500/10 text-zinc-500 hover:text-red-400 rounded-2xl border border-zinc-800 hover:border-red-500/20 shadow-lg shadow-black/20 transition-all active:scale-95"
-                title="Déconnexion"
+                title={t('logout')}
               >
                  <LogOut className="w-5 h-5" />
               </button>

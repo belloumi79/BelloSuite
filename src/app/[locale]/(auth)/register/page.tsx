@@ -36,7 +36,7 @@ export default function RegisterPage() {
         setErrorMsg(data.error || t('errors.generic_error'))
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Erreur de connexion')
+      setErrorMsg(err.message || t('errors.connection_error'))
     } finally {
       setLoading(false)
     }
