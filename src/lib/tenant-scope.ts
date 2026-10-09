@@ -42,6 +42,7 @@ export type TenantScopedModel =
   | 'asset' | 'workOrder' | 'workStation' | 'billOfMaterials' | 'productionOrder'
   | 'project' | 'projectTag'
   | 'product' | 'warehouse' | 'inventory' | 'stockTransfer'
+  | 'goodsReceipt' | 'supplierReturn'
 
 type Db = typeof prisma | Prisma.TransactionClient
 type CountDelegate = { count: (args: { where: { id: { in: string[] }; tenantId: string } }) => Promise<number> }

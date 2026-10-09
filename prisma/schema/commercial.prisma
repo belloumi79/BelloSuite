@@ -19,8 +19,10 @@ model Client {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  invoices       Invoice[]
-  purchaseOrders PurchaseOrder[]
+  invoices        Invoice[]
+  purchaseOrders  PurchaseOrder[]
+  goodsReceipts   GoodsReceipt[]
+  supplierReturns SupplierReturn[]
 
   @@unique([tenantId, code])
 }
@@ -41,7 +43,9 @@ model Supplier {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  purchaseOrders PurchaseOrder[]
+  purchaseOrders  PurchaseOrder[]
+  goodsReceipts   GoodsReceipt[]
+  supplierReturns SupplierReturn[]
 
   @@unique([tenantId, code])
 }
@@ -78,7 +82,7 @@ model Invoice {
   accountingEntryId String?
   paymentEntryId    String?
   createdAt         DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt         DateTime @updatedAt
 
   // ─── TTN / El Fatoora E-Invoicing ───────────────────────
   ttnStatus       String    @default("DRAFT")
@@ -135,28 +139,38 @@ model InvoiceItem {
 }
 
 model PurchaseOrder {
-  id           String    @id @default(uuid())
-  tenantId     String
-  tenant       Tenant    @relation(fields: [tenantId], references: [id])
-  clientId     String?
-  client       Client?   @relation(fields: [clientId], references: [id])
-  supplierId   String?
-  supplier     Supplier? @relation(fields: [supplierId], references: [id])
-  number       String
-  type         String
-  status       String    @default("DRAFT")
-  date         DateTime  @default(now())
-  expectedDate DateTime?
-  subtotal     Decimal   @default(0)
-  taxRate      Decimal   @default(0)
-  taxAmount    Decimal   @default(0)
-  total        Decimal   @default(0)
+  id                String          @id @default(uuid())
+  tenantId          String
+  tenant            Tenant          @relation(fields: [tenantId], references: [id])
+  clientId          String?
+  client            Client?         @relation(fields: [clientId], references: [id])
+  supplierId        String?
+  supplier          Supplier?       @relation(fields: [supplierId], references: [id])
+  number            String
+  type              String
+  status            String          @default("DRAFT")
+  date              DateTime        @default(now())
+  expectedDate      DateTime?
+  subtotal          Decimal         @default(0)
+  taxRate           Decimal         @default(0)
+  taxAmount         Decimal         @default(0)
+  total             Decimal         @default(0)
   notes             String?
   accountingEntryId String?
-  createdAt         DateTime @default(now())
-  updatedAt    DateTime  @updatedAt
+  /// Dépôt de livraison prévu (bon de commande)
+  warehouseId       String?
+  warehouse         Warehouse?      @relation(fields: [warehouseId], references: [id])
+  /// Facture fournisseur → bon de commande lié
+  linkedOrderId     String?
+  linkedOrder       PurchaseOrder?  @relation("PurchaseInvoiceOrder", fields: [linkedOrderId], references: [id])
+  linkedInvoices    PurchaseOrder[] @relation("PurchaseInvoiceOrder")
+  supplierRef       String?
+  confirmedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
-  items PurchaseOrderItem[]
+  items    PurchaseOrderItem[]
+  receipts GoodsReceipt[]
 
   @@unique([tenantId, number])
 }
@@ -170,6 +184,102 @@ model PurchaseOrderItem {
   quantity        Decimal
   unitPrice       Decimal
   total           Decimal
+
+  receiptItems GoodsReceiptItem[]
+}
+
+/// Bon de réception fournisseur : SEUL document d'achat qui fait entrer du stock (ENTRY / PURCHASE).
+model GoodsReceipt {
+  id              String         @id @default(uuid())
+  tenantId        String
+  tenant          Tenant         @relation(fields: [tenantId], references: [id])
+  number          String
+  supplierId      String?
+  supplier        Supplier?      @relation(fields: [supplierId], references: [id])
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  warehouseId     String
+  warehouse       Warehouse      @relation(fields: [warehouseId], references: [id])
+  /// DRAFT | VALIDATED | CANCELLED
+  status          String         @default("DRAFT")
+  date            DateTime       @default(now())
+  supplierRef     String?
+  notes           String?
+  total           Decimal        @default(0)
+  validatedAt     DateTime?
+  createdById     String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @default(now()) @updatedAt
+
+  items    GoodsReceiptItem[]
+  returns  SupplierReturn[]
+  Client   Client?            @relation(fields: [clientId], references: [id])
+  clientId String?
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@index([purchaseOrderId])
+}
+
+model GoodsReceiptItem {
+  id                  String             @id @default(uuid())
+  receiptId           String
+  receipt             GoodsReceipt       @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  purchaseOrderItemId String?
+  purchaseOrderItem   PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
+  productId           String
+  product             Product            @relation(fields: [productId], references: [id])
+  description         String?
+  quantity            Decimal
+  unitCost            Decimal            @default(0)
+
+  returnItems SupplierReturnItem[]
+
+  @@index([receiptId])
+  @@index([purchaseOrderItemId])
+}
+
+/// Retour fournisseur depuis un bon de réception (EXIT / SUPPLIER_RETURN).
+model SupplierReturn {
+  id          String       @id @default(uuid())
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  number      String
+  receiptId   String
+  receipt     GoodsReceipt @relation(fields: [receiptId], references: [id])
+  supplierId  String?
+  supplier    Supplier?    @relation(fields: [supplierId], references: [id])
+  warehouseId String
+  warehouse   Warehouse    @relation(fields: [warehouseId], references: [id])
+  status      String       @default("VALIDATED")
+  date        DateTime     @default(now())
+  notes       String?
+  total       Decimal      @default(0)
+  createdById String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+
+  items    SupplierReturnItem[]
+  Client   Client?              @relation(fields: [clientId], references: [id])
+  clientId String?
+
+  @@unique([tenantId, number])
+  @@index([receiptId])
+}
+
+model SupplierReturnItem {
+  id             String           @id @default(uuid())
+  returnId       String
+  supplierReturn SupplierReturn   @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  receiptItemId  String
+  receiptItem    GoodsReceiptItem @relation(fields: [receiptItemId], references: [id])
+  productId      String
+  product        Product          @relation(fields: [productId], references: [id])
+  quantity       Decimal
+  unitCost       Decimal          @default(0)
+
+  @@index([returnId])
+  @@index([receiptItemId])
 }
 
 // ============================================
