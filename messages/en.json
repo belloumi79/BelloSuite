@@ -1082,7 +1082,7 @@
       "kicker": "2-minute video",
       "title": "See BelloSuite in action",
       "subtitle": "Quotes, invoices, stock and unpaid bills: three everyday situations, on real screens.",
-      "note": "Video in French (an Arabic version is available on the Arabic page). Subtitles are burned in.",
+      "note": "English version, subtitles burned in. French and Tunisian Arabic versions are available on the French and Arabic pages.",
       "caption": "BelloSuite demo video"
     },
     "scenarios": {
@@ -1104,7 +1104,6 @@
         }
       }
     },
-    "pilot": "We are looking for 10 pilot companies: free trial, setup and support included.",
     "pain": {
       "title": "What are your Excel files really costing you?",
       "items": [

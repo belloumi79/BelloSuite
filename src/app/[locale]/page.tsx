@@ -12,7 +12,6 @@ import {
   PackageSearch,
   Play,
   ShieldCheck,
-  Sparkles,
   Users,
   Wallet,
   X,
@@ -34,8 +33,8 @@ export default function Home() {
   const localItems = [0, 1, 2, 3, 4, 5].map(i => t(`local.items.${i}`))
   const benefits = [FileSpreadsheet, ShieldCheck, Boxes, Wallet, FileText, Users]
 
-  // Vidéo de démo : derja pour l'arabe, français sinon (l'anglais affiche la version française + une note).
-  const videoLang = locale === 'ar' ? 'ar' : 'fr'
+  // Vidéo de démo dans la langue de la page : derja pour l'arabe, anglais pour l'anglais, français sinon.
+  const videoLang = locale === 'ar' || locale === 'en' ? locale : 'fr'
   const videoSrc = `/videos/bellosuite-${videoLang}.mp4`
   const videoPoster = `/videos/bellosuite-${videoLang}-poster.jpg`
 
@@ -139,10 +138,6 @@ export default function Home() {
             </video>
           </div>
           <p className="mt-4 text-center text-sm text-zinc-400">{t('video.note')}</p>
-          <p className="mt-6 text-center text-lg font-semibold text-amber-400">
-            <Sparkles className="inline w-5 h-5 me-2 -mt-1" />
-            {t('pilot')}
-          </p>
         </div>
       </section>
 

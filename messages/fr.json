@@ -1082,7 +1082,7 @@
       "kicker": "Vidéo de 2 minutes",
       "title": "Voyez BelloSuite en action",
       "subtitle": "Devis, facture, stock et impayés : trois situations de tous les jours, sur de vrais écrans.",
-      "note": "Version française, sous-titres incrustés. Une version en derja tunisienne est disponible sur la page arabe.",
+      "note": "Version française, sous-titres incrustés. Une version en derja tunisienne et une version anglaise sont disponibles sur les pages arabe et anglaise.",
       "caption": "Vidéo de démonstration de BelloSuite"
     },
     "scenarios": {
@@ -1104,7 +1104,6 @@
         }
       }
     },
-    "pilot": "On cherche 10 entreprises pilotes : essai gratuit, installation et accompagnement offerts.",
     "pain": {
       "title": "Combien vous coûtent vos fichiers Excel ?",
       "items": [
