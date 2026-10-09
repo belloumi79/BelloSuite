@@ -439,7 +439,8 @@
     "download_template": "Download template",
     "import_in_progress": "Importing...",
     "max_size": "5 MB max.",
-    "close": "Close"
+    "close": "Close",
+    "csv_or_excel": "CSV or Excel (.xlsx)"
   },
   "Commercial": {
     "module_title": "Commercial Management 🇹🇳",
@@ -667,7 +668,10 @@
         "CANCELLED": "Cancelled"
       },
       "due_date": "Due date",
-      "date": "Date"
+      "date": "Date",
+      "fee_note_pdf": "Fee note PDF",
+      "ttn_ref": "— Ref: {ref}",
+      "number": "No. {number}"
     },
     "DocumentList": {
       "ttc_total": "Total TTC",
@@ -908,7 +912,8 @@
         }
       },
       "empty_desc": "No unpaid invoices to process.",
-      "empty_title": "All clear!"
+      "empty_title": "All clear!",
+      "send_failed": "Failed to send"
     },
     "recent_docs_subtitle": "Latest edited transactions",
     "create_invoice": "Create an invoice",

@@ -67,7 +67,7 @@ export function NotificationCenter() {
       {open && (
         <div className="w-96 max-h-[480px] overflow-hidden rounded-3xl bg-zinc-900 border border-zinc-800 shadow-[0_25px_80px_rgba(0,0,0,0.6)]">
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-950">
-            <span className="text-sm font-semibold text-white">Notifications</span>
+            <span className="text-sm font-semibold text-white">{t('title')}</span>
             <button
               className="flex items-center gap-1 text-xs text-zinc-400"
               onClick={clearAll}

@@ -211,7 +211,7 @@ export default function InvoiceDetailPage() {
           {invoice.type === 'HONORAIRES' && (
             <button onClick={handleNoteHonorairesPDF} disabled={submitting}
               className="flex items-center gap-2 px-4 py-2.5 border border-amber-200 dark:border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 font-bold text-sm shadow-sm">
-              <Receipt className="w-4 h-4" /> Note Honoraires PDF
+              <Receipt className="w-4 h-4" /> {t('fee_note_pdf')}
             </button>
           )}
           <button className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-xl text-stone-600 dark:text-zinc-400 hover:bg-stone-50 dark:hover:bg-zinc-800 font-bold text-sm shadow-sm">
@@ -232,7 +232,7 @@ export default function InvoiceDetailPage() {
               <p className="font-black text-stone-900 dark:text-white text-lg">{t('ttn_status_title')}</p>
               <p className={`text-sm font-bold ${invoice.ttnStatus === 'ACCEPTED' ? 'text-emerald-700 dark:text-emerald-400' : invoice.ttnStatus === 'REJECTED' ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'}`}>
                 {t(`status_labels.${invoice.ttnStatus || 'DRAFT'}`)}
-                {invoice.ttnReference ? ` — Réf: ${invoice.ttnReference}` : ''}
+                {invoice.ttnReference ? ` ${t('ttn_ref', { ref: invoice.ttnReference })}` : ''}
               </p>
               {invoice.ttnErrorMessage && (
                 <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-bold">⚠ {invoice.ttnErrorMessage}</p>
@@ -318,7 +318,7 @@ export default function InvoiceDetailPage() {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-stone-100 dark:border-zinc-800 pb-6">
             <div>
-              <p className="text-[10px] font-black text-stone-500 dark:text-zinc-500 uppercase tracking-widest">N° {invoice.number}</p>
+              <p className="text-[10px] font-black text-stone-500 dark:text-zinc-500 uppercase tracking-widest">{t('number', { number: invoice.number })}</p>
               <p className="text-xs text-stone-400 dark:text-zinc-600 mt-1">{invoice.type} — {invoice.status}</p>
             </div>
             <div className="text-end">

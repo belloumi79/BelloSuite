@@ -439,7 +439,8 @@
     "download_template": "تنزيل النموذج",
     "import_in_progress": "جارٍ الاستيراد...",
     "max_size": "5 ميغابايت كحد أقصى",
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "csv_or_excel": "CSV أو Excel ‏(.xlsx)"
   },
   "Commercial": {
     "module_title": "التصرف التجاري 🇹🇳",
@@ -667,7 +668,10 @@
         "CANCELLED": "ملغى"
       },
       "due_date": "تاريخ الاستحقاق",
-      "date": "التاريخ"
+      "date": "التاريخ",
+      "fee_note_pdf": "مذكرة الأتعاب PDF",
+      "ttn_ref": "— المرجع: {ref}",
+      "number": "رقم {number}"
     },
     "DocumentList": {
       "ttc_total": "إجمالي مع الأداءات",
@@ -908,7 +912,8 @@
         }
       },
       "empty_desc": "لا توجد فواتير غير مدفوعة للمعالجة.",
-      "empty_title": "كل شيء على ما يرام!"
+      "empty_title": "كل شيء على ما يرام!",
+      "send_failed": "فشل الإرسال"
     },
     "recent_docs_subtitle": "آخر المعاملات المحرّرة",
     "create_invoice": "إنشاء فاتورة",

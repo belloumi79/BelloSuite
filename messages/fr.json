@@ -439,7 +439,8 @@
     "download_template": "Télécharger le modèle",
     "import_in_progress": "Import en cours...",
     "max_size": "5 Mo max.",
-    "close": "Fermer"
+    "close": "Fermer",
+    "csv_or_excel": "CSV ou Excel (.xlsx)"
   },
   "Commercial": {
     "module_title": "Gestion Commerciale 🇹🇳",
@@ -667,7 +668,10 @@
         "CANCELLED": "Annulé"
       },
       "due_date": "Échéance",
-      "date": "Date"
+      "date": "Date",
+      "fee_note_pdf": "Note Honoraires PDF",
+      "ttn_ref": "— Réf: {ref}",
+      "number": "N° {number}"
     },
     "DocumentList": {
       "ttc_total": "Total TTC",
@@ -908,7 +912,8 @@
         }
       },
       "empty_desc": "Aucune facture impayée à traiter.",
-      "empty_title": "Perfecto!"
+      "empty_title": "Perfecto!",
+      "send_failed": "Échec de l'envoi"
     },
     "recent_docs_subtitle": "Dernières transactions éditées",
     "create_invoice": "Créer une facture",

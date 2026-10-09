@@ -213,7 +213,7 @@ export default function StockManagementPage() {
             <div className="border-2 border-dashed border-zinc-700 rounded-2xl p-12 text-center hover:border-purple-500 transition-colors">
               <Upload className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
               <p className="text-white font-bold mb-2">{t('Stock.drop_file')}</p>
-              <p className="text-zinc-500 text-sm mb-4">CSV or Excel (.xlsx)</p>
+              <p className="text-zinc-500 text-sm mb-4">{t('Stock.csv_or_excel')}</p>
               <input type="file" accept=".csv,.xlsx,.xls" className="hidden" id="csvInput2" onChange={async e => {
                 const file = e.target.files?.[0]
                 if (!file) return
@@ -221,7 +221,7 @@ export default function StockManagementPage() {
                 fd.append('file', file)
                 const r = await fetch('/api/stock/import', { method: 'POST', body: fd })
                 if (r.ok) { setShowImport(false); fetchData(tenantId) }
-                else { const d = await r.json(); alert(d.error || 'Erreur') }
+                else { const d = await r.json(); alert(d.error || t('Common.error')) }
               }} />
               <label htmlFor="csvInput2" className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold cursor-pointer">
                 <Upload className="w-5 h-5" /> {t('Stock.choose_file')}

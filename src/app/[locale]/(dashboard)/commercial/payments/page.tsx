@@ -77,7 +77,7 @@ export default function PaymentsPage() {
         setSent(prev => ({ ...prev, [invoice.id + method]: true }))
         setTimeout(() => setSelectedRemind(null), 1500)
       } else { 
-        alert(data.result?.error || 'Failed to send') 
+        alert(data.result?.error || t('send_failed')) 
       }
     } catch (e) { 
       console.error(e) 
