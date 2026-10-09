@@ -63,6 +63,8 @@ model Tenant {
   posPayments         POSPayment[]
   inventories         Inventory[]
   stockTransfers      StockTransfer[]
+  goodsReceipts       GoodsReceipt[]
+  supplierReturns     SupplierReturn[]
   productCategories   ProductCategory[]
   stockUnits          StockUnit[]
   aspConfiguration    ASPConfiguration?
