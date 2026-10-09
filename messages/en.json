@@ -1078,6 +1078,32 @@
       "meeting": "Request a presentation",
       "note": "Demo open without sign-up · Sample data · No commitment"
     },
+    "video": {
+      "kicker": "2-minute video",
+      "title": "See BelloSuite in action",
+      "subtitle": "Quotes, invoices, stock and unpaid bills: three everyday situations, on real screens.",
+      "note": "English version, subtitles burned in. French and Tunisian Arabic versions are available on the French and Arabic pages.",
+      "caption": "BelloSuite demo video"
+    },
+    "scenarios": {
+      "title": "3 demo scenarios",
+      "subtitle": "Pick a situation: the demo opens straight on the right screen, no account needed.",
+      "try": "Try this scenario",
+      "items": {
+        "0": {
+          "title": "A quote, then an invoice, in 1 minute",
+          "text": "Customer, items, VAT and stamp duty calculated for you: the document is ready to print."
+        },
+        "1": {
+          "title": "See your stock and what is running low",
+          "text": "Stock value and low-stock alerts, so you reorder before running out."
+        },
+        "2": {
+          "title": "Know who owes you money",
+          "text": "What is left to collect and your biggest debtors, customer by customer."
+        }
+      }
+    },
     "pain": {
       "title": "What are your Excel files really costing you?",
       "items": [
