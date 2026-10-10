@@ -1,0 +1,33 @@
+// ============================================
+// BASE DE CONNAISSANCES FISCALE (RAG) — table globale, non tenant-scopée
+// Table créée par supabase/migrations/20261010100000_fiscal_kb.sql (pgvector + tsvector).
+// Les colonnes `embedding` (vector) et `tsv` (tsvector généré) sont lues/écrites en SQL brut
+// ($queryRaw / $executeRaw) : voir src/lib/fiscal-kb.ts et src/lib/fiscal-kb-ingest.ts.
+// ============================================
+
+model FiscalChunk {
+  id             String                       @id
+  code           String
+  article        String?
+  section        String?
+  title          String
+  version        String
+  lang           String
+  sourceUrl      String                       @map("source_url")
+  outdated       Boolean                      @default(false)
+  kind           String                       @default("code")
+  part           Int                          @default(1)
+  parts          Int                          @default(1)
+  content        String
+  contentHash    String                       @map("content_hash")
+  tokens         Int                          @default(0)
+  embedding      Unsupported("vector(768)")?
+  embeddingModel String?                      @map("embedding_model")
+  embeddedAt     DateTime?                    @map("embedded_at") @db.Timestamptz(6)
+  tsv            Unsupported("tsvector")?
+  createdAt      DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                     @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([code, version, article], map: "fiscal_chunks_code_article_idx")
+  @@map("fiscal_chunks")
+}
