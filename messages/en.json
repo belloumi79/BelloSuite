@@ -709,7 +709,8 @@
         "edit": "Edit",
         "delete": "Delete",
         "delete_prompt": "Delete this {label}?"
-      }
+      },
+      "warehouse": "Warehouse: {name}"
     },
     "DocumentTypes": {
       "QUOTE": "Quote",
@@ -762,6 +763,22 @@
       },
       "validation": {
         "select_client": "Please select a client"
+      },
+      "warehouse": {
+        "label": "Shipping warehouse",
+        "hint": "Available stock shown on each line is for this warehouse.",
+        "none": "No active warehouse: overall stock will be used.",
+        "default": "default",
+        "available": "Available: {qty}",
+        "insufficient": "Insufficient stock in this warehouse (available: {qty})",
+        "negative_allowed": "Negative stock is allowed (stock settings): the delivery will be accepted even if stock is insufficient."
+      },
+      "errors": {
+        "insufficient_stock": "Insufficient stock in the selected warehouse for: {products}",
+        "warehouse_invalid": "Invalid warehouse.",
+        "warehouse_inactive": "This warehouse is archived: choose an active warehouse.",
+        "duplicate_number": "This document number is already in use.",
+        "generic": "Could not save the document. Please try again."
       }
     },
     "RetenueSource": {

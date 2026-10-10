@@ -2,7 +2,7 @@ import { requireTenant } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { tenantRefsError } from '@/lib/tenant-scope'
-import { applyMovementTx, getDefaultWarehouseId } from '@/services/stock'
+import { resolveDeliveryWarehouseTx, postDeliveryNoteStockTx } from '@/services/delivery-notes'
 import { handleApiError } from '@/lib/errors'
 
 export async function GET(request: Request) {
@@ -16,12 +16,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
     }
 
+    const type = searchParams.get('type')
     const invoices = await prisma.invoice.findMany({
-      where: { tenantId },
+      where: { tenantId, ...(type ? { type } : {}) },
       include: {
         client: true,
         items: true,
         tenant: true,
+        warehouse: { select: { id: true, code: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -56,7 +58,8 @@ export async function POST(request: Request) {
       totalTTC, 
       vatSummary,
       notes,
-      type
+      type,
+      warehouseId: requestedWarehouseId,
     } = body
     const ctx = await requireTenant(request, requestedTenantId)
     if (ctx instanceof NextResponse) return ctx
@@ -69,6 +72,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Quantité invalide' }, { status: 400 })
     }
     const docType = typeof type === 'string' && type ? type : 'INVOICE'
+    if (requestedWarehouseId != null && typeof requestedWarehouseId !== 'string') {
+      return NextResponse.json({ error: 'Référence invalide (warehouse)', code: 'WAREHOUSE_INVALID' }, { status: 400 })
+    }
     const duplicate = await prisma.invoice.findFirst({ where: { tenantId, type: docType, number: String(number) }, select: { id: true } })
     if (duplicate) {
       return NextResponse.json({ error: `Numéro "${number}" déjà utilisé` }, { status: 409 })
@@ -81,12 +87,21 @@ export async function POST(request: Request) {
 
     // Use a transaction to ensure all operations succeed or none do
     const result = await prisma.$transaction(async (tx) => {
+      // Pratique tunisienne : seul le bon de livraison (BL) sort la marchandise du stock.
+      // La facture est un document commercial/fiscal : elle peut précéder la livraison
+      // (client qui paie avant d'être livré) et ne touche donc jamais au stock.
+      const isDeliveryNote = docType === 'DELIVERY_NOTE'
+      const delivery = isDeliveryNote
+        ? await resolveDeliveryWarehouseTx(tx, tenantId, requestedWarehouseId)
+        : null
+
       const invoice = await tx.invoice.create({
         data: {
           tenantId,
           clientId,
           number,
           type: docType,
+          warehouseId: delivery?.warehouseId ?? null,
           status: 'PENDING',
           date: new Date(date),
           dueDate: dueDate ? new Date(dueDate) : null,
@@ -118,42 +133,16 @@ export async function POST(request: Request) {
         },
       })
 
-      // Pratique tunisienne : seul le bon de livraison (BL) sort la marchandise du stock.
-      // La facture est un document commercial/fiscal : elle peut précéder la livraison
-      // (client qui paie avant d'être livré) et ne touche donc jamais au stock.
-      const shouldDecrementStock = docType === 'DELIVERY_NOTE'
-
-      if (shouldDecrementStock) {
-        const stockModule = await tx.tenantModule.findFirst({
-          where: {
-            tenantId,
-            module: { name: { equals: 'stock', mode: 'insensitive' } },
-            isEnabled: true
-          }
+      // Sortie de stock dans le dépôt choisi ; refus (409) si stock insuffisant et stock négatif non autorisé.
+      if (delivery?.stockEnabled) {
+        await postDeliveryNoteStockTx(tx, {
+          tenantId,
+          invoiceId: invoice.id,
+          number: String(number),
+          warehouseId: delivery.warehouseId,
+          lines: items,
+          userId: ctx.user.id,
         })
-
-        if (stockModule) {
-          // Sortie de stock via le service (mouvement = source de vérité, dépôt par défaut).
-          // Une vente n'est pas bloquée par un stock insuffisant (allowNegative) : voir alertes stock.
-          const defaultWarehouseId = await getDefaultWarehouseId(tenantId, tx)
-          for (const item of items) {
-            if (!item.productId || !(Number(item.quantity) > 0)) continue
-            await applyMovementTx(tx, {
-              tenantId,
-              productId: item.productId,
-              warehouseId: defaultWarehouseId,
-              type: 'EXIT',
-              quantity: Number(item.quantity),
-              reference: number,
-              reason: 'SALE',
-              notes: `Livraison: BL ${number}`,
-              sourceType: 'SALE',
-              sourceId: invoice.id,
-              createdById: ctx.user.id,
-              allowNegative: true,
-            })
-          }
-        }
       }
 
       return invoice

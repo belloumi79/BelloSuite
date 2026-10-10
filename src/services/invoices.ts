@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { BusinessError } from '@/lib/errors'
 import { InvoiceStatus } from '@prisma/client'
 import { assertBelongsToTenant, assertAllBelongToTenant } from '@/lib/tenant-scope'
+import { resolveDeliveryWarehouseTx, postDeliveryNoteStockTx } from '@/services/delivery-notes'
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -190,7 +191,12 @@ export async function getPipelineData(tenantId: string) {
   return { quoteStats, orderStats, conversionRate, pipelineItems }
 }
 
-export async function convertDocument(id: string, tenantId: string, targetType: string) {
+export async function convertDocument(
+  id: string,
+  tenantId: string,
+  targetType: string,
+  opts: { warehouseId?: string | null; userId?: string | null } = {},
+) {
   const source = await prisma.invoice.findFirst({
     where: { id, tenantId },
     include: { items: true, client: true },
@@ -200,16 +206,21 @@ export async function convertDocument(id: string, tenantId: string, targetType: 
 
   const typeMap: Record<string, string> = { QUOTE: 'ORDER', ORDER: 'INVOICE' }
   const actualTarget = typeMap[source.type] || targetType
-  const prefix = actualTarget === 'ORDER' ? 'BC' : actualTarget === 'INVOICE' ? 'FAC' : actualTarget
+  const prefix = actualTarget === 'ORDER' ? 'BC' : actualTarget === 'INVOICE' ? 'FAC' : actualTarget === 'DELIVERY_NOTE' ? 'BL' : actualTarget
   const newNumber = `${prefix}-${source.client?.code || 'CL'}-${Date.now().toString(36).toUpperCase()}`
 
   return prisma.$transaction(async (tx) => {
+    // Conversion en bon de livraison : dépôt choisi (ou défaut) et sortie de stock, comme à la création d'un BL
+    const delivery = actualTarget === 'DELIVERY_NOTE'
+      ? await resolveDeliveryWarehouseTx(tx, tenantId, opts.warehouseId)
+      : null
     const newDoc = await tx.invoice.create({
       data: {
         tenantId,
         clientId: source.clientId,
         number: newNumber,
         type: actualTarget as any,
+        warehouseId: delivery?.warehouseId ?? null,
         status: InvoiceStatus.PENDING,
         date: new Date(),
         dueDate: new Date(Date.now() + 30 * 86400000),
@@ -239,6 +250,17 @@ export async function convertDocument(id: string, tenantId: string, targetType: 
         },
       },
     })
+
+    if (delivery?.stockEnabled) {
+      await postDeliveryNoteStockTx(tx, {
+        tenantId,
+        invoiceId: newDoc.id,
+        number: newNumber,
+        warehouseId: delivery.warehouseId,
+        lines: source.items.map(i => ({ productId: i.productId, quantity: Number(i.quantity) })),
+        userId: opts.userId ?? null,
+      })
+    }
 
     // Update source status
     await tx.invoice.update({

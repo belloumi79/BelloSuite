@@ -104,6 +104,7 @@ model Warehouse {
   goodsReceipts   GoodsReceipt[]
   supplierReturns SupplierReturn[]
   inventories     Inventory[]
+  deliveryNotes   Invoice[]
 
   @@unique([tenantId, code])
 }

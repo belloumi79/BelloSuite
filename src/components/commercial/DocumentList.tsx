@@ -216,6 +216,9 @@ export default function DocumentList({
                       <div>
                         <p className="font-bold text-stone-900 dark:text-white text-sm font-mono uppercase">{doc.number}</p>
                         <p className="text-[10px] text-stone-400 dark:text-zinc-600 uppercase font-black">{doc.type}</p>
+                        {doc.warehouse && (
+                          <p className="text-[10px] text-stone-500 dark:text-zinc-500 font-bold">{t('warehouse', { name: doc.warehouse.name })}</p>
+                        )}
                       </div>
                     </div>
                   </td>
