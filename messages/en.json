@@ -296,9 +296,9 @@
     "actions": "Actions",
     "loading": "Loading...",
     "no_product_found": "No product found",
-    "status_ok": "OK",
+    "status_ok": "In stock",
     "status_rupture": "Out of Stock",
-    "status_low": "Low",
+    "status_low": "Low stock",
     "delete_confirm_title": "Delete product?",
     "delete_confirm_desc": "This action is irreversible. Stock movements will be preserved.",
     "cancel": "Cancel",
@@ -440,7 +440,8 @@
     "import_in_progress": "Importing...",
     "max_size": "5 MB max.",
     "close": "Close",
-    "csv_or_excel": "CSV or Excel (.xlsx)"
+    "csv_or_excel": "CSV or Excel (.xlsx)",
+    "new_product": "New product"
   },
   "Commercial": {
     "module_title": "Commercial Management 🇹🇳",

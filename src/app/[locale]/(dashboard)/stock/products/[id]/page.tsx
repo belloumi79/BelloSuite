@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { Pencil, Plus, History, Save, Package } from 'lucide-react'
-import { StockPage, StockNav, PageHeader, Card, Loading, EmptyState, MovementBadge, Badge, Alert, KpiCard, cls, useStockFormat, api } from '@/components/stock/ui'
+import { StockPage, StockNav, PageHeader, Card, Loading, EmptyState, MovementBadge, Badge, Alert, KpiCard, CodeTag, cls, useStockFormat, api } from '@/components/stock/ui'
 import MovementFormModal, { useReasonLabel, type ProductOption, type WarehouseOption } from '@/components/stock/MovementFormModal'
 import { isLowStock, valuationCost } from '@/lib/stock-logic'
 
@@ -66,7 +66,7 @@ export default function ProductDetailPage() {
       <StockNav />
       {error && <Alert onClose={() => setError('')}>{error}</Alert>}
       {notice && <Alert tone="green" onClose={() => setNotice('')}>{notice}</Alert>}
-      {!p ? <Loading /> : (
+      {!p ? (error ? null : <Loading />) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard label={t('stock')} value={<span className={stock <= 0 ? 'text-red-700' : low ? 'text-amber-700' : ''}>{f.qty(stock)} <span className="text-sm text-zinc-400">{p.unit}</span></span>}
@@ -92,7 +92,7 @@ export default function ProductDetailPage() {
                     const depotLow = m !== '' && isLowStock(q, Number(m))
                     return (
                       <tr key={w.id}>
-                        <td className={cls.td}><Link href={`/stock/availability/${w.id}`} className="font-medium hover:text-teal-700">{w.name}</Link> <span className="text-xs text-zinc-400 font-mono">{w.code}</span></td>
+                        <td className={cls.td}><Link href={`/stock/availability/${w.id}`} className="font-medium hover:text-teal-700">{w.name}</Link> <CodeTag code={w.code} /></td>
                         <td className={`${cls.tdNum} ${q < 0 ? 'text-red-700' : depotLow ? 'text-amber-700 font-semibold' : ''}`}>{f.qty(q)} {depotLow && <Badge tone="amber">{t('low')}</Badge>}</td>
                         <td className={cls.tdNum}>{f.money(q * cost)}</td>
                         <td className={cls.td}><input type="number" min="0" step="any" className={`${cls.input} text-end`} placeholder={t('use_product_threshold')} value={m} onChange={e => setMins(s => ({ ...s, [w.id]: e.target.value }))} /></td>

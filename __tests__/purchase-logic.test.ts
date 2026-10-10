@@ -1,7 +1,7 @@
 import {
   purchaseDocType, normalizePoStatus, remainingQty, returnableQty, poStatusFromReceipts,
   canTransitionPo, canReceive, findOverReceipts, linesAmount, invoicingSummary,
-  purchaseEditMode, validateOrderEdit, purchaseTotals,
+  purchaseEditMode, validateOrderEdit, purchaseTotals, canInvoiceOrder,
 } from '@/lib/purchase-logic'
 
 describe('purchase-logic', () => {
@@ -134,5 +134,14 @@ describe('purchase-logic — modification', () => {
     expect(purchaseTotals([{ quantity: 3, unitPrice: 1.333 }, { quantity: 2, unitPrice: 10 }], { rate: 19 })).toEqual({ subtotal: 23.999, taxAmount: 4.56, total: 28.559 })
     expect(purchaseTotals([{ quantity: 1, unitPrice: 100 }], { amount: 7 })).toEqual({ subtotal: 100, taxAmount: 7, total: 107 })
     expect(purchaseTotals([{ quantity: 1, unitPrice: 100 }], { rate: 0 })).toEqual({ subtotal: 100, taxAmount: 0, total: 100 })
+  })
+})
+
+describe('canInvoiceOrder', () => {
+  it('refuse une commande annulée', () => {
+    expect(canInvoiceOrder('CANCELLED')).toBe(false)
+  })
+  it('accepte les autres statuts (dont PENDING historique)', () => {
+    for (const st of ['DRAFT', 'CONFIRMED', 'PENDING', 'PARTIALLY_RECEIVED', 'RECEIVED']) expect(canInvoiceOrder(st)).toBe(true)
   })
 })

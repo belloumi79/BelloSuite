@@ -107,7 +107,7 @@ export function PurchaseDocsList({ docType }: { docType: 'ORDER' | 'INVOICE' }) 
 
   const load = useCallback(async () => {
     const r = await api<DocRow[]>(`/api/commercial/suppliers/orders?type=${docType}&status=${status}`)
-    if (r.ok) setRows(r.data); else setError(r.error || t('error_generic'))
+    if (r.ok) setRows(r.data); else { setRows([]); setError(r.error || t('error_generic')) }
   }, [docType, status, t])
   useEffect(() => { load() }, [load])
 
@@ -620,7 +620,7 @@ export function ReceiptsList() {
 
   const load = useCallback(async () => {
     const r = await api<ReceiptRow[]>('/api/commercial/suppliers/receipts')
-    if (r.ok) setRows(r.data); else setError(r.error || t('error_generic'))
+    if (r.ok) setRows(r.data); else { setRows([]); setError(r.error || t('error_generic')) }
   }, [t])
   useEffect(() => { load() }, [load])
   useEffect(() => {
@@ -656,7 +656,7 @@ export function ReceiptsList() {
                     <td className={cls.td}>{r.supplier?.name ?? '—'}</td>
                     <td className={cls.td}>{r.purchaseOrder ? <Link href={`/commercial/documents/supplier-orders/${r.purchaseOrder.id}`} className="hover:text-teal-700">{r.purchaseOrder.number}</Link> : <span className="text-zinc-400">{t('without_order')}</span>}</td>
                     <td className={cls.td}>{r.warehouse.name}</td>
-                    <td className={cls.td}><PurchaseStatus status={r.status} />{r._count.returns > 0 && <span className="ms-1"><Badge tone="amber">{t('has_returns')}</Badge></span>}</td>
+                    <td className={cls.td}><PurchaseStatus status={r.status} />{r._count.returns > 0 && <>{' '}<span className="ms-1"><Badge tone="amber">{t('has_returns')}</Badge></span></>}</td>
                     <td className={cls.tdNum}>{f.money(r.total)}</td>
                   </tr>
                 ))}
@@ -763,7 +763,7 @@ function ReceiptModal({ id, onClose, onChanged }: { id: string; onClose: () => v
         {canReturn && <button className={cls.btnDanger} disabled={busy || !returning} onClick={doReturn}><Undo2 className="w-4 h-4" /> {t('create_return')}</button>}
       </>}>
       {error && <Alert onClose={() => setError('')}>{error}</Alert>}
-      {!r ? <Loading /> : (
+      {!r ? (error ? null : <Loading />) : (
         <div className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div><div className={cls.label}>{t('supplier')}</div>{r.supplier?.name ?? '—'}</div>
@@ -815,7 +815,7 @@ export function ReturnsList() {
   const [rows, setRows] = useState<ReturnRow[] | null>(null)
   const [error, setError] = useState('')
   useEffect(() => {
-    api<ReturnRow[]>('/api/commercial/suppliers/returns').then(r => (r.ok ? setRows(r.data) : setError(r.error || t('error_generic'))))
+    api<ReturnRow[]>('/api/commercial/suppliers/returns').then(r => { if (r.ok) setRows(r.data); else { setRows([]); setError(r.error || t('error_generic')) } })
   }, [t])
   return (
     <StockPage>

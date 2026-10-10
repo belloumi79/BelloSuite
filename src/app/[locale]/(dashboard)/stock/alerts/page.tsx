@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { Download, Printer, AlertTriangle, PackageX, ShoppingCart } from 'lucide-react'
 import { PoFromAlertsButton } from '@/components/purchases/PurchasesUI'
-import { StockPage, StockNav, PageHeader, Card, Loading, EmptyState, Badge, Alert, KpiCard, cls, useStockFormat, api, downloadCsv } from '@/components/stock/ui'
+import { StockPage, StockNav, PageHeader, Card, Loading, EmptyState, Badge, Alert, KpiCard, CodeTag, cls, useStockFormat, api, downloadCsv } from '@/components/stock/ui'
 
 type Base = { productId: string; code: string; name: string; category: string | null; unit: string; stock: number; minStock: number; reorderPoint: number; unitCost: number }
 type Alerts = {
@@ -20,10 +20,11 @@ export default function AlertsPage() {
   const f = useStockFormat()
   const [data, setData] = useState<Alerts | null>(null)
   const [error, setError] = useState('')
+  const [failed, setFailed] = useState(false)
 
   const load = useCallback(async () => {
     const r = await api<Alerts>('/api/stock/alerts')
-    if (r.ok) setData(r.data); else setError(r.error || t('error_generic'))
+    if (r.ok) setData(r.data); else { setFailed(true); setError(r.error || t('error_generic')) }
   }, [t])
   useEffect(() => { load() }, [load])
 
@@ -44,7 +45,7 @@ export default function AlertsPage() {
         </>} />
       <StockNav />
       {error && <Alert onClose={() => setError('')}>{error}</Alert>}
-      {!data ? <Loading /> : (
+      {!data ? (failed ? <EmptyState title={t('error_generic')} /> : <Loading />) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <KpiCard label={t('kpi_low_stock')} value={f.qty(data.totals.lowStock)} icon={AlertTriangle} tone="amber" />
@@ -69,7 +70,7 @@ export default function AlertsPage() {
                       <tr key={r.productId} className="hover:bg-zinc-50">
                         <td className={cls.td}>
                           <Link href={`/stock/products/${r.productId}`} className="font-medium text-zinc-900 hover:text-teal-700">{r.name}</Link>
-                          <span className="ms-2 text-xs text-zinc-400 font-mono">{r.code}</span>
+                          <CodeTag code={r.code} />
                           {r.stock <= 0 && <span className="ms-2"><Badge tone="red">{t('out_of_stock')}</Badge></span>}
                         </td>
                         <td className={`${cls.tdNum} ${r.stock <= 0 ? 'text-red-700 font-semibold' : 'text-amber-700 font-semibold'}`}>{f.qty(r.stock)} <span className="text-xs text-zinc-400">{r.unit}</span></td>

@@ -14,7 +14,7 @@ import { formatReference, round3 } from '@/lib/stock-logic'
 import {
   purchaseDocType, normalizePoStatus, poStatusFromReceipts, canTransitionPo, canReceive,
   findOverReceipts, remainingQty, returnableQty, linesAmount, invoicingSummary,
-  purchaseEditMode, validateOrderEdit, purchaseTotals, type OrderEditError,
+  purchaseEditMode, validateOrderEdit, purchaseTotals, canInvoiceOrder, type OrderEditError,
 } from '@/lib/purchase-logic'
 
 type Tx = Prisma.TransactionClient
@@ -204,8 +204,9 @@ export async function createPurchaseOrder(data: CreatePurchaseOrderData) {
   await assertBelongsToTenant('purchaseOrder', linkedOrderId, tenantId)
   await assertAllBelongToTenant('product', items.map((i) => i.productId), tenantId)
   if (linkedOrderId) {
-    const linked = await prisma.purchaseOrder.findFirst({ where: { id: linkedOrderId, tenantId }, select: { type: true, supplierId: true } })
+    const linked = await prisma.purchaseOrder.findFirst({ where: { id: linkedOrderId, tenantId }, select: { type: true, supplierId: true, status: true } })
     if (!linked || linked.type !== 'ORDER') throw new BusinessError('La pièce liée doit être un bon de commande', 400)
+    if (!canInvoiceOrder(linked.status)) throw new BusinessError('Commande annulée : facturation impossible', 409)
     if (supplierId && linked.supplierId && linked.supplierId !== supplierId) throw new BusinessError('Fournisseur différent de celui de la commande', 400)
   }
 

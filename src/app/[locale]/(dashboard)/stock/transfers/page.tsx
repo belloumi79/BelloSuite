@@ -24,7 +24,7 @@ export default function TransfersPage() {
   const load = useCallback(async () => {
     setLoading(true)
     const r = await api<Transfer[]>(`/api/stock/transfers${status ? `?status=${status}` : ''}`)
-    if (r.ok) setRows(r.data); else setError(r.error || t('error_generic'))
+    if (r.ok) setRows(r.data); else { setRows([]); setError(r.error || t('error_generic')) }
     setLoading(false)
   }, [status, t])
   useEffect(() => { load() }, [load])

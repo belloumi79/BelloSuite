@@ -51,15 +51,16 @@ export default function StockSettingsPage() {
 
       <div className="space-y-6">
         <Card title={t('rules')}>
-          {!settings ? <Loading /> : (
-            <label className="flex items-start gap-3 text-start">
-              <input type="checkbox" disabled={!canEdit} className="accent-teal-600 w-5 h-5 mt-0.5" checked={settings.allowNegativeStock}
+          {!settings ? (error ? null : <Loading />) : (
+            <div className="flex items-start gap-3 text-start">
+              <input id="allow-negative-stock" type="checkbox" disabled={!canEdit} className="accent-teal-600 w-5 h-5 mt-0.5" checked={settings.allowNegativeStock}
+                aria-describedby="allow-negative-stock-help"
                 onChange={e => handle(api('/api/stock/settings', { method: 'PUT', body: JSON.stringify({ allowNegativeStock: e.target.checked }) }))} />
-              <span>
-                <span className="block text-sm font-semibold text-zinc-900">{t('allow_negative')}</span>
-                <span className="block text-sm text-zinc-500">{t('allow_negative_desc')}</span>
-              </span>
-            </label>
+              <div>
+                <label htmlFor="allow-negative-stock" className="block text-sm font-semibold text-zinc-900 cursor-pointer">{t('allow_negative')}</label>
+                <p id="allow-negative-stock-help" className="mt-0.5 text-sm text-zinc-500">{t('allow_negative_desc')}</p>
+              </div>
+            </div>
           )}
         </Card>
 
@@ -71,7 +72,7 @@ export default function StockSettingsPage() {
                 <button className={cls.btnPrimary} type="submit"><Plus className="w-4 h-4" /> {t('add')}</button>
               </form>
             )}
-            {!categories ? <Loading /> : categories.length === 0 ? <EmptyState title={t('no_category')} /> : (
+            {!categories ? (error ? null : <Loading />) : categories.length === 0 ? <EmptyState title={t('no_category')} /> : (
               <ul className="divide-y divide-zinc-100">
                 {categories.map(c => (
                   <li key={c.name} className="flex items-center justify-between gap-3 px-4 py-3">
@@ -123,7 +124,7 @@ export default function StockSettingsPage() {
                 <button className={cls.btnPrimary} type="submit"><Plus className="w-4 h-4" /></button>
               </form>
             )}
-            {!units ? <Loading /> : (
+            {!units ? (error ? null : <Loading />) : (
               <table className={cls.table}>
                 <thead className="bg-zinc-50"><tr>
                   <th className={cls.th}>{t('code')}</th>

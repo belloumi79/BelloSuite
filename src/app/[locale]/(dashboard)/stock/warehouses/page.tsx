@@ -29,7 +29,7 @@ export default function WarehousesPage() {
   const load = useCallback(async () => {
     setLoading(true)
     const r = await api<Warehouse[]>(`/api/stock/warehouses?includeArchived=${showArchived ? 1 : 0}`)
-    if (r.ok) setRows(r.data); else setError(r.error || t('error_generic'))
+    if (r.ok) setRows(r.data); else { setRows([]); setError(r.error || t('error_generic')) }
     setLoading(false)
   }, [showArchived, t])
 

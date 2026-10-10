@@ -60,7 +60,7 @@ export default function TransferDetailPage() {
       <StockNav />
       {error && <Alert onClose={() => setError('')}>{error}</Alert>}
       {notice && <Alert tone="green" onClose={() => setNotice('')}>{notice}</Alert>}
-      {!tr ? <Loading /> : (
+      {!tr ? (error ? null : <Loading />) : (
         <div className="space-y-6">
           <Card>
             <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">

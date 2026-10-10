@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { tenantRefsError } from '@/lib/tenant-scope'
 import { applyMovementTx, getDefaultWarehouseId } from '@/services/stock'
+import { handleApiError } from '@/lib/errors'
 
 export async function GET(request: Request) {
   try {
@@ -34,7 +35,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    let body: Record<string, any>
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Corps JSON invalide' }, { status: 400 })
+    }
+    if (!body || typeof body !== 'object') return NextResponse.json({ error: 'Corps JSON invalide' }, { status: 400 })
     const { 
       tenantId: requestedTenantId, 
       clientId, 
@@ -55,8 +62,16 @@ export async function POST(request: Request) {
     if (ctx instanceof NextResponse) return ctx
     const tenantId = ctx.tenantId
 
-    if (!tenantId || !clientId || !number || !items || items.length === 0) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    if (!tenantId || !clientId || !number || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'Champs obligatoires manquants' }, { status: 400 })
+    }
+    if (items.some((i: { quantity?: unknown }) => !Number.isFinite(Number(i?.quantity)) || Number(i?.quantity) < 0)) {
+      return NextResponse.json({ error: 'Quantité invalide' }, { status: 400 })
+    }
+    const docType = typeof type === 'string' && type ? type : 'INVOICE'
+    const duplicate = await prisma.invoice.findFirst({ where: { tenantId, type: docType, number: String(number) }, select: { id: true } })
+    if (duplicate) {
+      return NextResponse.json({ error: `Numéro "${number}" déjà utilisé` }, { status: 409 })
     }
     const badRef = await tenantRefsError(tenantId, {
       client: clientId,
@@ -71,7 +86,7 @@ export async function POST(request: Request) {
           tenantId,
           clientId,
           number,
-          type: type || 'INVOICE',
+          type: docType,
           status: 'PENDING',
           date: new Date(date),
           dueDate: dueDate ? new Date(dueDate) : null,
@@ -106,7 +121,7 @@ export async function POST(request: Request) {
       // Pratique tunisienne : seul le bon de livraison (BL) sort la marchandise du stock.
       // La facture est un document commercial/fiscal : elle peut précéder la livraison
       // (client qui paie avant d'être livré) et ne touche donc jamais au stock.
-      const shouldDecrementStock = type === 'DELIVERY_NOTE'
+      const shouldDecrementStock = docType === 'DELIVERY_NOTE'
 
       if (shouldDecrementStock) {
         const stockModule = await tx.tenantModule.findFirst({
@@ -146,7 +161,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('Error creating document:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    return handleApiError(error, 'POST commercial document')
   }
 }
