@@ -59,6 +59,25 @@ describe('POST /api/ai/extract-invoice', () => {
     warn.mockRestore(); error.mockRestore()
   })
 
+  it('réponse Gemini partielle → relance unique, aiWarnings sans contenu, une seule unité de quota', async () => {
+    process.env.GEMINI_API_KEY = 'k'
+    rateLimitPersistent.mockClear()
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const gem = (text: string) => ({ ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text }] } }] }) })
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce(gem('{"supplierName":"SECRET ALPHA","total":"sept mille","subtotal":null,"lines":null}'))
+      .mockResolvedValueOnce(gem('{"supplierName":"ALPHA","subtotal":"6.110,000","total":"7.344,609 DT"}')) as unknown as typeof fetch
+    const res = await POST(req(JSON.stringify({ text: 'FACTURE FA-1\nTotal TTC 7 344,609' })))
+    const body = await res.json()
+    expect(body).toMatchObject({ available: true, provider: 'gemini', result: { subtotal: 6110, total: 7344.609 } })
+    expect(body.aiWarnings).toEqual(expect.arrayContaining(['ai:retried', 'ai:string_numbers']))
+    expect(JSON.stringify(body.aiWarnings)).not.toContain('ALPHA')
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+    expect(rateLimitPersistent).toHaveBeenCalledTimes(1)
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('SECRET')
+    warn.mockRestore()
+  })
+
   it('limite de débit atteinte → 429', async () => {
     process.env.GEMINI_API_KEY = 'k'
     rateLimitPersistent.mockResolvedValue({ success: false })

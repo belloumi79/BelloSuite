@@ -2,7 +2,9 @@
  * POST /api/ai/extract-invoice — affinage IA optionnel d'une facture fournisseur (« zéro saisie »).
  * Corps : { text: string (texte OCR / PDF), image?: data URL (image ≤ ~3 Mo) }.
  * Réponse : { available: false } sans clé (GEMINI_API_KEY / GROQ_API_KEY) — l'UI garde l'extraction déterministe ;
- *           { available: true, provider, result: AiInvoice | null } sinon.
+ *           { available: true, provider, result: AiInvoice | null, aiWarnings?: string[] } sinon
+ *           (aiWarnings : codes seulement, ex. « ai:retried », « ai:string_numbers » — jamais de contenu).
+ * Réponse IA incomplète → une relance chez le même fournisseur (≤ 2 appels Gemini), puis Groq ; une seule unité de quota.
  * Tenant depuis la session, limite par tenant, rien n'est stocké ni journalisé (ni texte ni image).
  */
 import { NextRequest, NextResponse } from 'next/server'
@@ -10,6 +12,7 @@ import { getApiContext, parseBody } from '@/lib/api'
 import { handleApiError } from '@/lib/errors'
 import { rateLimitPersistent, tooManyRequests } from '@/lib/rate-limit-persistent'
 import { aiProviders, extractWithAi, extractRequestSchema } from '@/lib/ai-invoice'
+import { extractInvoice } from '@/lib/invoice-extract'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -44,8 +47,13 @@ export async function POST(req: NextRequest) {
     if (!data.text.trim() && !data.image) return NextResponse.json({ available: true, provider: null, result: null })
 
     // Erreur / quota / réponse invalide de tous les fournisseurs → result null : l'UI garde l'extraction déterministe
-    const out = await extractWithAi(providers, data.text, data.image ?? null)
-    return NextResponse.json({ available: true, provider: out?.provider ?? null, result: out?.result ?? null })
+    // Extraction déterministe (pure, rien de journalisé) : sert à juger si la réponse IA est incomplète
+    const det = data.text.trim() ? extractInvoice(data.text) : null
+    const out = await extractWithAi(providers, data.text, data.image ?? null, det)
+    return NextResponse.json({
+      available: true, provider: out?.provider ?? null, result: out?.result ?? null,
+      ...(out?.warnings.length ? { aiWarnings: out.warnings } : {}),
+    })
   } catch (err) {
     return handleApiError(err, 'POST ai extract-invoice')
   }
