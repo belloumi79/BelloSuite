@@ -11,7 +11,12 @@
  *    hormis form-action vers Supabase/Google par précaution.
  *  - Polices : next/font les auto-héberge (font-src 'self').
  *  - Vidéos de la landing servies depuis /videos (media-src 'self').
+ *  - Import de facture fournisseur (OCR dans le navigateur) : pdfjs-dist et tesseract.js chargent leurs workers,
+ *    le cœur WASM et les données de langue depuis le CDN jsdelivr (script-src + connect-src), et compilent du
+ *    WebAssembly ('wasm-unsafe-eval', qui n'autorise PAS eval() JavaScript).
  */
+export const OCR_CDN = 'https://cdn.jsdelivr.net'
+
 export function supabaseOrigin(url: string | undefined = process.env.NEXT_PUBLIC_SUPABASE_URL): string | null {
   if (!url) return null
   try {
@@ -29,13 +34,13 @@ export function buildContentSecurityPolicy(opts: { supabaseUrl?: string; isDev?:
 
   const directives: Record<string, string[]> = {
     'default-src': ["'self'"],
-    'script-src': ["'self'", "'unsafe-inline'", ...(isDev ? ["'unsafe-eval'"] : [])],
+    'script-src': ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", OCR_CDN, ...(isDev ? ["'unsafe-eval'"] : [])],
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', 'blob:', 'https:'],
     'font-src': ["'self'", 'data:'],
     // Vidéos de démo auto-hébergées (public/videos)
     'media-src': ["'self'"],
-    'connect-src': ["'self'", supaHttp, supaWs, ...(isDev ? ['ws:', 'http://localhost:*'] : [])],
+    'connect-src': ["'self'", supaHttp, supaWs, OCR_CDN, ...(isDev ? ['ws:', 'http://localhost:*'] : [])],
     'frame-src': ["'self'", 'blob:'],
     'worker-src': ["'self'", 'blob:'],
     'object-src': ["'none'"],

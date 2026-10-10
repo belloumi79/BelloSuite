@@ -9,10 +9,12 @@ import { useTranslations } from 'next-intl'
 import { Link, usePathname, useRouter } from '@/i18n/routing'
 import { Plus, Trash2, CheckCircle2, XCircle, PackageCheck, Undo2, FileText, Printer, Banknote, Pencil, Lock, Save } from 'lucide-react'
 import { StockPage, PageHeader, Card, Loading, EmptyState, Badge, Alert, Modal, Field, KpiCard, cls, useStockFormat, api } from '@/components/stock/ui'
+import { InvoiceImportPanel } from '@/components/purchases/InvoiceImport'
+import { matchSupplier, matchProduct, LOW_CONFIDENCE, round3, type InvoiceExtraction } from '@/lib/invoice-extract'
 
 // ─── Types ──────────────────────────────────────────────────
 
-type Ref = { id: string; name: string; code?: string }
+type Ref = { id: string; name: string; code?: string; matriculeFiscal?: string | null }
 type Product = { id: string; code: string; name: string; unit: string; purchasePrice: string | number; averageCost?: string | number }
 type Warehouse = { id: string; code: string; name: string; isDefault?: boolean; isActive?: boolean }
 type DocRow = {
@@ -88,8 +90,11 @@ function useRefs() {
     api<Product[]>('/api/stock/products').then(r => r.ok && Array.isArray(r.data) && setProducts(r.data))
   }, [])
   const defaultWarehouse = warehouses.find(w => w.isDefault)?.id ?? warehouses[0]?.id ?? ''
-  return { suppliers, warehouses, products, defaultWarehouse }
+  return { suppliers, setSuppliers, warehouses, products, defaultWarehouse }
 }
+
+/** Surlignage des champs à relire (confiance faible après import). */
+const LOW_RING = 'ring-2 ring-amber-400 border-amber-400 bg-amber-50'
 
 const n = (v: unknown) => (v === '' || v === null || v === undefined ? 0 : Number(v))
 const docBase = (type: string) => (type === 'INVOICE' ? '/commercial/documents/supplier-invoices' : '/commercial/documents/supplier-orders')
@@ -163,12 +168,12 @@ export function PurchaseDocsList({ docType }: { docType: 'ORDER' | 'INVOICE' }) 
 // ─── Création commande / facture ────────────────────────────
 
 /** `id` = ligne existante ; `minQty` = déjà reçu (net) ; `fixed` = ligne réceptionnée (ni suppression ni changement d'article). */
-type EditLine = { id?: string; productId: string; description: string; quantity: string; unitPrice: string; minQty?: number; fixed?: boolean }
+type EditLine = { id?: string; productId: string; description: string; quantity: string; unitPrice: string; minQty?: number; fixed?: boolean; low?: boolean }
 
-function LinesEditor({ lines, setLines, products, priceLabel }: { lines: EditLine[]; setLines: (l: EditLine[]) => void; products: Product[]; priceLabel: string }) {
+function LinesEditor({ lines, setLines, products, priceLabel, allowFreeText = false }: { lines: EditLine[]; setLines: (l: EditLine[]) => void; products: Product[]; priceLabel: string; allowFreeText?: boolean }) {
   const t = useTranslations('Purchases')
   const f = useStockFormat()
-  const upd = (i: number, patch: Partial<EditLine>) => setLines(lines.map((l, j) => (j === i ? { ...l, ...patch } : l)))
+  const upd = (i: number, patch: Partial<EditLine>) => setLines(lines.map((l, j) => (j === i ? { ...l, ...patch, low: false } : l)))
   return (
     <div className="space-y-2">
       <div className="overflow-x-auto">
@@ -182,9 +187,9 @@ function LinesEditor({ lines, setLines, products, priceLabel }: { lines: EditLin
           </tr></thead>
           <tbody>
             {lines.map((l, i) => (
-              <tr key={i}>
+              <tr key={i} className={l.low ? 'bg-amber-50' : undefined}>
                 <td className="px-2 py-1.5">
-                  <select className={cls.input} value={l.productId} disabled={l.fixed} onChange={e => {
+                  <select className={`${cls.input} ${l.low ? LOW_RING : ''}`} value={l.productId} disabled={l.fixed} onChange={e => {
                     const p = products.find(x => x.id === e.target.value)
                     upd(i, { productId: e.target.value, description: p ? `${p.code} — ${p.name}` : '', unitPrice: p ? String(n(p.purchasePrice) || n(p.averageCost)) : l.unitPrice })
                   }}>
@@ -192,12 +197,15 @@ function LinesEditor({ lines, setLines, products, priceLabel }: { lines: EditLin
                     {products.map(p => <option key={p.id} value={p.id}>{p.code} — {p.name}</option>)}
                     {l.productId && !products.some(p => p.id === l.productId) && <option value={l.productId}>{l.description}</option>}
                   </select>
+                  {allowFreeText && !l.productId && (
+                    <input className={`${cls.input} mt-1 ${l.low ? LOW_RING : ''}`} placeholder={t('free_text_line')} aria-label={t('free_text_line')} value={l.description} onChange={e => upd(i, { description: e.target.value })} />
+                  )}
                 </td>
                 <td className="px-2 py-1.5">
                   <input type="number" min={l.minQty ?? 0} step="any" className={`${cls.input} text-end ${l.minQty && n(l.quantity) < l.minQty ? 'border-red-500' : ''}`} value={l.quantity} onChange={e => upd(i, { quantity: e.target.value })} />
                   {!!l.minQty && <div className="mt-0.5 text-[11px] text-zinc-500 text-end">{t('min_received', { min: l.minQty })}</div>}
                 </td>
-                <td className="px-2 py-1.5"><input type="number" min="0" step="any" className={`${cls.input} text-end`} value={l.unitPrice} onChange={e => upd(i, { unitPrice: e.target.value })} /></td>
+                <td className="px-2 py-1.5"><input type="number" min="0" step="any" className={`${cls.input} text-end ${l.low ? LOW_RING : ''}`} value={l.unitPrice} onChange={e => upd(i, { unitPrice: e.target.value })} /></td>
                 <td className={cls.tdNum}>{f.money(n(l.quantity) * n(l.unitPrice))}</td>
                 <td className="px-1">{l.fixed
                   ? <span className="inline-flex p-2 text-zinc-400" title={t('line_received_locked')} aria-label={t('line_received_locked')}><Lock className="w-4 h-4" /></span>
@@ -216,27 +224,100 @@ function NewDocModal({ open, docType, onClose }: { open: boolean; docType: 'ORDE
   const t = useTranslations('Purchases')
   const f = useStockFormat()
   const router = useRouter()
-  const { suppliers, warehouses, products, defaultWarehouse } = useRefs()
+  const { suppliers, setSuppliers, warehouses, products, defaultWarehouse } = useRefs()
+  const isInvoice = docType === 'INVOICE'
   const [supplierId, setSupplierId] = useState('')
   const [warehouseId, setWarehouseId] = useState('')
   const [expectedDate, setExpectedDate] = useState('')
   const [supplierRef, setSupplierRef] = useState('')
+  const [invoiceDate, setInvoiceDate] = useState('')
   const [vat, setVat] = useState('19')
+  /** Montant de TVA saisi / importé (plusieurs taux) ; vide = calculé depuis le taux. */
+  const [vatAmount, setVatAmount] = useState('')
+  const [fodec, setFodec] = useState('')
+  const [stamp, setStamp] = useState('')
   const [lines, setLines] = useState<EditLine[]>([{ productId: '', description: '', quantity: '1', unitPrice: '0' }])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [low, setLow] = useState<Set<string>>(new Set())
+  const [newSupplier, setNewSupplier] = useState<{ name: string; matriculeFiscal: string | null } | null>(null)
+  const [vatBreakdown, setVatBreakdown] = useState<string>('')
   const subtotal = lines.reduce((s, l) => s + n(l.quantity) * n(l.unitPrice), 0)
-  const tax = Math.round(subtotal * n(vat) * 10) / 1000
+  const fodecN = isInvoice ? n(fodec) : 0
+  const stampN = isInvoice ? n(stamp) : 0
+  const vatN = isInvoice && vatAmount !== '' ? n(vatAmount) : Math.round((subtotal + fodecN) * n(vat) * 10) / 1000
+  const tax = round3(vatN + fodecN + stampN)
+  const lowCls = (k: string) => (low.has(k) ? LOW_RING : '')
+  const touch = (k: string) => low.has(k) && setLow(prev => { const s2 = new Set(prev); s2.delete(k); return s2 })
+
+  function applyExtraction(x: InvoiceExtraction) {
+    const lowSet = new Set<string>()
+    const mark = (k: string, c: number, has: boolean) => { if (!has || c < LOW_CONFIDENCE) lowSet.add(k) }
+    // Fournisseur : MF puis nom
+    const m = matchSupplier(x, suppliers)
+    if (m) { setSupplierId(m.id); setNewSupplier(null); if (m.by === 'name' && m.score < 0.9) lowSet.add('supplier') }
+    else {
+      setSupplierId('')
+      lowSet.add('supplier')
+      setNewSupplier(x.supplierName.value ? { name: x.supplierName.value, matriculeFiscal: x.matriculeFiscal.value } : null)
+    }
+    if (x.invoiceNumber.value) setSupplierRef(x.invoiceNumber.value)
+    mark('ref', x.invoiceNumber.confidence, !!x.invoiceNumber.value)
+    if (x.date.value) setInvoiceDate(x.date.value)
+    mark('date', x.date.confidence, !!x.date.value)
+    // Taxes
+    setFodec(x.fodec.value ? String(x.fodec.value) : '')
+    if (x.fodec.value) mark('fodec', x.fodec.confidence, true)
+    setStamp(x.stamp.value ? String(x.stamp.value) : '')
+    mark('stamp', x.stamp.confidence, x.stamp.value !== null)
+    if (x.vat.length === 1) { setVat(String(x.vat[0].rate)); setVatAmount(x.vatTotal.value !== null ? String(x.vatTotal.value) : '') }
+    else if (x.vat.length > 1 || x.vatTotal.value !== null) setVatAmount(x.vatTotal.value !== null ? String(x.vatTotal.value) : String(x.vat.reduce((s2, v) => s2 + v.amount, 0)))
+    mark('vat', x.vatTotal.confidence, x.vatTotal.value !== null)
+    setVatBreakdown(x.vat.length > 1 ? x.vat.map(v => `TVA ${v.rate} % : ${f.money(v.amount)}`).join(' ; ') : '')
+    // Lignes : article reconnu (référence / nom) sinon texte libre ; à défaut une ligne « total HT »
+    const ls: EditLine[] = x.lines.map(l => {
+      const p = matchProduct(l, products)
+      const prod = p ? products.find(pp => pp.id === p.id) : undefined
+      return {
+        productId: prod?.id ?? '',
+        description: prod ? `${prod.code} — ${prod.name}` : [l.reference, l.designation].filter(Boolean).join(' '),
+        quantity: String(l.quantity), unitPrice: String(l.unitPrice),
+        low: l.confidence < LOW_CONFIDENCE,
+      }
+    })
+    if (!ls.length && x.subtotal.value !== null) {
+      ls.push({ productId: '', description: [t('ocr_global_line'), x.invoiceNumber.value].filter(Boolean).join(' '), quantity: '1', unitPrice: String(x.subtotal.value), low: true })
+    }
+    if (ls.length) setLines(ls)
+    if (x.checks.totalsConsistent === false) lowSet.add('totals')
+    setLow(lowSet)
+  }
+
+  async function createSupplier() {
+    if (!newSupplier) return
+    setBusy(true); setError('')
+    const r = await api<Ref>('/api/commercial/suppliers', { method: 'POST', body: JSON.stringify({ name: newSupplier.name, matriculeFiscal: newSupplier.matriculeFiscal }) })
+    setBusy(false)
+    if (!r.ok) { setError(r.error || t('error_generic')); return }
+    setSuppliers(prev => [...prev, r.data].sort((a, b) => a.name.localeCompare(b.name)))
+    setSupplierId(r.data.id); setNewSupplier(null); touch('supplier')
+  }
 
   async function save(confirm: boolean) {
     setBusy(true); setError('')
+    const notes = isInvoice && (fodecN || stampN || vatBreakdown)
+      ? [vatBreakdown || `${t('vat')} : ${f.money(vatN)}`, fodecN ? `FODEC : ${f.money(fodecN)}` : '', stampN ? `${t('stamp_duty')} : ${f.money(stampN)}` : ''].filter(Boolean).join(' ; ')
+      : null
     const r = await api<{ id: string }>('/api/commercial/suppliers/orders', {
       method: 'POST',
       body: JSON.stringify({
         type: docType, supplierId: supplierId || null, warehouseId: docType === 'ORDER' ? (warehouseId || defaultWarehouse || null) : null,
         expectedDate: expectedDate || null, supplierRef: supplierRef || null, taxAmount: tax,
+        date: isInvoice && invoiceDate ? invoiceDate : null, notes,
         status: confirm ? (docType === 'ORDER' ? 'CONFIRMED' : 'VALIDATED') : 'DRAFT',
-        items: lines.filter(l => l.productId && n(l.quantity) > 0).map(l => ({ productId: l.productId, description: l.description, quantity: n(l.quantity), unitPrice: n(l.unitPrice) })),
+        items: lines
+          .filter(l => (l.productId || (isInvoice && l.description.trim())) && n(l.quantity) > 0)
+          .map(l => ({ productId: l.productId || null, description: l.description.trim() || l.productId, quantity: n(l.quantity), unitPrice: n(l.unitPrice) })),
       }),
     })
     setBusy(false)
@@ -252,12 +333,18 @@ function NewDocModal({ open, docType, onClose }: { open: boolean; docType: 'ORDE
         <button className={cls.btnPrimary} disabled={busy || !supplierId} onClick={() => save(true)}><CheckCircle2 className="w-4 h-4" /> {t(docType === 'ORDER' ? 'save_confirm' : 'save_validate')}</button>
       </>}>
       {error && <Alert onClose={() => setError('')}>{error}</Alert>}
+      {isInvoice && <InvoiceImportPanel onExtracted={applyExtraction} />}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
         <Field label={t('supplier')}>
-          <select className={cls.input} value={supplierId} onChange={e => setSupplierId(e.target.value)}>
+          <select className={`${cls.input} ${lowCls('supplier')}`} value={supplierId} onChange={e => { setSupplierId(e.target.value); touch('supplier') }}>
             <option value="">{t('choose_supplier')}</option>
             {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
+          {newSupplier && !supplierId && (
+            <button type="button" disabled={busy} onClick={createSupplier} className="mt-1 text-xs font-semibold text-teal-700 hover:underline text-start">
+              <Plus className="inline w-3.5 h-3.5" /> {t('create_supplier', { name: newSupplier.name })}
+            </button>
+          )}
         </Field>
         {docType === 'ORDER' ? (
           <>
@@ -269,15 +356,28 @@ function NewDocModal({ open, docType, onClose }: { open: boolean; docType: 'ORDE
             <Field label={t('expected_date')}><input type="date" className={cls.input} value={expectedDate} onChange={e => setExpectedDate(e.target.value)} /></Field>
           </>
         ) : (
-          <Field label={t('supplier_invoice_ref')}><input className={cls.input} value={supplierRef} onChange={e => setSupplierRef(e.target.value)} /></Field>
+          <>
+            <Field label={t('supplier_invoice_ref')}><input className={`${cls.input} ${lowCls('ref')}`} value={supplierRef} onChange={e => { setSupplierRef(e.target.value); touch('ref') }} /></Field>
+            <Field label={t('invoice_date')}><input type="date" className={`${cls.input} ${lowCls('date')}`} value={invoiceDate} onChange={e => { setInvoiceDate(e.target.value); touch('date') }} /></Field>
+          </>
         )}
-        <Field label={t('vat_rate')}><input type="number" min="0" max="100" className={cls.input} value={vat} onChange={e => setVat(e.target.value)} /></Field>
+        <Field label={t('vat_rate')}><input type="number" min="0" max="100" className={cls.input} value={vat} onChange={e => { setVat(e.target.value); setVatAmount(''); touch('vat') }} /></Field>
       </div>
-      <LinesEditor lines={lines} setLines={setLines} products={products} priceLabel={t('unit_price')} />
+      <LinesEditor lines={lines} setLines={setLines} products={products} priceLabel={t('unit_price')} allowFreeText={isInvoice} />
       <div className="mt-4 flex flex-col items-end gap-1 text-sm">
         <div>{t('subtotal')} : <span className="font-semibold tabular-nums">{f.money(subtotal)}</span></div>
-        <div>{t('vat')} : <span className="tabular-nums">{f.money(tax)}</span></div>
-        <div className="text-base">{t('total_ttc')} : <span className="font-bold tabular-nums">{f.money(subtotal + tax)}</span></div>
+        {isInvoice ? (
+          <>
+            <label className="flex items-center gap-2">FODEC : <input type="number" min="0" step="any" className={`${cls.input} !w-32 !py-1 text-end ${lowCls('fodec')}`} value={fodec} placeholder="0" onChange={e => { setFodec(e.target.value); touch('fodec') }} /></label>
+            <label className="flex items-center gap-2">{t('vat')} : <input type="number" min="0" step="any" className={`${cls.input} !w-32 !py-1 text-end ${lowCls('vat')}`} value={vatAmount === '' ? String(vatN) : vatAmount} onChange={e => { setVatAmount(e.target.value); touch('vat') }} /></label>
+            {vatBreakdown && <div className="text-xs text-zinc-500">{vatBreakdown}</div>}
+            <label className="flex items-center gap-2">{t('stamp_duty')} : <input type="number" min="0" step="any" className={`${cls.input} !w-32 !py-1 text-end ${lowCls('stamp')}`} value={stamp} placeholder="0" onChange={e => { setStamp(e.target.value); touch('stamp') }} /></label>
+          </>
+        ) : (
+          <div>{t('vat')} : <span className="tabular-nums">{f.money(tax)}</span></div>
+        )}
+        <div className={`text-base rounded-lg px-1 ${lowCls('totals')}`}>{t('total_ttc')} : <span className="font-bold tabular-nums">{f.money(subtotal + tax)}</span></div>
+        {low.has('totals') && <div className="text-xs text-amber-700">{t('ocr_check_totals')}</div>}
       </div>
     </Modal>
   )
@@ -517,7 +617,7 @@ function EditDocForm({ doc, onCancel, onSaved }: { doc: DocDetail; onCancel: () 
         <Field label={t(isOrder ? 'supplier_ref' : 'supplier_invoice_ref')}><input className={cls.input} value={supplierRef} onChange={e => setSupplierRef(e.target.value)} /></Field>
         <Field label={t('vat_rate')}><input type="number" min="0" max="100" step="any" className={cls.input} value={vat} onChange={e => setVat(e.target.value)} /></Field>
       </div>
-      <LinesEditor lines={lines} setLines={setLines} products={products} priceLabel={t('unit_price')} />
+      <LinesEditor lines={lines} setLines={setLines} products={products} priceLabel={t('unit_price')} allowFreeText={!isOrder} />
       <div className="mt-3"><Field label={t('notes')}><textarea rows={2} className={cls.input} value={notes} onChange={e => setNotes(e.target.value)} /></Field></div>
       <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
         <div className="flex gap-2">

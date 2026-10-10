@@ -3,9 +3,11 @@ import { buildContentSecurityPolicy, securityHeaders } from '@/lib/security-head
 describe('security headers', () => {
   it('CSP prod : Supabase autorisé, pas d’unsafe-eval, frame-ancestors none', () => {
     const csp = buildContentSecurityPolicy({ supabaseUrl: 'https://abc.supabase.co', isDev: false })
-    expect(csp).toContain("connect-src 'self' https://abc.supabase.co wss://abc.supabase.co")
+    expect(csp).toContain("connect-src 'self' https://abc.supabase.co wss://abc.supabase.co https://cdn.jsdelivr.net")
     expect(csp).toContain("script-src 'self' 'unsafe-inline'")
-    expect(csp).not.toContain('unsafe-eval')
+    expect(csp).not.toContain("'unsafe-eval'")
+    // OCR navigateur (pdfjs / tesseract.js) : WASM + CDN jsdelivr
+    expect(csp).toContain("'wasm-unsafe-eval' https://cdn.jsdelivr.net")
     expect(csp).toContain("frame-ancestors 'none'")
     expect(csp).toContain("object-src 'none'")
     expect(csp).toContain('upgrade-insecure-requests')
