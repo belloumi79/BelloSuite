@@ -310,3 +310,63 @@ describe('rapprochements', () => {
     expect(matchProduct({ reference: null, designation: 'Boutons métal' }, products)).toBeNull()
   })
 })
+
+/** Couche texte de public/samples/facture-fournisseur-demo.pdf (titre « FACTURE » sur la ligne de la raison sociale). */
+const INV_SAMPLE = `FILATURE DÉMO DU CAP BON SARL  FACTURE
+Zone Industrielle, Route de Kélibia Km 3, 8000 Nabeul (société fictive)
+FACTURE N° : FA-2026/0471
+MF : 1234567/A/M/000  RC : B0123452020
+Date : 06/10/2026
+Tél : 72 000 000  contact@filature-demo.example
+Client : BELLOSUITE DÉMO SARL
+MF client : 7654321B/A/M/000
+Avenue de la République, Tunis
+Réf  Désignation  Qté  P.U HT  Montant HT
+TX-101  Fil coton peigné Ne 30/1  120  18,500  2 220,000
+TX-205  Tissu denim 12 oz  250  14,200  3 550,000
+AC-310  Boutons métal 17 mm (lot 1000)  4  85,000  340,000
+Total HT  6 110,000
+FODEC 1%  61,100
+TVA 19%  6 171,100  1 172,509
+Timbre fiscal  1,000
+Total TTC  7 344,609`
+
+describe('extractInvoice — échantillon de démo (public/samples)', () => {
+  it('raison sociale isolée du titre « FACTURE », client exclu, tout cohérent', () => {
+    const x = extractInvoice(INV_SAMPLE)
+    expect(x.supplierName.value).toBe('FILATURE DÉMO DU CAP BON SARL')
+    expect(x.matriculeFiscal.value).toBe('1234567/A/M/000')
+    expect(x.invoiceNumber.value).toBe('FA-2026/0471')
+    expect(x.date.value).toBe('2026-10-06')
+    expect([x.subtotal.value, x.fodec.value, x.vatTotal.value, x.stamp.value, x.total.value]).toEqual([6110, 61.1, 1172.509, 1, 7344.609])
+    expect(x.lines.map((l) => [l.reference, l.quantity, l.unitPrice, l.total])).toEqual([['TX-101', 120, 18.5, 2220], ['TX-205', 250, 14.2, 3550], ['AC-310', 4, 85, 340]])
+    expect(x.checks.totalsConsistent).toBe(true)
+  })
+})
+
+describe('extractInvoice — échantillon de démo, sortie OCR de la photo (PNG)', () => {
+  it('titre « FACTURE » fusionné, « N° » lu « N? », bruit sur la ligne RC', () => {
+    const ocr = `FILATURE DEMO DU CAP BON SARL FACTURE
+Zone eran le - Kelibla Km 3, 8000 Nabeul (société fictive) FACTURE N? : FA-2026/0471
+MF : 1234567/A/M/000 iS + 80123452020 Date : 06/10/2026
+Tél : 72 000 000 contact@filature-demo.example
+Client : BELLOSUITE DEMO SARL
+MF client : 7654321B/A/M/000
+Réf Désignation Qté P.U HT Montant HT
+TX-101 Fil coton peigné Ne 30/1 120 18,500 2 220,000
+TX-205 Tissu denim 12 oz 250 14,200 3 550,000
+AC-310 Boutons métal 17 mm (lot 1000) 4 85,000 340,000
+Total HT 6 110,000
+FODEC 1% 61,100
+TVA 19% 6 171,100 1 172,509
+Timbre fiscal 1,000
+Total TTC 7 344,609`
+    const x = extractInvoice(ocr)
+    expect(x.supplierName.value).toBe('FILATURE DEMO DU CAP BON SARL')
+    expect(x.invoiceNumber.value).toBe('FA-2026/0471')
+    expect(x.matriculeFiscal.value).toBe('1234567/A/M/000')
+    expect(x.total.value).toBe(7344.609)
+    expect(x.lines).toHaveLength(3)
+    expect(x.checks.totalsConsistent).toBe(true)
+  })
+})

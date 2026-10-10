@@ -2401,6 +2401,8 @@
     "lock_INVOICE_CANCELLED": "Facture annulée : lecture seule.",
     "import_invoice": "Importer une facture (PDF/photo)",
     "import_invoice_hint": "Déposez un PDF ou une photo (5 Mo max) : les champs sont pré-remplis, vous relisez avant d'enregistrer. Le fichier n'est pas conservé.",
+    "ocr_try_sample_pdf": "Essayer avec une facture d'exemple (PDF)",
+    "ocr_try_sample_photo": "Essayer avec une photo d'exemple",
     "ocr_too_large": "Fichier trop volumineux (5 Mo maximum).",
     "ocr_unsupported": "Format non pris en charge : PDF, JPEG, PNG ou WebP.",
     "ocr_no_text": "Aucun texte lisible dans ce document. Essayez une photo plus nette.",

@@ -202,18 +202,25 @@ function findSupplierName(lines: string[], client: Set<number>, opts: ExtractOpt
     const m = l.match(/(?:fournisseur|raison\s+sociale|vendeur|supplier|المزود)\s*[:\-]\s*(.{3,80})/i)
     if (m && !client.has(i) && !isOwn(m[1])) return { value: cleanName(m[1]), confidence: 0.85 }
   }
-  // 2) En-tête : ligne avec forme juridique, hors zone client
+  // En-tête : chaque ligne est découpée en cellules (colonnes PDF / OCR séparées par 2 espaces ou « | »),
+  // pour qu'un titre « FACTURE » ou un n° placé sur la même ligne n'élimine pas la raison sociale.
   const head = lines.slice(0, 15)
+  // Un titre « FACTURE » en fin de ligne (OCR qui a fusionné les colonnes avec un seul espace) est retiré.
+  const cells = (l: string) => l.replace(/\s+(?:facture|invoice|فاتورة)\s*$/i, '').split(/\s{2,}|\s*\|\s*|\t/).map((c) => c.trim()).filter(Boolean)
+  const usable = (c: string) => c.length >= 3 && !NOT_NAME_RE.test(stripAccents(c)) && !isOwn(c)
+  // 2) Cellule avec forme juridique, hors zone client
   for (const [i, l] of head.entries()) {
-    const t = l.trim()
-    if (!t || client.has(i) || NOT_NAME_RE.test(stripAccents(t)) || isOwn(t)) continue
-    if (LEGAL_FORM_RE.test(stripAccents(t)) && /[A-Za-z\u0600-\u06ff]{3}/.test(t)) return { value: cleanName(t), confidence: 0.75 }
+    if (client.has(i)) continue
+    for (const c of cells(l)) {
+      if (usable(c) && LEGAL_FORM_RE.test(stripAccents(c)) && /[A-Za-z\u0600-\u06ff]{3}/.test(c)) return { value: cleanName(c), confidence: 0.75 }
+    }
   }
-  // 3) Première ligne textuelle plausible
+  // 3) Première cellule textuelle plausible
   for (const [i, l] of head.entries()) {
-    const t = l.trim()
-    if (t.length < 3 || client.has(i) || NOT_NAME_RE.test(stripAccents(t)) || isOwn(t)) continue
-    if ((t.match(/[A-Za-z\u0600-\u06ff]/g) ?? []).length >= 3 && (t.match(/\d/g) ?? []).length <= 2) return { value: cleanName(t), confidence: 0.45 }
+    if (client.has(i)) continue
+    for (const c of cells(l)) {
+      if (usable(c) && (c.match(/[A-Za-z\u0600-\u06ff]/g) ?? []).length >= 3 && (c.match(/\d/g) ?? []).length <= 2) return { value: cleanName(c), confidence: 0.45 }
+    }
   }
   return { value: null, confidence: 0 }
 }
@@ -226,8 +233,8 @@ function cleanName(s: string): string {
 
 function findInvoiceNumber(lines: string[]): Field<string> {
   const patterns: Array<[RegExp, number]> = [
-    [/(?:facture|invoice|fact\.?)\s*(?:n\s*[°ºo]\.?|num[ée]ro|no\.?|#)\s*[:.\-]?\s*([A-Z0-9][A-Z0-9/\-_.]{1,30})/i, 0.9],
-    [/(?:n\s*[°º]|num[ée]ro)\s*(?:de\s+)?(?:la\s+)?facture\s*[:.\-]?\s*([A-Z0-9][A-Z0-9/\-_.]{1,30})/i, 0.9],
+    [/(?:facture|invoice|fact\.?)\s*(?:n\s*[°ºo?*]\.?|num[ée]ro|no\.?|#)\s*[:.\-]?\s*([A-Z0-9][A-Z0-9/\-_.]{1,30})/i, 0.9],
+    [/(?:n\s*[°º?*]|num[ée]ro)\s*(?:de\s+)?(?:la\s+)?facture\s*[:.\-]?\s*([A-Z0-9][A-Z0-9/\-_.]{1,30})/i, 0.9],
     [/فاتورة\s*(?:عدد|رقم)\s*[:.\-]?\s*([A-Z0-9][A-Z0-9/\-_.]{1,30})/i, 0.85],
     [/\bfacture\s*[:\-]\s*([A-Z0-9][A-Z0-9/\-_.]{1,30})/i, 0.7],
   ]

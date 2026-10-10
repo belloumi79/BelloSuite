@@ -15,6 +15,10 @@ import { extractInvoice, mergeAiExtraction, LOW_CONFIDENCE, type InvoiceExtracti
 import type { OcrProgress } from '@/lib/invoice-ocr-client'
 
 const MAX_BYTES = 5 * 1024 * 1024
+const SAMPLES = [
+  { file: 'facture-fournisseur-demo.pdf', type: 'application/pdf', label: 'ocr_try_sample_pdf' },
+  { file: 'facture-fournisseur-demo.png', type: 'image/png', label: 'ocr_try_sample_photo' },
+] as const
 
 type Status = { kind: 'idle' } | { kind: 'busy'; p: OcrProgress | null; ai?: boolean } | { kind: 'error'; key: string } | { kind: 'done'; x: InvoiceExtraction; ai: boolean }
 
@@ -55,6 +59,17 @@ export function InvoiceImportPanel({ onExtracted }: { onExtracted: (x: InvoiceEx
     }
   }
 
+  /** Démo : facture fictive servie depuis public/samples, traitée exactement comme un fichier déposé. */
+  async function trySample(name: string, type: string) {
+    try {
+      const res = await fetch(`/samples/${name}`)
+      if (!res.ok) throw new Error('sample')
+      await handle(new File([await res.blob()], name, { type }))
+    } catch {
+      setStatus({ kind: 'error', key: 'ocr_failed' })
+    }
+  }
+
   const busy = status.kind === 'busy'
   const stageLabel = (p: OcrProgress | null, ai?: boolean) => {
     if (ai) return t('ocr_stage_ai')
@@ -81,6 +96,13 @@ export function InvoiceImportPanel({ onExtracted }: { onExtracted: (x: InvoiceEx
         <div className="text-xs text-zinc-500 text-start flex-1">{t('import_invoice_hint')}</div>
         <input ref={input} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => handle(e.target.files?.[0])} />
       </div>
+      {status.kind === 'idle' && (
+        <div className="mt-1 flex flex-wrap gap-x-4 text-xs">
+          {SAMPLES.map((s) => (
+            <button key={s.file} type="button" className="text-teal-700 hover:underline" onClick={() => trySample(s.file, s.type)}>{t(s.label)}</button>
+          ))}
+        </div>
+      )}
 
       {status.kind === 'busy' && (
         <div className="mt-2" aria-live="polite">
