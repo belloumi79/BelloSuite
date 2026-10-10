@@ -20,3 +20,12 @@ describe('schéma Prisma ↔ base (achats)', () => {
     expect(modelBody(model)).not.toMatch(/^\s*clientId\s/m)
   })
 })
+
+describe('schéma Prisma ↔ base (bons de livraison)', () => {
+  it('Invoice.warehouseId est nullable et créé par une migration additive', () => {
+    expect(modelBody('Invoice')).toMatch(/^\s*warehouseId\s+String\?/m)
+    const migDir = join(__dirname, '..', 'supabase', 'migrations')
+    const sql = readdirSync(migDir).filter(f => f.endsWith('.sql')).map(f => readFileSync(join(migDir, f), 'utf8')).join('\n')
+    expect(sql).toMatch(/ALTER TABLE "Invoice" ADD COLUMN IF NOT EXISTS "warehouseId" TEXT;/)
+  })
+})

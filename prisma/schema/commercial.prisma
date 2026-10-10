@@ -19,8 +19,8 @@ model Client {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  invoices        Invoice[]
-  purchaseOrders  PurchaseOrder[]
+  invoices       Invoice[]
+  purchaseOrders PurchaseOrder[]
 
   @@unique([tenantId, code])
 }
@@ -75,6 +75,10 @@ model Invoice {
   totalInCurrency Decimal?
   convertedFromId String?
   convertedAt     DateTime?
+
+  // Bon de livraison : dépôt de sortie du stock (null = documents antérieurs / non concernés)
+  warehouseId String?
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id])
 
   notes             String?
   accountingEntryId String?
@@ -209,8 +213,8 @@ model GoodsReceipt {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @default(now()) @updatedAt
 
-  items    GoodsReceiptItem[]
-  returns  SupplierReturn[]
+  items   GoodsReceiptItem[]
+  returns SupplierReturn[]
 
   @@unique([tenantId, number])
   @@index([tenantId, status])
@@ -255,7 +259,7 @@ model SupplierReturn {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @default(now()) @updatedAt
 
-  items    SupplierReturnItem[]
+  items SupplierReturnItem[]
 
   @@unique([tenantId, number])
   @@index([receiptId])

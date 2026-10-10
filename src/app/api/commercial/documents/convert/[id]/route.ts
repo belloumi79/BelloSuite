@@ -7,6 +7,8 @@ import { z } from 'zod'
 const convertSchema = z.object({
   tenantId: z.string().min(1).optional(),
   targetType: z.string().min(1),
+  /** Conversion en bon de livraison : dépôt de sortie (défaut : dépôt par défaut du tenant). */
+  warehouseId: z.string().min(1).optional().nullable(),
 })
 
 // POST /api/commercial/documents/convert/:id
@@ -26,7 +28,10 @@ export async function POST(
     if (ctx instanceof NextResponse) return ctx
 
     const { id } = await params
-    const converted = await convertDocument(id, ctx.tenantId, validated.data.targetType)
+    const converted = await convertDocument(id, ctx.tenantId, validated.data.targetType, {
+      warehouseId: validated.data.warehouseId,
+      userId: ctx.user?.id ?? null,
+    })
 
     return NextResponse.json(converted, { status: 201 })
   } catch (err) {

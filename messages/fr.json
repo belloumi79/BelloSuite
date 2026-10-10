@@ -709,7 +709,8 @@
         "edit": "Modifier",
         "delete": "Supprimer",
         "delete_prompt": "Supprimer ce {label} ?"
-      }
+      },
+      "warehouse": "Dépôt : {name}"
     },
     "DocumentTypes": {
       "QUOTE": "Devis",
@@ -762,6 +763,22 @@
       },
       "validation": {
         "select_client": "Veuillez sélectionner un client"
+      },
+      "warehouse": {
+        "label": "Dépôt de sortie",
+        "hint": "Le stock disponible affiché sur chaque ligne est celui de ce dépôt.",
+        "none": "Aucun dépôt actif : le stock global sera utilisé.",
+        "default": "par défaut",
+        "available": "Disponible : {qty}",
+        "insufficient": "Stock insuffisant dans ce dépôt (disponible : {qty})",
+        "negative_allowed": "Le stock négatif est autorisé (paramètres du stock) : la livraison sera acceptée même si le stock est insuffisant."
+      },
+      "errors": {
+        "insufficient_stock": "Stock insuffisant dans le dépôt choisi pour : {products}",
+        "warehouse_invalid": "Dépôt invalide.",
+        "warehouse_inactive": "Ce dépôt est archivé : choisissez un dépôt actif.",
+        "duplicate_number": "Ce numéro de document est déjà utilisé.",
+        "generic": "Impossible d'enregistrer le document. Réessayez."
       }
     },
     "RetenueSource": {

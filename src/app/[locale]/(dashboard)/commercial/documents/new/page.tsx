@@ -1,12 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
-import { Plus, Trash2, Save, ArrowLeft, Search, User, Package, Calendar, Info, CreditCard, FileText } from 'lucide-react'
+import { Plus, Trash2, Save, ArrowLeft, Search, User, Package, Calendar, Info, CreditCard, FileText, Warehouse, AlertTriangle } from 'lucide-react'
 import { calculateInvoiceTotals, VAT_RATES, FISCAL_STAMP } from '@/lib/fiscal'
 import { Link } from '@/i18n/routing'
 import { useSession } from '@/hooks/useSession'
+import { findShortages, aggregateQuantities } from '@/lib/delivery-note-logic'
+
+type WarehouseOpt = { id: string; code: string; name: string; isDefault?: boolean }
+type ProductOpt = { id: string; name: string; code?: string; salePrice?: unknown; vatRate?: unknown; fodec?: boolean; currentStock?: unknown; warehouseStock?: Array<{ warehouseId: string; stock: string | number }> }
+const DOC_TYPES = ['INVOICE', 'QUOTE', 'ORDER', 'DELIVERY_NOTE', 'CREDIT_NOTE']
+const DOC_PREFIX: Record<string, string> = { INVOICE: 'FAC', QUOTE: 'DEV', ORDER: 'BC', DELIVERY_NOTE: 'BL', CREDIT_NOTE: 'AV' }
 
 export default function NewInvoicePage() {
   const t = useTranslations('Commercial.DocumentEditor')
@@ -16,7 +22,11 @@ export default function NewInvoicePage() {
   const [loading, setLoading] = useState(false)
   const { tenantId } = useSession()
   const [clients, setClients] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<ProductOpt[]>([])
+  const [warehouses, setWarehouses] = useState<WarehouseOpt[]>([])
+  const [warehouseId, setWarehouseId] = useState('')
+  const [allowNegative, setAllowNegative] = useState(false)
+  const [error, setError] = useState('')
   
   const [invoiceData, setInvoiceData] = useState({
     clientId: '',
@@ -34,7 +44,62 @@ export default function NewInvoicePage() {
   useEffect(() => {
     fetchClients(tenantId)
     fetchProducts(tenantId)
-  }, [])
+    fetchStockContext()
+    // Type pré-sélectionné depuis la liste (ex. ?type=DELIVERY_NOTE)
+    const qType = new URLSearchParams(window.location.search).get('type')
+    if (qType && DOC_TYPES.includes(qType)) {
+      setInvoiceData(d => ({ ...d, type: qType, number: `${DOC_PREFIX[qType]}-${Date.now().toString().slice(-6)}` }))
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Dépôts actifs (défaut présélectionné) et paramètre « stock négatif autorisé » du module stock
+  const fetchStockContext = async () => {
+    try {
+      const [w, st] = await Promise.all([fetch('/api/stock/warehouses'), fetch('/api/stock/settings')])
+      if (w.ok) {
+        const list: WarehouseOpt[] = await w.json()
+        if (Array.isArray(list)) {
+          setWarehouses(list)
+          const def = list.find(x => x.isDefault) ?? list[0]
+          setWarehouseId(def?.id ?? '')
+        }
+      }
+      if (st.ok) setAllowNegative(Boolean((await st.json())?.allowNegativeStock))
+    } catch { /* module stock indisponible : pas de choix de dépôt */ }
+  }
+
+  const isDeliveryNote = invoiceData.type === 'DELIVERY_NOTE'
+
+  // Stock disponible d'un produit dans le dépôt choisi (stock global s'il n'y a aucun dépôt)
+  const availableIn = (productId: string) => {
+    const p = products.find(x => x.id === productId)
+    if (!p) return 0
+    if (!warehouseId) return Number(p.currentStock ?? 0)
+    return Number(p.warehouseStock?.find(w => w.warehouseId === warehouseId)?.stock ?? 0)
+  }
+
+  const requestedByProduct = useMemo(() => aggregateQuantities(invoiceData.items), [invoiceData.items])
+  const shortages = useMemo(() => {
+    if (!isDeliveryNote) return []
+    const available: Record<string, number> = {}
+    for (const pid of Object.keys(requestedByProduct)) available[pid] = availableIn(pid)
+    return findShortages(invoiceData.items, available, allowNegative)
+  }, [isDeliveryNote, requestedByProduct, invoiceData.items, allowNegative, products, warehouseId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const productName = (id: string) => products.find(p => p.id === id)?.name || id
+
+  const fmtQty = (n: number) => n.toLocaleString(locale === 'ar' ? 'ar-TN' : locale === 'en' ? 'en-GB' : 'fr-TN', { maximumFractionDigits: 3 })
+
+  // Erreur serveur → message traduit (code renvoyé par l'API)
+  const serverErrorMessage = (status: number, data: { code?: string; products?: string[]; error?: string } | null) => {
+    switch (data?.code) {
+      case 'INSUFFICIENT_STOCK': return t('errors.insufficient_stock', { products: (data.products || []).join(', ') })
+      case 'WAREHOUSE_INVALID': return t('errors.warehouse_invalid')
+      case 'WAREHOUSE_INACTIVE': return t('errors.warehouse_inactive')
+    }
+    if (status === 409 && /déjà utilisé/i.test(data?.error || '')) return t('errors.duplicate_number')
+    return t('errors.generic')
+  }
 
   const fetchClients = async (tid: string) => {
     const res = await fetch(`/api/commercial/clients`)
@@ -70,7 +135,7 @@ export default function NewInvoicePage() {
         newItems[index].description = product.name
         newItems[index].unitPriceHT = Number(product.salePrice)
         newItems[index].vatRate = Number(product.vatRate)
-        newItems[index].fodecApply = product.fodec
+        newItems[index].fodecApply = Boolean(product.fodec)
       }
     }
     
@@ -82,6 +147,11 @@ export default function NewInvoicePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!invoiceData.clientId) return alert(t('validation.select_client'))
+    setError('')
+    if (shortages.length) {
+      setError(t('errors.insufficient_stock', { products: shortages.map(s => productName(s.productId)).join(', ') }))
+      return
+    }
     setLoading(true)
 
     try {
@@ -91,15 +161,21 @@ export default function NewInvoicePage() {
         body: JSON.stringify({
           ...invoiceData,
           tenantId,
-          ...totals
+          ...totals,
+          ...(isDeliveryNote && warehouseId ? { warehouseId } : {}),
         })
       })
 
       if (res.ok) {
-        router.push('/commercial/documents')
+        router.push(isDeliveryNote ? '/commercial/documents/delivery-notes' : '/commercial/documents')
+      } else {
+        let data = null
+        try { data = await res.json() } catch { /* corps vide */ }
+        setError(serverErrorMessage(res.status, data))
       }
-    } catch (error) {
-      console.error(error)
+    } catch (err) {
+      console.error(err)
+      setError(t('errors.generic'))
     } finally {
       setLoading(false)
     }
@@ -120,6 +196,14 @@ export default function NewInvoicePage() {
           <p className="text-stone-500 text-[10px] font-black uppercase tracking-widest mt-1">{t('compliance')}</p>
         </div>
       </div>
+
+      {error && (
+        <div role="alert" className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm font-bold">
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+          <span className="flex-1">{error}</span>
+          <button type="button" onClick={() => setError('')} className="text-red-400 hover:text-red-700" aria-label="×">×</button>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
         
@@ -153,14 +237,14 @@ export default function NewInvoicePage() {
                       <select 
                         required
                         value={invoiceData.type}
-                        onChange={e => setInvoiceData({...invoiceData, type: e.target.value})}
+                        onChange={e => {
+                          const nt = e.target.value
+                          const auto = /^(FAC|DEV|BC|BL|AV)-\d{6}$/.test(invoiceData.number)
+                          setInvoiceData({ ...invoiceData, type: nt, number: auto ? `${DOC_PREFIX[nt] || 'DOC'}-${invoiceData.number.slice(-6)}` : invoiceData.number })
+                        }}
                         className="w-full bg-stone-50 border border-stone-200 rounded-2xl ps-12 pe-4 py-3 text-stone-900 outline-none focus:border-teal-500 transition-all appearance-none uppercase font-bold"
                       >
-                         <option value="INVOICE">{dt('INVOICE')}</option>
-                         <option value="QUOTE">{dt('QUOTE')}</option>
-                         <option value="ORDER">{dt('ORDER')}</option>
-                         <option value="DELIVERY_NOTE">{dt('DELIVERY_NOTE')}</option>
-                         <option value="CREDIT_NOTE">{dt('CREDIT_NOTE')}</option>
+                         {DOC_TYPES.map(ty => <option key={ty} value={ty}>{dt(ty)}</option>)}
                       </select>
                    </div>
                 </div>
@@ -197,6 +281,31 @@ export default function NewInvoicePage() {
                    />
                 </div>
 
+                {isDeliveryNote && (
+                  <div className="space-y-2 md:col-span-2">
+                     <label htmlFor="bl-warehouse" className="text-[10px] font-black text-stone-500 uppercase tracking-widest ms-1">{t('warehouse.label')}</label>
+                     {warehouses.length > 0 ? (
+                       <div className="relative">
+                          <Warehouse className="w-4 h-4 absolute inset-inline-start-4 top-1/2 -translate-y-1/2 text-stone-400" />
+                          <select
+                            id="bl-warehouse"
+                            required
+                            value={warehouseId}
+                            onChange={e => setWarehouseId(e.target.value)}
+                            className="w-full bg-stone-50 border border-stone-200 rounded-2xl ps-12 pe-4 py-3 text-stone-900 outline-none focus:border-teal-500 transition-all appearance-none font-bold"
+                          >
+                            {warehouses.map(w => (
+                              <option key={w.id} value={w.id}>{w.name} ({w.code}){w.isDefault ? ` — ${t('warehouse.default')}` : ''}</option>
+                            ))}
+                          </select>
+                       </div>
+                     ) : (
+                       <p className="text-xs font-medium text-stone-500 ms-1">{t('warehouse.none')}</p>
+                     )}
+                     <p className="text-[11px] text-stone-400 ms-1">{allowNegative ? t('warehouse.negative_allowed') : t('warehouse.hint')}</p>
+                  </div>
+                )}
+
              </div>
            </div>
 
@@ -229,6 +338,15 @@ export default function NewInvoicePage() {
                                <option value="">{t('items.select_product')}</option>
                                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                             </select>
+                            {isDeliveryNote && item.productId && (() => {
+                              const avail = availableIn(item.productId)
+                              const short = !allowNegative && (requestedByProduct[item.productId] || 0) > avail
+                              return (
+                                <p className={`text-[11px] font-bold mt-1 ${short ? 'text-red-600' : 'text-stone-500'}`}>
+                                  {short ? t('warehouse.insufficient', { qty: fmtQty(avail) }) : t('warehouse.available', { qty: fmtQty(avail) })}
+                                </p>
+                              )
+                            })()}
                          </div>
                          <div className="col-span-12 md:col-span-8 space-y-1">
                             <label className="text-[9px] font-black text-stone-400 uppercase tracking-widest">{t('items.description')}</label>
