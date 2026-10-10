@@ -28,7 +28,7 @@ export default function InventoryListPage() {
   const load = useCallback(async () => {
     setLoading(true)
     const r = await api<Inventory[]>(`/api/stock/inventory${status ? `?status=${status}` : ''}`)
-    if (r.ok) setRows(r.data); else setError(r.error || t('error_generic'))
+    if (r.ok) setRows(r.data); else { setRows([]); setError(r.error || t('error_generic')) }
     setLoading(false)
   }, [status, t])
   useEffect(() => { load() }, [load])

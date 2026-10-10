@@ -16,12 +16,13 @@ export default function WarehouseStockPage() {
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState<Detail | null>(null)
   const [error, setError] = useState('')
+  const [failed, setFailed] = useState(false)
   const [q, setQ] = useState('')
   const [onlyStock, setOnlyStock] = useState(true)
 
   const load = useCallback(async () => {
     const r = await api<Detail>(`/api/stock/warehouses/${id}`)
-    if (r.ok) setData(r.data); else setError(r.error || t('error_generic'))
+    if (r.ok) setData(r.data); else { setFailed(true); setError(r.error || t('error_generic')) }
   }, [id, t])
   useEffect(() => { load() }, [load])
 
@@ -50,7 +51,7 @@ export default function WarehouseStockPage() {
       />
       <StockNav />
       {error && <Alert onClose={() => setError('')}>{error}</Alert>}
-      {!data ? <Loading /> : (
+      {!data ? (failed ? <EmptyState title={t('error_generic')} /> : <Loading />) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <KpiCard label={t('stock_value')} value={f.money(data.totalValue)} tone="teal" />

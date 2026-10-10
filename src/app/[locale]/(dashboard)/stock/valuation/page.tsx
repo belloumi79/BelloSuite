@@ -15,13 +15,14 @@ export default function ValuationPage() {
   const [warehouseId, setWarehouseId] = useState('')
   const [data, setData] = useState<Valuation | null>(null)
   const [error, setError] = useState('')
+  const [failed, setFailed] = useState(false)
   const [q, setQ] = useState('')
   const [hideZero, setHideZero] = useState(true)
 
   const load = useCallback(async () => {
     setData(null)
     const r = await api<Valuation>(`/api/stock/valuation${warehouseId ? `?warehouseId=${warehouseId}` : ''}`)
-    if (r.ok) setData(r.data); else setError(r.error || t('error_generic'))
+    if (r.ok) setData(r.data); else { setFailed(true); setError(r.error || t('error_generic')) }
   }, [warehouseId, t])
   useEffect(() => { load() }, [load])
 
@@ -37,7 +38,7 @@ export default function ValuationPage() {
     if (!data) return
     const whCols = warehouseId ? [] : activeWh
     downloadCsv(`valorisation-stock${warehouseId ? '-' + (data.warehouses.find(w => w.id === warehouseId)?.code ?? '') : ''}.csv`, [
-      [t('code'), t('product'), t('category'), t('unit'), ...whCols.map(w => w.code), t('quantity'), t('cmup'), t('value')],
+      [t('code'), t('product'), t('category'), t('unit'), ...whCols.map(w => w.name), t('quantity'), t('cmup'), t('value')],
       ...rows.map(r => [r.code, r.name, r.category ?? '', r.unit, ...whCols.map(w => r.perWarehouse[w.id] ?? 0), r.qty, r.unitCost, r.value]),
       [],
       [t('total'), '', '', '', ...whCols.map(w => w.value), data.totalQty, '', data.totalValue],
@@ -57,12 +58,12 @@ export default function ValuationPage() {
         </>} />
       <StockNav />
       {error && <Alert onClose={() => setError('')}>{error}</Alert>}
-      {!data ? <Loading /> : (
+      {!data ? (failed ? <EmptyState title={t('error_generic')} /> : <Loading />) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard label={t('kpi_total_value')} value={f.money(data.totalValue)} sub={t('valuation_method')} tone="teal" />
             {(warehouseId ? data.warehouses.filter(w => w.id === warehouseId) : activeWh).slice(0, 3).map(w => (
-              <KpiCard key={w.id} label={w.name} value={f.money(w.value)} sub={!w.isActive ? t('archived') : undefined} tone="zinc" href={`/stock/availability/${w.id}`} />
+              <KpiCard key={w.id} plainLabel label={w.name} value={f.money(w.value)} sub={!w.isActive ? t('archived') : undefined} tone="zinc" href={`/stock/availability/${w.id}`} />
             ))}
           </div>
 
@@ -89,7 +90,7 @@ export default function ValuationPage() {
                   <thead className="bg-zinc-50"><tr>
                     <th className={cls.th}>{t('code')}</th>
                     <th className={cls.th}>{t('product')}</th>
-                    {!warehouseId && activeWh.map(w => <th key={w.id} className={`${cls.th} text-end`}>{w.code}</th>)}
+                    {!warehouseId && activeWh.map(w => <th key={w.id} title={w.code} className={`${cls.th} text-end normal-case tracking-normal`}>{w.name}</th>)}
                     <th className={`${cls.th} text-end`}>{t('quantity')}</th>
                     <th className={`${cls.th} text-end`}>{t('cmup')}</th>
                     <th className={`${cls.th} text-end`}>{t('value')}</th>
@@ -97,7 +98,7 @@ export default function ValuationPage() {
                   <tbody className="divide-y divide-zinc-100">
                     {rows.map(r => (
                       <tr key={r.productId} className="hover:bg-zinc-50">
-                        <td className={`${cls.td} font-mono text-xs`}>{r.code}</td>
+                        <td className={`${cls.td} font-mono text-xs whitespace-nowrap`} dir="ltr">{r.code}</td>
                         <td className={cls.td}><Link href={`/stock/products/${r.productId}`} className="font-medium text-zinc-900 hover:text-teal-700">{r.name}</Link><span className="block text-xs text-zinc-400">{r.category ?? ''}</span></td>
                         {!warehouseId && activeWh.map(w => <td key={w.id} className={`${cls.tdNum} text-zinc-500`}>{r.perWarehouse[w.id] ? f.qty(r.perWarehouse[w.id]) : '—'}</td>)}
                         <td className={`${cls.tdNum} ${r.qty < 0 ? 'text-red-700' : ''}`}>{f.qty(r.qty)} <span className="text-xs text-zinc-400">{r.unit}</span></td>

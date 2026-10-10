@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { Plus, Download, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react'
-import { StockPage, StockNav, PageHeader, Card, Loading, EmptyState, MovementBadge, Alert, Field, cls, useStockFormat, api, downloadCsv } from '@/components/stock/ui'
+import { StockPage, StockNav, PageHeader, Card, Loading, EmptyState, MovementBadge, Alert, Field, CodeTag, cls, useStockFormat, api, downloadCsv } from '@/components/stock/ui'
 import MovementFormModal, { useReasonLabel, type MovementKind, type ProductOption, type WarehouseOption } from '@/components/stock/MovementFormModal'
 
 type Movement = {
@@ -143,7 +143,7 @@ export default function MovementsPage() {
                         <td className={cls.td}><MovementBadge type={m.type} /></td>
                         <td className={cls.td}>
                           <Link href={`/stock/products/${m.product.id}`} className="font-medium text-zinc-900 hover:text-teal-700">{m.product.name}</Link>
-                          <span className="block text-xs text-zinc-400 font-mono">{m.product.code}</span>
+                          <CodeTag code={m.product.code} block />
                         </td>
                         <td className={cls.td}>{m.warehouse?.name ?? '—'}</td>
                         <td className={`${cls.tdNum} font-semibold ${q < 0 ? 'text-red-700' : 'text-emerald-700'}`}>{f.signedQty(q)} <span className="text-xs text-zinc-400 font-normal">{m.product.unit}</span></td>

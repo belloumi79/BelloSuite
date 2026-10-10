@@ -128,7 +128,7 @@ export default function ProductsListPage() {
             <Tags className="w-5 h-5" /> {t('Stock.categories')}
           </Link>
           <Link href="/stock/products/new" className="flex items-center gap-2 px-5 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-teal-600/20">
-            <Plus className="w-5 h-5" /> {t('Home.modules.stock.title')}
+            <Plus className="w-5 h-5" /> {t('Stock.new_product')}
           </Link>
         </div>
       </div>
@@ -165,7 +165,7 @@ export default function ProductsListPage() {
               <th className="px-4 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-start">{t('Stock.category')}</th>
               <th className="px-4 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-end">{t('Stock.purchase_price')}</th>
               <th className="px-4 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-end">{t('Stock.sale_price')}</th>
-              <th className="px-4 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">{t('Common.dashboard')}</th>
+              <th className="px-4 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">{t('Stock.current_stock')}</th>
               <th className="px-4 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center">{t('Stock.statut')}</th>
               <th className="px-4 py-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-end">{t('Stock.actions')}</th>
             </tr>
@@ -189,7 +189,7 @@ export default function ProductsListPage() {
                       </div>
                       <div className="text-start">
                         <p className="font-bold text-zinc-900 text-sm">{p.name}</p>
-                        <p className="text-zinc-500 text-xs font-mono">{p.code} {p.barcode ? `· ${p.barcode}` : ''}</p>
+                        <p className="text-zinc-500 text-xs font-mono"><bdi dir="ltr">{p.code}</bdi>{p.barcode ? <> · <bdi dir="ltr">{p.barcode}</bdi></> : null}</p>
                       </div>
                     </div>
                   </td>

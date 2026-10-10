@@ -9,6 +9,9 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Link, usePathname } from '@/i18n/routing'
 import { ArrowLeft, X, Loader2 } from 'lucide-react'
 import { toCsv } from '@/lib/stock-logic'
+import { apiErrorMessage } from '@/lib/api-error'
+
+export { apiErrorMessage }
 
 // ─── Formatage dépendant de la langue ───────────────────────
 
@@ -23,7 +26,8 @@ export function useStockFormat() {
     const money = new Intl.NumberFormat(loc, { style: 'currency', currency: 'TND', minimumFractionDigits: 3, maximumFractionDigits: 3 })
     const qty = new Intl.NumberFormat(loc, { maximumFractionDigits: 3 })
     const date = new Intl.DateTimeFormat(loc, { dateStyle: 'medium' })
-    const dateTime = new Intl.DateTimeFormat(loc, { dateStyle: 'short', timeStyle: 'short' })
+    // 24 h partout (fr-TN / ar-TN afficheraient sinon AM/PM)
+    const dateTime = new Intl.DateTimeFormat(loc, { dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23' })
     const toNum = (v: unknown) => (v === null || v === undefined || v === '' ? 0 : Number(v))
     return {
       locale,
@@ -51,13 +55,23 @@ export function downloadCsv(filename: string, rows: Array<Array<string | number 
 }
 
 /** Appel API JSON : renvoie { ok, data, error }. */
+/**
+ * Appel API JSON : renvoie { ok, data, error }.
+ * `error` ne contient que les messages métier du serveur (4xx) ; pour une erreur serveur (5xx),
+ * une panne réseau ou un message générique non traduit, il reste vide → l'appelant affiche son message traduit.
+ */
 export async function api<T = unknown>(url: string, init?: RequestInit): Promise<{ ok: boolean; status: number; data: T; error?: string }> {
-  const res = await fetch(url, { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) } })
+  let res: Response
+  try {
+    res = await fetch(url, { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) } })
+  } catch {
+    return { ok: false, status: 0, data: null as T, error: undefined }
+  }
   let data: unknown = null
   try { data = await res.json() } catch { /* corps vide */ }
-  const error = !res.ok ? ((data as { error?: string } | null)?.error || `HTTP ${res.status}`) : undefined
-  return { ok: res.ok, status: res.status, data: data as T, error }
+  return { ok: res.ok, status: res.status, data: data as T, error: apiErrorMessage(res.ok, res.status, data) }
 }
+
 
 // ─── Classes partagées ──────────────────────────────────────
 
@@ -119,11 +133,12 @@ export function StockPage({ children }: { children: React.ReactNode }) {
 }
 
 export function PageHeader({ title, description, actions, backHref }: { title: string; description?: string; actions?: React.ReactNode; backHref?: string }) {
+  const t = useTranslations('StockMod')
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
       <div className="flex items-center gap-3 min-w-0">
         {backHref && (
-          <Link href={backHref} className="no-print p-2 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50" aria-label="back">
+          <Link href={backHref} className="no-print p-2 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50" aria-label={t('back')} title={t('back')}>
             <ArrowLeft className="w-5 h-5 rtl:rotate-180" />
           </Link>
         )}
@@ -160,12 +175,13 @@ const KPI_TONES: Record<string, string> = {
   emerald: 'bg-emerald-50 text-emerald-700',
 }
 
-export function KpiCard({ label, value, sub, icon: Icon, tone = 'teal', href }: { label: string; value: React.ReactNode; sub?: React.ReactNode; icon?: React.ComponentType<{ className?: string }>; tone?: keyof typeof KPI_TONES | string; href?: string }) {
+/** `plainLabel` : libellé saisi par l'utilisateur (nom de dépôt…) affiché tel quel, sans capitales forcées. */
+export function KpiCard({ label, value, sub, icon: Icon, tone = 'teal', href, plainLabel = false }: { label: string; value: React.ReactNode; sub?: React.ReactNode; icon?: React.ComponentType<{ className?: string }>; tone?: keyof typeof KPI_TONES | string; href?: string; plainLabel?: boolean }) {
   const body = (
     <div className={`${cls.card} p-5 h-full ${href ? 'hover:border-teal-300 hover:shadow transition' : ''}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 text-start">
-          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">{label}</p>
+          <p className={`text-xs font-semibold text-zinc-500 ${plainLabel ? 'text-sm truncate' : 'uppercase tracking-wide'}`}>{label}</p>
           <p className="mt-2 text-2xl font-bold text-zinc-900 tabular-nums truncate">{value}</p>
           {sub && <p className="mt-1 text-xs text-zinc-500">{sub}</p>}
         </div>
@@ -200,6 +216,17 @@ export function MovementBadge({ type }: { type: string }) {
 export function StatusBadge({ status }: { status: string }) {
   const t = useTranslations('StockMod')
   return <Badge tone={STATUS_TONE[status]}>{t(`status_${status}`)}</Badge>
+}
+
+/** Code article / dépôt : badge isolé (bidi) et séparé du libellé, lisible en RTL. */
+export function CodeTag({ code, block = false }: { code: string | null | undefined; block?: boolean }) {
+  if (!code) return null
+  return (
+    <>
+      {' '}
+      <bdi dir="ltr" className={`${block ? 'block w-fit mt-1' : 'inline-block ms-2'} align-middle whitespace-nowrap shrink-0 px-1.5 py-0.5 rounded-md bg-zinc-100 text-[11px] leading-none font-mono text-zinc-500`}>{code}</bdi>
+    </>
+  )
 }
 
 export function EmptyState({ title, action }: { title: string; action?: React.ReactNode }) {

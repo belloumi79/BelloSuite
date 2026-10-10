@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { Coins, Package, AlertTriangle, ArrowRightLeft, ClipboardList, Warehouse as WarehouseIcon, Plus, RefreshCw, PackageX } from 'lucide-react'
-import { StockPage, StockNav, PageHeader, KpiCard, Card, Loading, EmptyState, MovementBadge, Alert, cls, useStockFormat, api } from '@/components/stock/ui'
+import { StockPage, StockNav, PageHeader, KpiCard, Card, Loading, EmptyState, MovementBadge, Alert, CodeTag, cls, useStockFormat, api } from '@/components/stock/ui'
 
 type Dashboard = {
   kpis: { totalValue: number; products: number; itemsInStock: number; lowStock: number; outOfStock: number; openTransfers: number; openInventories: number }
@@ -68,7 +68,7 @@ export default function StockDashboardPage() {
                           <span className="flex items-center gap-2 font-medium text-zinc-800 group-hover:text-teal-700 min-w-0">
                             <WarehouseIcon className="w-4 h-4 text-zinc-400 shrink-0" />
                             <span className="truncate">{w.name}</span>
-                            <span className="text-xs text-zinc-400 font-mono">{w.code}</span>
+                            <CodeTag code={w.code} />
                           </span>
                           <span className="font-semibold tabular-nums text-zinc-900">{f.money(w.value)}</span>
                         </div>
@@ -96,7 +96,7 @@ export default function StockDashboardPage() {
                         <tr key={p.productId} className="hover:bg-zinc-50">
                           <td className={cls.td}>
                             <Link href={`/stock/products/${p.productId}`} className="font-medium text-zinc-900 hover:text-teal-700">{p.name}</Link>
-                            <span className="ms-2 text-xs text-zinc-400 font-mono">{p.code}</span>
+                            <CodeTag code={p.code} />
                           </td>
                           <td className={`${cls.tdNum} ${p.outOfStock ? 'text-red-700 font-semibold' : 'text-amber-700 font-semibold'}`}>
                             {p.outOfStock && <PackageX className="inline w-4 h-4 me-1 -mt-0.5" />}{f.qty(p.stock)} <span className="text-xs text-zinc-400">{p.unit}</span>

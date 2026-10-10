@@ -162,7 +162,7 @@ export default function InventoryDetailPage() {
       <StockNav />
       {error && <Alert onClose={() => setError('')}>{error}</Alert>}
       {notice && <Alert tone="green" onClose={() => setNotice('')}>{notice}</Alert>}
-      {!inv ? <Loading /> : (
+      {!inv ? (error ? null : <Loading />) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 no-print">
             <div className={`${cls.card} p-5 flex flex-col justify-between`}>
