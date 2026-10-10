@@ -32,13 +32,13 @@ export function InvoiceImportPanel({ onExtracted }: { onExtracted: (x: InvoiceEx
     setStatus({ kind: 'busy', p: null })
     try {
       const { extractInvoiceText, imageDataUrlForAi } = await import('@/lib/invoice-ocr-client')
-      const { text } = await extractInvoiceText(file, (p) => setStatus({ kind: 'busy', p }))
+      const { text, image: pdfImage } = await extractInvoiceText(file, (p) => setStatus({ kind: 'busy', p }))
       let x = extractInvoice(text)
       let aiUsed = false
       // Affinage IA : silencieux si aucune clé n'est configurée ou en cas d'erreur
       try {
         setStatus({ kind: 'busy', p: { stage: 'done', progress: 1 }, ai: true })
-        const image = await imageDataUrlForAi(file)
+        const image = pdfImage ?? (await imageDataUrlForAi(file))
         const res = await fetch('/api/ai/extract-invoice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text.slice(0, 30_000), image }) })
         if (res.ok) {
           const body = (await res.json()) as { available?: boolean; result?: AiInvoice | null }

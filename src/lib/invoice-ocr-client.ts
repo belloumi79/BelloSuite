@@ -9,7 +9,29 @@
 
 export type OcrStage = 'pdf' | 'ocr_load' | 'ocr' | 'done'
 export type OcrProgress = { stage: OcrStage; progress: number; page?: number; pages?: number }
-export type OcrResult = { text: string; method: 'pdf-text' | 'ocr' | 'pdf-ocr'; pages: number }
+/** `image` : 1re page scannée d'un PDF en JPEG (data URL) pour l'affinage IA par vision. */
+export type OcrResult = { text: string; method: 'pdf-text' | 'ocr' | 'pdf-ocr'; pages: number; image?: string | null }
+
+/** Limite du corps de requête Vercel (4,5 Mo) : l'image envoyée à l'IA reste sous ~3 Mo (≈ 4 Mo en base64). */
+const AI_IMAGE_MAX_BYTES = 3 * 1024 * 1024
+const AI_IMAGE_MAX_SIDE = 2000
+
+function canvasToJpeg(src: CanvasImageSource, w: number, h: number): string | null {
+  const scale = Math.min(1, AI_IMAGE_MAX_SIDE / Math.max(w, h))
+  const c = document.createElement('canvas')
+  c.width = Math.round(w * scale)
+  c.height = Math.round(h * scale)
+  const ctx = c.getContext('2d')
+  if (!ctx) return null
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, c.width, c.height)
+  ctx.drawImage(src, 0, 0, c.width, c.height)
+  for (const q of [0.85, 0.7, 0.5]) {
+    const url = c.toDataURL('image/jpeg', q)
+    if (url.length * 0.75 <= AI_IMAGE_MAX_BYTES) return url
+  }
+  return null
+}
 
 export const MAX_INVOICE_FILE_BYTES = 5 * 1024 * 1024
 export const ACCEPTED_INVOICE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
@@ -70,6 +92,7 @@ async function extractPdf(file: File, onProgress: (p: OcrProgress) => void): Pro
   const pages = Math.min(doc.numPages, MAX_PDF_PAGES)
   const texts: string[] = []
   let usedOcr = false
+  let image: string | null = null
   try {
     for (let i = 1; i <= pages; i++) {
       onProgress({ stage: 'pdf', progress: (i - 1) / pages, page: i, pages })
@@ -86,6 +109,7 @@ async function extractPdf(file: File, onProgress: (p: OcrProgress) => void): Pro
         if (ctx) {
           await page.render({ canvasContext: ctx, viewport, canvas }).promise
           text = await ocrImage(canvas, onProgress, i, pages)
+          if (!usedOcr) image = canvasToJpeg(canvas, canvas.width, canvas.height)
           usedOcr = true
         }
       }
@@ -95,7 +119,7 @@ async function extractPdf(file: File, onProgress: (p: OcrProgress) => void): Pro
     await doc.destroy()
   }
   onProgress({ stage: 'done', progress: 1 })
-  return { text: texts.join('\n'), method: usedOcr ? 'pdf-ocr' : 'pdf-text', pages }
+  return { text: texts.join('\n'), method: usedOcr ? 'pdf-ocr' : 'pdf-text', pages, image }
 }
 
 /** Texte de la facture (PDF ou image), avec progression. Lève une Error('too_large' | 'unsupported'). */
@@ -109,13 +133,21 @@ export async function extractInvoiceText(file: File, onProgress: (p: OcrProgress
   return { text, method: 'ocr', pages: 1 }
 }
 
-/** Image en data URL pour l'affinage IA (vision) — seulement si petite (limite de corps Vercel 4,5 Mo). */
-export async function imageDataUrlForAi(file: File, maxBytes = 3 * 1024 * 1024): Promise<string | null> {
-  if (!file.type.startsWith('image/') || file.size > maxBytes) return null
-  return new Promise((resolve) => {
-    const r = new FileReader()
-    r.onload = () => resolve(typeof r.result === 'string' ? r.result : null)
-    r.onerror = () => resolve(null)
-    r.readAsDataURL(file)
-  })
+/** Image en data URL pour l'affinage IA (vision) : envoyée telle quelle si petite, sinon réduite en JPEG ; null si impossible. */
+export async function imageDataUrlForAi(file: File, maxBytes = AI_IMAGE_MAX_BYTES): Promise<string | null> {
+  if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) return null
+  if (file.size <= maxBytes) {
+    return new Promise((resolve) => {
+      const r = new FileReader()
+      r.onload = () => resolve(typeof r.result === 'string' ? r.result : null)
+      r.onerror = () => resolve(null)
+      r.readAsDataURL(file)
+    })
+  }
+  try {
+    const bmp = await createImageBitmap(file)
+    try { return canvasToJpeg(bmp, bmp.width, bmp.height) } finally { bmp.close() }
+  } catch {
+    return null
+  }
 }

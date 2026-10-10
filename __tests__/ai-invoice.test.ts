@@ -1,4 +1,4 @@
-import { aiProvider, parseAiJson, callAi, extractRequestSchema, DEFAULT_GEMINI_MODEL, DEFAULT_GROQ_MODEL } from '@/lib/ai-invoice'
+import { aiProvider, aiProviders, extractWithAi, parseAiJson, callAi, extractRequestSchema, DEFAULT_GEMINI_MODEL, DEFAULT_GROQ_MODEL } from '@/lib/ai-invoice'
 
 describe('ai-invoice', () => {
   it('aucun fournisseur sans clé ; Gemini prioritaire ; modèles surchargeables', () => {
@@ -6,6 +6,8 @@ describe('ai-invoice', () => {
     expect(aiProvider({ GROQ_API_KEY: 'g' })).toEqual({ name: 'groq', key: 'g', model: DEFAULT_GROQ_MODEL })
     expect(aiProvider({ GEMINI_API_KEY: 'k', GROQ_API_KEY: 'g' })).toEqual({ name: 'gemini', key: 'k', model: DEFAULT_GEMINI_MODEL })
     expect(aiProvider({ GEMINI_API_KEY: 'k', GEMINI_MODEL: 'gemini-3.8-flash' })?.model).toBe('gemini-3.8-flash')
+    expect(aiProviders({ GEMINI_API_KEY: 'k', GROQ_API_KEY: 'g' }).map((p) => p.name)).toEqual(['gemini', 'groq'])
+    expect(aiProviders({})).toEqual([])
   })
 
   it('parseAiJson : JSON entouré, <think>, valeurs invalides neutralisées', () => {
@@ -34,7 +36,34 @@ describe('ai-invoice', () => {
       const [url, init] = fetchMock.mock.calls[0]
       expect(url).toContain('/models/gemini-3.5-flash-lite:generateContent')
       expect(init.headers['x-goog-api-key']).toBe('k')
-      expect(JSON.parse(init.body).contents[0].parts[1].inline_data.mime_type).toBe('image/png')
+      const body = JSON.parse(init.body)
+      expect(body.contents[0].parts[1].inline_data.mime_type).toBe('image/png')
+      expect(body.generationConfig.responseMimeType).toBe('application/json')
+      expect(body.generationConfig.responseSchema.type).toBe('OBJECT')
+    })
+
+    it('Gemini : schéma refusé (400) → une seule nouvelle tentative sans schéma', async () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+      const fetchMock = jest.fn()
+        .mockResolvedValueOnce({ ok: false, status: 400 })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: '{"invoiceNumber":"FA-9"}' }] } }] }) })
+      global.fetch = fetchMock as unknown as typeof fetch
+      expect(await callAi({ name: 'gemini', key: 'k', model: 'm' }, 'x')).toMatchObject({ invoiceNumber: 'FA-9' })
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(JSON.parse(fetchMock.mock.calls[1][1].body).generationConfig.responseSchema).toBeUndefined()
+      warn.mockRestore()
+    })
+
+    it('quota Gemini (429) → repli Groq ; tout en échec → null', async () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+      const providers = aiProviders({ GEMINI_API_KEY: 'k', GROQ_API_KEY: 'g' })
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce({ ok: false, status: 429 })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ choices: [{ message: { content: '{"total":10}' } }] }) }) as unknown as typeof fetch
+      expect(await extractWithAi(providers, 'x')).toEqual({ provider: 'groq', result: expect.objectContaining({ total: 10 }) })
+      global.fetch = jest.fn().mockRejectedValue(new Error('network')) as unknown as typeof fetch
+      expect(await extractWithAi(providers, 'x')).toBeNull()
+      warn.mockRestore()
     })
 
     it('Groq : chat completions, json_object', async () => {

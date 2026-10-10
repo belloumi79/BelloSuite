@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getApiContext, parseBody } from '@/lib/api'
 import { handleApiError } from '@/lib/errors'
 import { rateLimitPersistent, tooManyRequests } from '@/lib/rate-limit-persistent'
-import { aiProvider, callAi, extractRequestSchema } from '@/lib/ai-invoice'
+import { aiProviders, extractWithAi, extractRequestSchema } from '@/lib/ai-invoice'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
     const ctx = await getApiContext(req)
     if (ctx instanceof NextResponse) return ctx
 
-    const provider = aiProvider()
-    if (!provider) return NextResponse.json({ available: false })
+    const providers = aiProviders()
+    if (!providers.length) return NextResponse.json({ available: false })
 
     const len = Number(req.headers.get('content-length') ?? 0)
     if (len > MAX_BODY_BYTES) return NextResponse.json({ error: 'Fichier trop volumineux (5 Mo max).' }, { status: 413 })
@@ -33,16 +33,19 @@ export async function POST(req: NextRequest) {
 
     let body: unknown
     try {
-      body = await req.json()
+      const raw = await req.text()
+      if (raw.length > MAX_BODY_BYTES) return NextResponse.json({ error: 'Fichier trop volumineux (5 Mo max).' }, { status: 413 })
+      body = JSON.parse(raw)
     } catch {
       return NextResponse.json({ error: 'Corps invalide.' }, { status: 400 })
     }
     const data = parseBody(extractRequestSchema, body)
     if (data instanceof NextResponse) return data
-    if (!data.text.trim() && !data.image) return NextResponse.json({ available: true, provider: provider.name, result: null })
+    if (!data.text.trim() && !data.image) return NextResponse.json({ available: true, provider: null, result: null })
 
-    const result = await callAi(provider, data.text, data.image ?? null)
-    return NextResponse.json({ available: true, provider: provider.name, result })
+    // Erreur / quota / réponse invalide de tous les fournisseurs → result null : l'UI garde l'extraction déterministe
+    const out = await extractWithAi(providers, data.text, data.image ?? null)
+    return NextResponse.json({ available: true, provider: out?.provider ?? null, result: out?.result ?? null })
   } catch (err) {
     return handleApiError(err, 'POST ai extract-invoice')
   }

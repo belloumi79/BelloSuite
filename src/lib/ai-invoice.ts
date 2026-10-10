@@ -1,7 +1,7 @@
 /**
  * Affinage IA OPTIONNEL de l'extraction de facture fournisseur (côté serveur).
- * Fournisseurs gratuits pris en charge, par ordre de préférence :
- *  - Google AI Studio (Gemini) : env GEMINI_API_KEY, modèle env GEMINI_MODEL (défaut gemini-3.5-flash-lite, palier gratuit)
+ * Fournisseurs gratuits pris en charge, essayés dans cet ordre (le second sert de repli) :
+ *  - Google AI Studio (Gemini) : env GEMINI_API_KEY, modèle env GEMINI_MODEL (défaut gemini-3.5-flash-lite : palier gratuit, recommandé par Google pour les nouveaux projets — oct. 2026)
  *  - Groq (OpenAI-compatible)  : env GROQ_API_KEY,   modèle env GROQ_MODEL   (défaut qwen/qwen3.8-27b, vision)
  * Sans clé : `aiProvider()` renvoie null et la fonctionnalité reste 100 % déterministe.
  * Le contenu de la facture n'est jamais journalisé ni stocké.
@@ -46,9 +46,24 @@ export const extractRequestSchema = z.object({
 
 export type AiProvider = { name: 'gemini' | 'groq'; key: string; model: string }
 
+/** Fournisseurs configurés, par ordre d'essai : Gemini puis Groq (repli). */
+export function aiProviders(env: Record<string, string | undefined> = process.env): AiProvider[] {
+  const out: AiProvider[] = []
+  if (env.GEMINI_API_KEY) out.push({ name: 'gemini', key: env.GEMINI_API_KEY, model: env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL })
+  if (env.GROQ_API_KEY) out.push({ name: 'groq', key: env.GROQ_API_KEY, model: env.GROQ_MODEL || DEFAULT_GROQ_MODEL })
+  return out
+}
+
 export function aiProvider(env: Record<string, string | undefined> = process.env): AiProvider | null {
-  if (env.GEMINI_API_KEY) return { name: 'gemini', key: env.GEMINI_API_KEY, model: env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL }
-  if (env.GROQ_API_KEY) return { name: 'groq', key: env.GROQ_API_KEY, model: env.GROQ_MODEL || DEFAULT_GROQ_MODEL }
+  return aiProviders(env)[0] ?? null
+}
+
+/** Essaie chaque fournisseur jusqu'à obtenir un résultat valide (erreur / quota → suivant ; aucun → null). */
+export async function extractWithAi(providers: AiProvider[], text: string, image?: string | null): Promise<{ provider: AiProvider['name']; result: AiInvoice } | null> {
+  for (const p of providers) {
+    const result = await callAi(p, text, image)
+    if (result) return { provider: p.name, result }
+  }
   return null
 }
 
@@ -75,7 +90,22 @@ export function parseAiJson(raw: string): AiInvoice | null {
   }
 }
 
-async function postJson(url: string, headers: Record<string, string>, body: unknown): Promise<unknown | null> {
+/** Schéma de sortie structurée Gemini (sous-ensemble OpenAPI de generationConfig.responseSchema). */
+const S = (type: string, extra: Record<string, unknown> = {}) => ({ type, nullable: true, ...extra })
+export const GEMINI_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    supplierName: S('STRING'), matriculeFiscal: S('STRING'), invoiceNumber: S('STRING'),
+    date: S('STRING', { description: 'YYYY-MM-DD' }),
+    subtotal: S('NUMBER'), fodec: S('NUMBER'), vatTotal: S('NUMBER'), stamp: S('NUMBER'), total: S('NUMBER'),
+    vat: S('ARRAY', { items: { type: 'OBJECT', properties: { rate: { type: 'NUMBER' }, base: S('NUMBER'), amount: { type: 'NUMBER' } }, required: ['rate', 'amount'] } }),
+    lines: S('ARRAY', { items: { type: 'OBJECT', properties: { reference: S('STRING'), designation: { type: 'STRING' }, quantity: { type: 'NUMBER' }, unitPrice: { type: 'NUMBER' }, total: { type: 'NUMBER' } }, required: ['designation', 'quantity', 'unitPrice', 'total'] } }),
+  },
+}
+
+type PostResult = { ok: true; json: unknown } | { ok: false; status: number }
+
+async function postJson(url: string, headers: Record<string, string>, body: unknown): Promise<PostResult> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
   try {
@@ -83,12 +113,12 @@ async function postJson(url: string, headers: Record<string, string>, body: unkn
     if (!res.ok) {
       // statut seulement : jamais le contenu
       console.warn(`[ai-invoice] fournisseur IA HTTP ${res.status}`)
-      return null
+      return { ok: false, status: res.status }
     }
-    return await res.json()
+    return { ok: true, json: await res.json() }
   } catch (e) {
     console.warn('[ai-invoice] fournisseur IA indisponible :', (e as Error)?.name)
-    return null
+    return { ok: false, status: 0 }
   } finally {
     clearTimeout(timer)
   }
@@ -105,21 +135,26 @@ export async function callAi(p: AiProvider, text: string, image?: string | null)
   if (p.name === 'gemini') {
     const parts: unknown[] = [{ text: userText }]
     if (img) parts.push({ inline_data: { mime_type: img.mime, data: img.data } })
-    const json = (await postJson(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(p.model)}:generateContent`,
-      { 'x-goog-api-key': p.key },
-      { contents: [{ role: 'user', parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } },
-    )) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> } | null
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(p.model)}:generateContent`
+    const req = (schema: boolean) => ({
+      contents: [{ role: 'user', parts }],
+      generationConfig: { temperature: 0, responseMimeType: 'application/json', ...(schema ? { responseSchema: GEMINI_RESPONSE_SCHEMA } : {}) },
+    })
+    let r = await postJson(url, { 'x-goog-api-key': p.key }, req(true))
+    // Schéma refusé par le modèle (400) : une seule nouvelle tentative en JSON libre, validé par zod de toute façon
+    if (!r.ok && r.status === 400) r = await postJson(url, { 'x-goog-api-key': p.key }, req(false))
+    const json = (r.ok ? r.json : null) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> } | null
     const out = json?.candidates?.[0]?.content?.parts?.map((x) => x.text ?? '').join('') ?? ''
     return out ? parseAiJson(out) : null
   }
   const content: unknown[] = [{ type: 'text', text: userText }]
   if (img) content.push({ type: 'image_url', image_url: { url: image } })
-  const json = (await postJson(
+  const r = await postJson(
     'https://api.groq.com/openai/v1/chat/completions',
     { Authorization: `Bearer ${p.key}` },
     { model: p.model, temperature: 0, response_format: { type: 'json_object' }, messages: [{ role: 'user', content: img ? content : userText }] },
-  )) as { choices?: Array<{ message?: { content?: string } }> } | null
+  )
+  const json = (r.ok ? r.json : null) as { choices?: Array<{ message?: { content?: string } }> } | null
   const out = json?.choices?.[0]?.message?.content ?? ''
   return out ? parseAiJson(out) : null
 }
